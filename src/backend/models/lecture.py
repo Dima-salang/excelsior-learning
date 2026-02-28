@@ -10,6 +10,7 @@ class LectureBase(SQLModel):
     completion_percentage: float = Field(default=0.0)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
+    last_accessed_at: datetime = Field(default_factory=datetime.now)
 
 class Lecture(LectureBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -25,6 +26,9 @@ class LecturePublic(LectureBase):
 
 class LectureCreate(LectureBase):
     user_id: int
+
+class LectureUpdate(LectureBase):
+    id: int
 
 
 class LectureDelete(SQLModel):

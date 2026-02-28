@@ -6,6 +6,7 @@ from .lecture_step import LectureStep
 class LectureSectionBase(SQLModel):
     title: str
     completion_percentage: float = Field(default=0.0)
+    order_key: int = Field(default=0)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 

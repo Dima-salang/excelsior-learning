@@ -5,6 +5,7 @@ from .lecture_section import LectureSection
 class LectureStepBase(SQLModel):
     title: str
     content: str | None = None
+    order_key: int = Field(default=0)
     completed: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
