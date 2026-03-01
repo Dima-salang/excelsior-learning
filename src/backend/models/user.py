@@ -1,12 +1,12 @@
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 from .lecture import Lecture
+from pydantic import SecretStr
 
 class UserBase(SQLModel):
     username: str
     email: str | None = None
-    password: str
-
+    password: SecretStr
 
 class User(UserBase, table=True):
     id: int | None = Field(default=None, primary_key=True)

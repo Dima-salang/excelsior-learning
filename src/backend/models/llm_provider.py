@@ -1,33 +1,41 @@
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
-    
+from typing import Optional
+from pydantic import SecretStr, BaseModel
 
-class ModelProvider(BaseModel):
-    model_config = ConfigDict(frozen=True)
 
-    model_name: str
 
-class LLMProviderBase(SQLModel):
+class UserLLMConfigBase(SQLModel):
+    user_id: int = Field(foreign_key="user.id")
     provider_name: str
-    api_key: str
-
-
-class LLMProvider(LLMProviderBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
-    models: list["LLMModel"] = Relationship(back_populates="provider")
-
-
-
-class LLMModelBase(SQLModel):
     model_name: str
-    provider_id: int | None = Field(default=None, foreign_key="llm_provider.id")
+    api_key: SecretStr | None = None
+    base_url: Optional[str] = None
+    additional_params: Optional[str] = None
 
 
-class LLMModel(LLMModelBase, table=True):
+class UserLLMConfig(UserLLMConfigBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
-    provider: LLMProvider = Relationship(back_populates="models")
+
+
+class UserLLMConfigCreate(UserLLMConfigBase):
+    pass
+
+
+class UserLLMConfigUpdate(UserLLMConfigBase):
+    pass
+
+
+class UserLLMConfigDelete(SQLModel):
+    id: int
+
+
+class UserLLMConfigPublic(UserLLMConfigBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+
