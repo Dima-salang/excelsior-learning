@@ -12,7 +12,6 @@ from cryptography.fernet import Fernet
 import os
 from fastapi import HTTPException
 from litellm import completion
-from pydantic import SecretStr
 from google import genai
 from schema.lecture_schema_json import LectureSchema
 
@@ -23,7 +22,7 @@ class LLMService:
 
     def add_provider(self, provider: UserLLMConfigBase):
         db_provider = UserLLMConfig(**provider.dict())
-        db_provider.api_key = self.encrypt_api_key(provider.api_key.get_secret_value())
+        db_provider.api_key = self.encrypt_api_key(provider.api_key)
         self.session.add(db_provider)
         self.session.commit()
         self.session.refresh(db_provider)
@@ -52,9 +51,7 @@ class LLMService:
             raise HTTPException(status_code=404, detail="Provider not found")
         provider.provider_name = provider_update.provider_name
         provider.model_name = provider_update.model_name
-        provider.api_key = self.encrypt_api_key(
-            provider_update.api_key.get_secret_value()
-        )
+        provider.api_key = self.encrypt_api_key(provider_update.api_key)
         provider.base_url = provider_update.base_url
         self.session.add(provider)
         self.session.commit()
@@ -94,7 +91,7 @@ class LLMService:
             raise HTTPException(status_code=404, detail="Provider not found")
 
         # decrypt the api key
-        api_key = self.decrypt_api_key(provider.api_key.get_secret_value())
+        api_key = self.decrypt_api_key(provider.api_key)
 
         # Create a copy of provider config with decrypted key for the provider
         # provider.api_key = api_key # Avoid mutating the DB model if possible, or just use it
