@@ -1,6 +1,10 @@
+from typing import TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
-from .deck import Deck
+
+if TYPE_CHECKING:
+    from .deck import Deck
+
 
 class CardBase(SQLModel):
     front: str
@@ -8,10 +12,11 @@ class CardBase(SQLModel):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
+
 class Card(CardBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     deck_id: int = Field(foreign_key="deck.id")
-    deck: Deck = Relationship(back_populates="cards")
+    deck: "Deck" = Relationship(back_populates="cards")
 
 
 class CardPublic(CardBase):
