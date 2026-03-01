@@ -5,6 +5,7 @@ from models.lecture_section import LectureSection
 from models.lecture_step import LectureStep
 from models.deck import Deck
 from models.card import Card
+from models.llm_provider import UserLLMConfig
 
 sqlite_file_name = "db.sqlite"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
