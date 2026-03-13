@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 
+from .card import CardPublic
+
 if TYPE_CHECKING:
     from .card import Card
     from .user import User
@@ -32,6 +34,10 @@ class DeckPublic(DeckBase):
     id: int
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
+
+
+class DeckPublicWithCards(DeckPublic):
+    cards: list["CardPublic"] = []
 
 
 class DeckCreate(DeckBase):
