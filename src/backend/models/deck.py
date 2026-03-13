@@ -5,13 +5,12 @@ from datetime import datetime
 if TYPE_CHECKING:
     from .card import Card
     from .user import User
+    from .lecture import Lecture
 
 
 class DeckBase(SQLModel):
     title: str
     description: str | None = None
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
 
 
 class Deck(DeckBase, table=True):
@@ -21,9 +20,18 @@ class Deck(DeckBase, table=True):
 
     cards: list["Card"] = Relationship(back_populates="deck")
 
+    # lecture it belongs to
+    lecture_id: int | None = Field(default=None, foreign_key="lecture.id")
+    lecture: "Lecture" = Relationship(back_populates="deck")
+
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
 
 class DeckPublic(DeckBase):
     id: int
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
 
 
 class DeckCreate(DeckBase):

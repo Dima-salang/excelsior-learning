@@ -23,12 +23,12 @@ class LectureSection(LectureSectionBase, table=True):
     steps: list["LectureStep"] = Relationship(back_populates="lecture_section")
 
 
-class LectureSectionPublic(LectureSectionBase):
-    id: int
-
-
 class LectureSectionCreate(LectureSectionBase):
     lecture_id: int
+
+
+class LectureSectionUpdate(LectureSectionBase):
+    pass
 
 
 class LectureSectionDelete(SQLModel):

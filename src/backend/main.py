@@ -5,6 +5,7 @@ from sqlmodel import SQLModel
 from db.engine import engine
 from api.llm import router as llm_router
 from api.auth.auth import router as auth_router
+from api.lectures import router as lectures_router
 from typing import Annotated
 
 
@@ -25,6 +26,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 # Register routers
 app.include_router(llm_router)
 app.include_router(auth_router)
+app.include_router(lectures_router)
 
 
 @app.get("/")
