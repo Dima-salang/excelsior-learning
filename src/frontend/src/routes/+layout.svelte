@@ -1,72 +1,66 @@
 <script lang="ts">
 	import './layout.css';
-    import { onMount } from 'svelte';
-    import { auth } from '$lib/stores/auth';
+	import { onMount, type Snippet } from 'svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { apiFetch } from '$lib/api';
+    import Navbar from '$lib/components/Navbar.svelte';
+    import { page } from '$app/state';
 
-	const { children } = $props();
+	const { children }: { children: Snippet } = $props();
 
-    onMount(async () => {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            try {
-                const user = await apiFetch('/auth/me');
-                auth.login(token, user);
-            } catch (err) {
-                auth.logout();
-            }
-        }
-    });
+    // Hide global navbar on the reader page as it has its own sidebar navigation
+    const showNavbar = $derived(!page.url.pathname.includes('/step/'));
+
+	onMount(async () => {
+		const token = localStorage.getItem('access_token');
+		if (token) {
+			try {
+				const user = await apiFetch('/auth/me');
+				auth.login(token, user);
+			} catch (err) {
+				auth.logout();
+			}
+		}
+	});
 </script>
 
-<svelte:head>
-	<link rel="preconnect" href="https://fonts.googleapis.com" />
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-	<link
-		href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap"
-		rel="stylesheet"
-	/>
-</svelte:head>
-
-<div class="relative min-h-screen overflow-x-hidden text-slate-100">
-	<!-- Starry Layer -->
-	<div class="fixed inset-0 -z-50 bg-[#020617]">
-		<!-- Gradient Mesh -->
+<div class="relative min-h-screen overflow-x-hidden text-foreground selection:bg-primary/20 selection:text-primary">
+	<!-- Adaptive Background Atmosphere -->
+	<div class="fixed inset-0 -z-50 bg-background overflow-hidden pointer-events-none">
+		<!-- Starry Gradient Mesh -->
 		<div
-			class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_#0f172a_0%,_#020617_100%)]"
+			class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_oklch(0.12_0.02_260)_0%,_oklch(0.08_0.02_260)_100%)]"
 		></div>
-		<!-- Grain Texture -->
+		<!-- Grain Texture Overlay -->
 		<div
-			class="absolute inset-0 opacity-[0.03]"
+			class="absolute inset-0 opacity-[0.03] mix-blend-overlay"
 			style="background-image: url('https://www.transparenttextures.com/patterns/p6.png')"
 		></div>
-		<!-- Animated Nebula -->
-		<div
-			class="nebula nebula-1 animate-pulse-slow absolute top-[-20%] left-[-10%] h-[140%] w-[120%]"
-		></div>
+		<!-- Animated Floating Glows -->
+		<div class="nebula nebula-1 animate-pulse-slow absolute top-[-20%] left-[-10%] h-[140%] w-[120%] pointer-events-none"></div>
 	</div>
 
-	<main class="relative z-10 w-full">
-		{@render children()}
+	<main class="relative z-10 w-full min-h-screen flex flex-col">
+        {#if showNavbar}
+            <div class="container mx-auto max-w-7xl">
+                <Navbar />
+            </div>
+        {/if}
+        
+        <div class="flex-grow flex flex-col">
+		    {@render children()}
+        </div>
 	</main>
 </div>
 
 <style>
 	:global(body) {
-		font-family: 'Outfit', sans-serif;
-		background-color: #020617;
-	}
-	:global(h1, h2, h3, h4, h5, h6) {
-		font-family: 'Outfit', sans-serif;
-		letter-spacing: -0.02em;
-	}
-	:global(.font-serif) {
-		font-family: 'IBM Plex Serif', serif;
+		background-color: var(--background);
 	}
 
 	.nebula {
 		filter: blur(100px);
-		background: radial-gradient(circle at center, rgba(34, 211, 238, 0.08) 0%, transparent 60%);
+		background: radial-gradient(circle at center, var(--color-primary / 0.08) 0%, transparent 60%);
 	}
 
 	@keyframes pulse-slow {
