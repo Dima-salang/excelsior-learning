@@ -42,6 +42,7 @@
 	}
 
 	let lectures = $state<Lecture[]>([]);
+	let decks = $state<any[]>([]);
 	let providers = $state<Provider[]>([]);
 	let isLoading = $state(true);
 	let isGenerating = $state(false);
@@ -67,12 +68,14 @@
 
 		try {
 			// Using more robust endpoint paths
-			const [lecturesData, providersData] = await Promise.all([
+			const [lecturesData, providersData, decksData] = await Promise.all([
 				apiFetch(`/lectures/?user_id=${user.id}`),
-				apiFetch(`/llm/providers?user_id=${user.id}`)
+				apiFetch(`/llm/providers?user_id=${user.id}`),
+				apiFetch(`/decks?user_id=${user.id}`)
 			]);
 			lectures = lecturesData || [];
 			providers = providersData || [];
+			decks = decksData || [];
 			if (providers.length > 0 && !settings.selectedProviderId) {
 				settings.setProvider(providers[0].id);
 			}
