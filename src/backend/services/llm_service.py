@@ -1,26 +1,34 @@
 from models.llm_provider import (
     UserLLMConfig,
     UserLLMConfigBase,
+    UserLLMConfigCreate,
     UserLLMConfigUpdate,
     UserLLMConfigPublic,
 )
-from models.lecture import Lecture, LectureBase
-from models.lecture_section import LectureSection, LectureSectionBase
-from models.lecture_step import LectureStep, LectureStepBase
+from models.lecture import Lecture
+from models.lecture_section import LectureSection
+from models.lecture_step import LectureStep
+from schema.lecture_schema_json import LectureSchema, LectureStepSchema
 from sqlmodel import Session
 from cryptography.fernet import Fernet
 import os
 from fastapi import HTTPException
 from litellm import completion
 from google import genai
-from schema.lecture_schema_json import LectureSchema
+from datetime import datetime
+from models.card import Card, CardBase
+from models.llm_provider import PromptManager
 
 
 class LLMService:
+    prompt_manager: PromptManager
+    PROVIDER_NOT_FOUND = "Provider not found"
+
     def __init__(self, session: Session):
         self.session = session
+        self.prompt_manager = PromptManager()
 
-    def add_provider(self, provider: UserLLMConfigBase):
+    def add_provider(self, provider: UserLLMConfigCreate):
         db_provider = UserLLMConfig(**provider.dict())
         db_provider.api_key = self.encrypt_api_key(provider.api_key)
         self.session.add(db_provider)
@@ -31,7 +39,7 @@ class LLMService:
     def get_provider(self, provider_id: int) -> UserLLMConfigPublic:
         provider = self.session.get(UserLLMConfig, provider_id)
         if not provider:
-            raise HTTPException(status_code=404, detail="Provider not found")
+            raise HTTPException(status_code=404, detail=self.PROVIDER_NOT_FOUND)
         return provider
 
     def get_providers(self, user_id: int) -> list[UserLLMConfigPublic]:
@@ -48,7 +56,7 @@ class LLMService:
     ) -> UserLLMConfigPublic:
         provider = self.session.get(UserLLMConfig, provider_id)
         if not provider:
-            raise HTTPException(status_code=404, detail="Provider not found")
+            raise HTTPException(status_code=404, detail=self.PROVIDER_NOT_FOUND)
         provider.provider_name = provider_update.provider_name
         provider.model_name = provider_update.model_name
         provider.api_key = self.encrypt_api_key(provider_update.api_key)
@@ -61,7 +69,7 @@ class LLMService:
     def delete_provider(self, provider_id: int) -> UserLLMConfigPublic:
         provider = self.session.get(UserLLMConfig, provider_id)
         if not provider:
-            raise HTTPException(status_code=404, detail="Provider not found")
+            raise HTTPException(status_code=404, detail=self.PROVIDER_NOT_FOUND)
         self.session.delete(provider)
         self.session.commit()
         return provider
@@ -88,19 +96,18 @@ class LLMService:
     def generate_lecture(self, prompt: str, provider_id: int, user_id: int) -> Lecture:
         provider = self.session.get(UserLLMConfig, provider_id)
         if not provider:
-            raise HTTPException(status_code=404, detail="Provider not found")
+            raise HTTPException(status_code=404, detail=self.PROVIDER_NOT_FOUND)
 
         # decrypt the api key
         api_key = self.decrypt_api_key(provider.api_key)
 
-        # Create a copy of provider config with decrypted key for the provider
-        # provider.api_key = api_key # Avoid mutating the DB model if possible, or just use it
-
         # create llm provider
-        llm_provider = LLMProvider(provider, api_key)
+        llm_provider = LLMProvider(
+            provider, api_key, prompt_manager=self.prompt_manager
+        )
 
         # generate lecture
-        lecture = llm_provider.generate_lecture(prompt)
+        lecture = llm_provider.generate(prompt, type="lecture")
 
         # save and return lecture
         return self.save_lecture(lecture, user_id)
@@ -148,45 +155,213 @@ class LLMService:
     def generate_chat(self, prompt: str, provider_id: int) -> str:
         pass
 
+    def generate_step_content(self, lecture_id: int, step_id: int, provider_id: int):
+        from models.lecture_step import LectureStep
+        from models.lecture_section import LectureSection
+        from models.lecture import LectureStepPublic
+
+        provider = self.session.get(UserLLMConfig, provider_id)
+        if not provider:
+            raise HTTPException(status_code=404, detail=self.PROVIDER_NOT_FOUND)
+
+        lecture = self.session.get(Lecture, lecture_id)
+        step = self.session.get(LectureStep, step_id)
+
+        if not lecture or not step:
+            raise HTTPException(status_code=404, detail="Lecture or Step not found")
+
+        # decrypt the api key
+        api_key = self.decrypt_api_key(provider.api_key)
+
+        llm_provider = LLMProvider(
+            provider, api_key, prompt_manager=self.prompt_manager
+        )
+
+        # We need context for the generation
+        section = self.session.get(LectureSection, step.lecture_section_id)
+        prompt = (
+            f"Lecture: {lecture.title}\nSection: {section.title}\nStep: {step.title}"
+        )
+
+        # generate content
+        data = llm_provider.generate(prompt, type="step")
+
+        # save the step to the db
+        step.content = data.content
+        step.updated_at = datetime.now()
+        self.session.add(step)
+        self.session.commit()
+        self.session.refresh(step)
+
+        if data.flashcards:
+            self.save_step_cards(step_id, data.flashcards)
+
+        return LectureStepPublic.model_validate(step)
+
+    def update_card(self, card_id: int, card_update: dict) -> Card:
+        card = self.session.get(Card, card_id)
+        if not card:
+            raise HTTPException(status_code=404, detail="Card not found")
+
+        for key, value in card_update.items():
+            setattr(card, key, value)
+
+        card.updated_at = datetime.now()
+        self.session.add(card)
+        self.session.commit()
+        self.session.refresh(card)
+        return card
+
+    def save_step_cards(self, step_id: int, cards: list) -> None:
+
+        to_save = []
+        for card_data in cards:
+            to_save.append(
+                Card(
+                    type=card_data.type,
+                    front=card_data.front,
+                    options=card_data.options,
+                    options_ans=card_data.options_ans,
+                    explanation=card_data.explanation,
+                    step_id=step_id,
+                )
+            )
+        self.session.add_all(to_save)
+        self.session.commit()
+
 
 class LLMProvider:
-    def __init__(self, config: UserLLMConfigBase, api_key: str):
+    def __init__(
+        self, config: UserLLMConfigBase, api_key: str, prompt_manager: PromptManager
+    ):
         self.config = config
         self.api_key = api_key
+        self.prompt_manager = prompt_manager
 
-    def generate_lecture(self, prompt: str) -> LectureSchema:
-        if self.config.provider_name == "openai":
+    def generate(
+        self, prompt: str, type: str, num_flashcards: int | None = None
+    ) -> str:
+        # resolve the type
+        json_schema = self.resolve_json_schema(type)
+        prompt = self.resolve_prompt(type, topic=prompt, num_flashcards=num_flashcards)
+        provider = self.config.provider_name.lower()
+
+        if provider == "openai":
             os.environ["OPENAI_API_KEY"] = self.api_key
             response = completion(
                 model=self.config.model_name,
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a helpful assistant that generates lectures in JSON format according to the provided schema.",
+                        "content": f"You are a helpful educational assistant. Return as JSON matching this schema: {json_schema.model_json_schema()}",
                     },
                     {
                         "role": "user",
-                        "content": f"Generate a lecture for: {prompt}. Return JSON.",
+                        "content": prompt,
                     },
                 ],
-                response_format={"type": "json_object"},
+                response_format={"type": "json_object"}
+                if "gpt-4" in self.config.model_name
+                or "gpt-3.5-turbo-0125" in self.config.model_name
+                else None,
             )
             content = response["choices"][0]["message"]["content"]
-            return LectureSchema.model_validate_json(content)
-        elif self.config.provider_name == "gemini":
+            return json_schema.model_validate_json(content)
+        elif provider == "gemini":
             os.environ["GEMINI_API_KEY"] = self.api_key
             client = genai.Client()
+            config = genai.types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=json_schema.model_json_schema(),
+            )
             response = client.models.generate_content(
                 model=self.config.model_name,
                 contents=prompt,
-                config=genai.types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=LectureSchema.model_json_schema(),
-                ),
+                config=config,
             )
-            # convert to lecture schema
-            lecture_schema = LectureSchema.model_validate_json(response.text)
-            return lecture_schema
+            data = json_schema.model_validate_json(response.text)
+            return data
+        return ""
 
-    def generate_flashcards(self, prompt: str) -> str:
-        pass
+    def generate_stream(
+        self, prompt: str, type: str, num_flashcards: int | None = None
+    ):
+        json_schema = self.resolve_json_schema(type)
+        full_prompt = self.resolve_prompt(
+            type, topic=prompt, num_flashcards=num_flashcards
+        )
+        provider = self.config.provider_name.lower()
+
+        if provider == "openai":
+            os.environ["OPENAI_API_KEY"] = self.api_key
+            response_stream = completion(
+                model=self.config.model_name,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": f"You are a helpful educational assistant. Return as JSON matching this schema: {json_schema.model_json_schema()}",
+                    },
+                    {
+                        "role": "user",
+                        "content": full_prompt + "\nContext details: " + prompt,
+                    },
+                ],
+                stream=True,
+                response_format={"type": "json_object"}
+                if "gpt-4" in self.config.model_name
+                else None,
+            )
+            for chunk in response_stream:
+                content = chunk["choices"][0]["delta"].get("content", "")
+                if content:
+                    yield content
+
+        elif provider == "gemini":
+            os.environ["GEMINI_API_KEY"] = self.api_key
+            client = genai.Client()
+            config = genai.types.GenerateContentConfig(
+                response_mime_type="application/json",
+                # response_schema=json_schema, # response_schema can sometimes break streaming in some SDK versions, or it works fine.
+            )
+            response_stream = client.models.generate_content_stream(
+                model=self.config.model_name,
+                contents=full_prompt + "\nContext details: " + prompt,
+                config=config,
+            )
+            for chunk in response_stream:
+                if chunk.text:
+                    yield chunk.text
+
+    def resolve_json_schema(self, type: str):
+        """
+        Function for resolving the type of schema to be used in the generation
+        """
+        if type == "lecture":
+            return LectureSchema
+        elif type == "step":
+            return LectureStepSchema
+        elif type == "flashcard":
+            return CardBase
+        elif type == "chat":
+            # TODO: implement chat schema
+            pass
+        else:
+            raise HTTPException(status_code=400, detail="Invalid generation type")
+
+    def resolve_prompt(
+        self, type: str, topic: str | None, num_flashcards: int | None = None
+    ) -> str:
+        """
+        Function for resolving the prompt based on the type of generation
+        """
+        if type == "lecture":
+            return self.prompt_manager.get_lecture_system_prompt(topic)
+        elif type == "step":
+            return self.prompt_manager.get_generate_content_prompt(topic)
+        elif type == "flashcard":
+            return self.prompt_manager.get_flashcard_prompt(topic, num_flashcards)
+        elif type == "chat":
+            # TODO: implement chat prompt
+            pass
+        else:
+            raise HTTPException(status_code=400, detail="Invalid generation type")
