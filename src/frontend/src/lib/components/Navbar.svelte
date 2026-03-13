@@ -34,6 +34,12 @@
                     <div class="absolute -bottom-1 left-0 w-full h-0.5 bg-primary rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
                 {/if}
 			</a>
+			<a href="/decks" class="transition-all hover:text-foreground relative pb-1 {isActive('/decks') ? 'text-foreground' : ''}">
+				NeuroDecks
+                {#if isActive('/decks')}
+                    <div class="absolute -bottom-1 left-0 w-full h-0.5 bg-primary rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+                {/if}
+			</a>
 			<a href="/library" class="transition-all hover:text-foreground relative pb-1 {isActive('/library') ? 'text-foreground' : ''}">
 				Library
                 {#if isActive('/library')}
