@@ -72,8 +72,6 @@ class PromptManager:
 
             First Principles Approach: Do not assume prior knowledge. Start with the "why" and the most basic physical or logical truths of the topic before building toward complexity.
 
-            Scale: You must generate a minimum of 5 Sections. Each Section must contain a minimum of 5 Detailed Steps.
-
             Pedagogical Depth:
 
             Sections: Must represent a logical progression of mental models.

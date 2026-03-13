@@ -8,6 +8,7 @@ from models.llm_provider import (
 from models.lecture import Lecture
 from models.lecture_section import LectureSection
 from models.lecture_step import LectureStep
+from models.deck import Deck
 from schema.lecture_schema_json import LectureSchema, LectureStepSchema
 from sqlmodel import Session
 from cryptography.fernet import Fernet
@@ -144,6 +145,18 @@ class LLMService:
 
             self.session.commit()
 
+        # create a deck for the lecture
+        db_deck = Deck(
+            title=lecture.title,
+            description=lecture.description,
+            user_id=user_id,
+            lecture_id=db_lecture.id,
+            lecture=db_lecture,
+        )
+        self.session.add(db_deck)
+        self.session.commit()
+        self.session.refresh(db_deck)
+
         self.session.refresh(db_lecture)
         return db_lecture
 
@@ -213,6 +226,10 @@ class LLMService:
         return card
 
     def save_step_cards(self, step_id: int, cards: list) -> None:
+        # get the deck associated with the lecture
+        step = self.session.get(LectureStep, step_id)
+        lecture = step.lecture_section.lecture
+        deck = lecture.deck
 
         to_save = []
         for card_data in cards:
@@ -224,6 +241,7 @@ class LLMService:
                     options_ans=card_data.options_ans,
                     explanation=card_data.explanation,
                     step_id=step_id,
+                    deck_id=deck.id,
                 )
             )
         self.session.add_all(to_save)
