@@ -7,6 +7,7 @@ from api.llm import router as llm_router
 from api.auth.auth import router as auth_router
 from api.lectures import router as lectures_router
 from api.decks import router as decks_router
+from api.quiz import router as quiz_router
 from typing import Annotated
 
 
@@ -29,6 +30,7 @@ app.include_router(llm_router)
 app.include_router(auth_router)
 app.include_router(lectures_router)
 app.include_router(decks_router)
+app.include_router(quiz_router)
 
 
 @app.get("/")
