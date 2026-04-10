@@ -4,6 +4,14 @@ from datetime import datetime
 from enum import Enum
 from sqlalchemy import Column, JSON
 
+
+class CardStatus(str, Enum):
+    UNANSWERED = "UNANSWERED"
+    GREAT = "GREAT"
+    MASTERED = "MASTERED"
+    NOT_MASTERED = "NOT_MASTERED"
+
+
 if TYPE_CHECKING:
     from .deck import Deck
     from .lecture_step import LectureStep
@@ -22,6 +30,7 @@ class CardBase(SQLModel):
     user_selected_ans: Optional[int] = Field(default=None)
     explanation: Optional[str] = Field(default=None)
     is_correct: Optional[bool] = Field(default=None)
+    status: Optional[CardStatus] = Field(default=CardStatus.UNANSWERED)
 
 
 class Card(CardBase, table=True):
