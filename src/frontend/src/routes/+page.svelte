@@ -311,7 +311,7 @@
 					<div in:fly={{ y: 20, delay: i * 100 }} class="group">
 						<Card.Root 
 							onclick={() => goto(`/lectures/${lecture.id}`)}
-							class="h-full cursor-pointer rounded-[2rem] border-white/5 bg-slate-950/40 hover:bg-slate-900/60 hover:border-indigo-500/30 transition-all duration-500 overflow-hidden shadow-xl ring-1 ring-white/10"
+							class="h-full cursor-pointer rounded-[2rem] border-border bg-card/40 hover:bg-muted/60 hover:border-primary/30 transition-all duration-500 overflow-hidden shadow-xl ring-1 ring-border/20"
 						>
 							<Card.Header class="p-8 pb-4">
 								<div class="flex items-start justify-between mb-6">
@@ -332,25 +332,25 @@
 							</Card.Header>
 
 							<Card.Content class="p-8 pt-4 space-y-6">
-								<div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-									<div class="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 transition-all duration-1000" style="width: {lecture.completion_percentage}%"></div>
+								<div class="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+									<div class="h-full bg-primary transition-all duration-1000" style="width: {lecture.completion_percentage}%"></div>
 								</div>
 
 								<div class="grid grid-cols-2 gap-4">
-									<div class="p-3 bg-white/2 rounded-xl border border-white/5">
-										<span class="text-[8px] font-black text-slate-600 tracking-widest uppercase block mb-1">Created</span>
-										<span class="text-xs font-bold text-slate-300">{formatDate(lecture.created_at)}</span>
+									<div class="p-3 bg-muted/30 rounded-xl border border-border">
+										<span class="text-[8px] font-black text-muted-foreground tracking-widest uppercase block mb-1">Created</span>
+										<span class="text-xs font-bold text-foreground/70">{formatDate(lecture.created_at)}</span>
 									</div>
-									<div class="p-3 bg-white/2 rounded-xl border border-white/5">
-										<span class="text-[8px] font-black text-slate-600 tracking-widest uppercase block mb-1">Last seen</span>
-										<span class="text-xs font-bold text-slate-300">{formatDate(lecture.last_accessed_at)}</span>
+									<div class="p-3 bg-muted/30 rounded-xl border border-border">
+										<span class="text-[8px] font-black text-muted-foreground tracking-widest uppercase block mb-1">Last seen</span>
+										<span class="text-xs font-bold text-foreground/70">{formatDate(lecture.last_accessed_at)}</span>
 									</div>
 								</div>
 							</Card.Content>
 
-							<Card.Footer class="p-6 bg-white/2 border-t border-white/5 flex items-center justify-between">
-								<span class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Open Course</span>
-								<ArrowRight class="h-4 w-4 text-slate-500 group-hover:translate-x-1 transition-transform" />
+							<Card.Footer class="p-6 bg-muted/30 border-t border-border flex items-center justify-between">
+								<span class="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Open Course</span>
+								<ArrowRight class="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
 							</Card.Footer>
 						</Card.Root>
 					</div>
@@ -361,10 +361,6 @@
 </div>
 
 <style>
-	:global(body) {
-		background-color: #020617;
-		font-family: var(--font-sans);
-	}
 	.font-unbounded {
 		font-family: var(--font-display);
 	}

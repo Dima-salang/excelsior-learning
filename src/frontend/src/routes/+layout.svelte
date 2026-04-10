@@ -29,7 +29,7 @@
 	<div class="fixed inset-0 -z-50 bg-background overflow-hidden pointer-events-none">
 		<!-- Starry Gradient Mesh -->
 		<div
-			class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_oklch(0.12_0.02_260)_0%,_oklch(0.08_0.02_260)_100%)]"
+			class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--color-primary)_0%,_var(--color-background)_100%)] opacity-20"
 		></div>
 		<!-- Grain Texture Overlay -->
 		<div

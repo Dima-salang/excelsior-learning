@@ -66,17 +66,17 @@
 					<Layers class="w-4 h-4" />
 					<span>Knowledge Architecture</span>
 				</div>
-				<h1 class="text-5xl md:text-7xl font-unbounded font-black tracking-tighter text-white uppercase leading-none">
-					Neuro<span class="text-indigo-500">Decks</span>
+				<h1 class="text-5xl md:text-7xl font-unbounded font-black tracking-tighter text-foreground uppercase leading-none">
+					Neuro<span class="text-primary">Decks</span>
 				</h1>
-				<p class="text-slate-500 font-serif italic text-lg max-w-xl">
+				<p class="text-muted-foreground font-sans italic text-lg max-w-xl">
 					Manage your collection of AI-synthesized knowledge modules and flashcard networks.
 				</p>
 			</div>
 			
 			<Button 
 				onclick={() => goto('/dashboard')}
-				class="h-14 px-8 rounded-2xl bg-indigo-600 font-black tracking-widest uppercase shadow-[0_0_30px_rgba(79,70,229,0.4)] transition-all hover:-translate-y-1"
+				class="h-14 px-8 rounded-2xl bg-primary font-black tracking-widest uppercase shadow-[0_0_30px_rgba(79,70,229,0.4)] transition-all hover:-translate-y-1"
 			>
 				<Plus class="mr-2 w-5 h-5" />
 				Generate New Lecture
@@ -86,7 +86,7 @@
 		{#if isLoading}
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 				{#each Array(6) as _}
-					<div class="h-64 rounded-3xl bg-white/5 animate-pulse border border-white/5"></div>
+					<div class="h-64 rounded-3xl bg-muted animate-pulse border border-border"></div>
 				{/each}
 			</div>
 		{:else if error}
@@ -98,16 +98,16 @@
 				<Button onclick={fetchDecks} variant="outline" class="rounded-xl border-white/10">Retry Connection</Button>
 			</div>
 		{:else if decks.length === 0}
-			<div class="flex flex-col items-center justify-center py-32 text-center space-y-10 rounded-[4rem] border border-dashed border-white/5 bg-white/2" in:scale>
+			<div class="flex flex-col items-center justify-center py-32 text-center space-y-10 rounded-[4rem] border border-dashed border-border bg-muted/60" in:scale>
 				<div class="relative">
-					<div class="absolute inset-0 animate-ping rounded-full bg-indigo-500/20"></div>
-					<div class="relative p-8 rounded-full bg-indigo-500/10 border border-indigo-500/20">
-						<Layers class="w-16 h-16 text-indigo-400" />
+					<div class="absolute inset-0 animate-ping rounded-full bg-primary/20"></div>
+					<div class="relative p-8 rounded-full bg-primary/10 border border-primary/20">
+						<Layers class="w-16 h-16 text-primary" />
 					</div>
 				</div>
 				<div class="space-y-4">
-					<h2 class="text-3xl font-unbounded font-black text-white uppercase tracking-tighter">No Neural Decks Found</h2>
-					<p class="text-slate-500 font-serif italic text-xl max-w-md mx-auto">
+					<h2 class="text-3xl font-unbounded font-black text-foreground uppercase tracking-tighter">No Neural Decks Found</h2>
+					<p class="text-muted-foreground font-sans italic text-xl max-w-md mx-auto">
 						Start by generating a lecture to synthesize your first knowledge deck.
 					</p>
 				</div>
@@ -123,38 +123,38 @@
 				{#each decks as deck, i}
 					<div 
 						in:fly={{ y: 20, delay: i * 50 }}
-						class="group relative h-full flex flex-col p-8 rounded-[2.5rem] bg-slate-900/40 border border-white/5 backdrop-blur-xl transition-all duration-500 hover:bg-slate-900/60 hover:border-indigo-500/30 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] cursor-pointer overflow-hidden"
+						class="group relative h-full flex flex-col p-8 rounded-[2.5rem] bg-card/40 border border-border backdrop-blur-xl transition-all duration-500 hover:bg-muted/60 hover:border-primary/30 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] cursor-pointer overflow-hidden"
 						onclick={() => goto(`/decks/${deck.id}`)}
 					>
 						<!-- Decorative Glow -->
-						<div class="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/10 blur-[80px] rounded-full transition-opacity duration-700 opacity-0 group-hover:opacity-100"></div>
+						<div class="absolute -top-10 -right-10 w-40 h-40 bg-primary/10 blur-[80px] rounded-full transition-opacity duration-700 opacity-0 group-hover:opacity-100"></div>
 						
 						<div class="relative z-10 flex flex-col h-full space-y-6">
 							<div class="flex items-center justify-between">
-								<div class="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20">
-									<Layers class="w-6 h-6 text-indigo-400" />
+								<div class="p-3 rounded-2xl bg-primary/10 border border-primary/20">
+									<Layers class="w-6 h-6 text-primary" />
 								</div>
-								<div class="flex items-center gap-2 text-[10px] font-black tracking-widest text-slate-500 uppercase">
+								<div class="flex items-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
 									<Calendar class="w-3 h-3" />
 									{formatDate(deck.created_at)}
 								</div>
 							</div>
 
 							<div class="space-y-2 flex-grow">
-								<h3 class="text-2xl font-unbounded font-black text-white uppercase tracking-tighter group-hover:text-indigo-400 transition-colors">
+								<h3 class="text-2xl font-unbounded font-black text-foreground uppercase tracking-tighter group-hover:text-primary transition-colors">
 									{deck.title}
 								</h3>
-								<p class="text-slate-400 font-serif italic line-clamp-3 leading-relaxed">
+								<p class="text-muted-foreground font-sans italic line-clamp-3 leading-relaxed">
 									{deck.description || 'No neural context provided.'}
 								</p>
 							</div>
 
-							<div class="pt-6 border-t border-white/5 flex items-center justify-between">
+							<div class="pt-6 border-t border-border flex items-center justify-between">
 								<div class="flex items-center gap-2">
-									<Sparkles class="w-4 h-4 text-indigo-400" />
-									<span class="text-[10px] font-black tracking-widest text-slate-500 uppercase">Interactive Deck</span>
+									<Sparkles class="w-4 h-4 text-primary" />
+									<span class="text-[10px] font-black tracking-widest text-muted-foreground uppercase">Interactive Deck</span>
 								</div>
-								<div class="flex items-center gap-1 text-indigo-400 font-black tracking-widest text-[10px] uppercase group-hover:translate-x-1 transition-transform">
+								<div class="flex items-center gap-1 text-primary font-black tracking-widest text-[10px] uppercase group-hover:translate-x-1 transition-transform">
 									Link
 									<ChevronRight class="w-4 h-4" />
 								</div>
@@ -169,5 +169,4 @@
 
 <style>
 	.font-unbounded { font-family: var(--font-display); }
-	.font-serif { font-family: var(--font-serif); }
 </style>

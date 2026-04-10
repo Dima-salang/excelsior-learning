@@ -87,7 +87,7 @@
 			<Button 
 				variant="ghost" 
 				onclick={() => goto('/decks')}
-				class="w-fit flex items-center gap-2 text-slate-500 hover:text-white group px-0"
+				class="w-fit flex items-center gap-2 text-muted-foreground hover:text-foreground group px-0"
 			>
 				<ArrowLeft class="w-4 h-4 transition-transform group-hover:-translate-x-1" />
 				<span class="text-[10px] font-black tracking-widest uppercase">Back to Decks</span>
@@ -101,9 +101,9 @@
 							{masteredCount} / {totalCount} Mastered
 						</span>
 					</div>
-					<div class="w-32 h-1.5 rounded-full bg-white/5 overflow-hidden">
+					<div class="w-32 h-1.5 rounded-full bg-muted overflow-hidden">
 						<div 
-							class="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-1000"
+							class="h-full bg-primary transition-all duration-1000"
 							style="width: {progress}%"
 						></div>
 					</div>
@@ -113,8 +113,8 @@
 
 		{#if isLoading}
 			<div class="flex flex-col items-center justify-center py-32 space-y-6">
-				<Loader2 class="w-12 h-12 text-indigo-500 animate-spin" />
-				<p class="font-serif italic text-slate-500">Accessing neural storage units...</p>
+				<Loader2 class="w-12 h-12 text-primary animate-spin" />
+				<p class="font-sans italic text-muted-foreground">Accessing neural storage units...</p>
 			</div>
 		{:else if error}
 			<div class="flex flex-col items-center justify-center py-20 text-center space-y-6">
@@ -127,20 +127,21 @@
 		{:else if deck}
 			<header class="flex flex-col md:flex-row md:items-end justify-between gap-8" in:fade>
 				<div class="space-y-6">
-					<div class="flex items-center gap-4 text-[10px] font-black tracking-[0.4em] text-indigo-400 uppercase">
+					<div class="flex items-center gap-4 text-[10px] font-black tracking-[0.4em] text-primary uppercase">
 						<Sparkles class="w-4 h-4" />
 						<span>Deck Interface v1.0</span>
 					</div>
-					<h1 class="text-4xl md:text-6xl font-unbounded font-black tracking-tighter text-white uppercase leading-tight">
+					<h1 class="text-4xl md:text-6xl font-unbounded font-black tracking-tighter text-foreground uppercase leading-tight">
 						{deck.title}
 					</h1>
-					<p class="text-xl text-slate-400 font-serif italic leading-relaxed max-w-2xl">
+					<p class="text-xl text-muted-foreground font-sans italic leading-relaxed max-w-2xl">
 						{deck.description || 'Synergizing multiple concepts into unified neural mapping.'}
 					</p>
 				</div>
 				<Button 
 					size="lg"
-					class="h-16 px-12 rounded-2xl bg-indigo-600 font-black tracking-widest uppercase shadow-[0_0_30_rgba(79,70,229,0.3)] hover:-translate-y-1 transition-all"
+					onclick={() => goto(`/quiz/${id}`)}
+					class="h-16 px-12 rounded-2xl bg-primary font-black tracking-widest uppercase shadow-[0_0_30_rgba(79,70,229,0.3)] hover:-translate-y-1 transition-all"
 				>
 					Start Quiz
 				</Button>
@@ -149,9 +150,9 @@
 			<!-- Flashcards Grid -->
 			<div class="space-y-12">
 				<div class="flex items-center gap-4">
-					<div class="h-px flex-grow bg-white/5"></div>
-					<span class="text-[10px] font-black tracking-[0.4em] text-slate-500 uppercase">Interactive Nodes</span>
-					<div class="h-px flex-grow bg-white/5"></div>
+					<div class="h-px flex-grow bg-border"></div>
+					<span class="text-[10px] font-black tracking-[0.4em] text-muted-foreground uppercase">Interactive Nodes</span>
+					<div class="h-px flex-grow bg-border"></div>
 				</div>
 
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -172,5 +173,5 @@
 
 <style>
 	.font-unbounded { font-family: var(--font-display); }
-	.font-serif { font-family: var(--font-serif); }
+	.font-sans { font-family: var(--font-sans); }
 </style>

@@ -217,17 +217,17 @@
 		goto(`/lectures/${lectureId}/step/${targetId}`);
 	}
 
-	let renderedContent = $derived(step?.content ? marked(step.content) : '');
+	let renderedContent = $derived(step?.content ? marked.parse(step.content, { breaks: true, gfm: true }) : '');
 </script>
 
-<div class="flex h-screen overflow-hidden bg-[#020617] text-slate-100">
+<div class="flex h-screen overflow-hidden bg-background text-foreground">
 	<!-- Adaptive Sidebar -->
 	<aside
-		class="fixed inset-y-0 left-0 z-50 w-80 transform border-r border-white/5 bg-slate-950 transition-transform duration-500 {isSidebarOpen
+		class="fixed inset-y-0 left-0 z-50 w-80 transform border-r border-border bg-card transition-transform duration-500 {isSidebarOpen
 			? 'translate-x-0'
 			: '-translate-x-full'} shadow-2xl lg:relative lg:translate-x-0"
 	>
-		<div class="flex flex-col gap-6 border-b border-white/5 p-8">
+		<div class="flex flex-col gap-6 border-b border-border p-8">
 			<a href="/" class="flex items-center gap-3">
 				<div class="rounded-xl bg-indigo-600 p-2">
 					<BrainCircuit class="h-5 w-5 text-white" />
@@ -260,13 +260,13 @@
 					<select
 						bind:value={settings.selectedProviderId}
 						onchange={() => settings.setProvider(Number(settings.selectedProviderId))}
-						class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-border bg-slate-900 px-3 text-[10px] font-bold text-white shadow-xl transition-all outline-none focus:ring-1 focus:ring-primary"
+						class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-border bg-secondary px-3 text-[10px] font-bold text-foreground shadow-xl transition-all outline-none focus:ring-1 focus:ring-primary"
 					>
 						{#if providers.length === 0}
 							<option value={null} class="bg-slate-900 text-white">No models available</option>
 						{/if}
 						{#each providers as p}
-							<option value={p.id} class="bg-slate-900 text-white"
+							<option value={p.id} class="bg-card text-foreground"
 								>{p.provider_name} — {p.model_name}</option
 							>
 						{/each}
@@ -294,16 +294,16 @@
 									<button
 										onclick={() => navigateTo(s.id)}
 										class="w-full rounded-xl border p-3 text-left text-xs font-bold transition-all {s.id ===
-										Number(stepId)
-											? 'border-indigo-500/30 bg-indigo-600/10 text-white'
-											: 'border-transparent text-slate-500 hover:bg-white/5 hover:text-white'} flex items-center gap-3"
+                                        Number(stepId)
+											? 'border-primary/30 bg-primary/10 text-primary-foreground'
+											: 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground'} flex items-center gap-3"
 									>
 										<div
 											class="h-1.5 w-1.5 rounded-full {s.id === Number(stepId)
-												? 'animate-pulse bg-indigo-400'
+												? 'animate-pulse bg-primary'
 												: s.is_completed
 													? 'bg-emerald-500'
-													: 'bg-slate-800'}"
+													: 'bg-muted'}"
 										></div>
 										<span class="truncate">{s.title}</span>
 									</button>
@@ -333,7 +333,7 @@
 	<main class="relative flex flex-grow flex-col overflow-hidden">
 		<!-- Mobile Header -->
 		<div
-			class="flex items-center justify-between border-b border-white/5 bg-slate-950 p-4 lg:hidden"
+			class="flex items-center justify-between border-b border-border bg-card p-4 lg:hidden"
 		>
 			<button
 				onclick={() => (isSidebarOpen = !isSidebarOpen)}
@@ -354,7 +354,7 @@
 
 		{#if isLoading}
 			<div
-				class="flex h-full flex-grow flex-col items-center justify-center space-y-8 bg-slate-950/20 backdrop-blur-xl"
+				class="flex h-full flex-grow flex-col items-center justify-center space-y-8 bg-background/20 backdrop-blur-xl"
 			>
 				<div class="relative h-24 w-24">
 					<div
@@ -603,21 +603,21 @@
 
 	/* Custom Prose Styling for Better Readability */
 	:global(.prose-excelsior) {
-		--tw-prose-invert-body: #94a3b8;
-		--tw-prose-invert-headings: #f8fafc;
-		--tw-prose-invert-links: #818cf8;
-		--tw-prose-invert-bold: #f8fafc;
-		--tw-prose-invert-counters: #6366f1;
-		--tw-prose-invert-bullets: #334155;
-		--tw-prose-invert-hr: #1e293b;
-		--tw-prose-invert-quotes: #e2e8f0;
-		--tw-prose-invert-quote-borders: #6366f1;
-		--tw-prose-invert-captions: #64748b;
-		--tw-prose-invert-code: #818cf8;
-		--tw-prose-invert-pre-code: #e2e8f0;
-		--tw-prose-invert-pre-bg: #0f172a;
-		--tw-prose-invert-th-borders: #334155;
-		--tw-prose-invert-td-borders: #1e293b;
+		--tw-prose-invert-body: var(--muted-foreground);
+		--tw-prose-invert-headings: var(--foreground);
+		--tw-prose-invert-links: var(--primary);
+		--tw-prose-invert-bold: var(--foreground);
+		--tw-prose-invert-counters: var(--primary);
+		--tw-prose-invert-bullets: var(--muted-foreground);
+		--tw-prose-invert-hr: var(--border);
+		--tw-prose-invert-quotes: var(--foreground);
+		--tw-prose-invert-quote-borders: var(--primary);
+		--tw-prose-invert-captions: var(--muted-foreground);
+		--tw-prose-invert-code: var(--primary);
+		--tw-prose-invert-pre-code: var(--foreground);
+		--tw-prose-invert-pre-bg: var(--card);
+		--tw-prose-invert-th-borders: var(--border);
+		--tw-prose-invert-td-borders: var(--border);
 	}
 
 	:global(.prose-excelsior h1, .prose-excelsior h2, .prose-excelsior h3) {
@@ -625,55 +625,77 @@
 		letter-spacing: -0.05em;
 		text-transform: uppercase;
 		font-weight: 800;
-		margin-top: 2.5em;
-		margin-bottom: 1em;
+		margin-top: 3em;
+		margin-bottom: 1.5em;
 		line-height: 1.1;
+		color: white;
 	}
 
 	:global(.prose-excelsior p) {
-		font-family: var(--font-serif);
+		font-family: var(--font-sans);
 		font-size: 1.125rem;
 		line-height: 1.8;
 		margin-top: 1.5em;
 		margin-bottom: 1.5em;
-		color: #94a3b8;
+		color: #94a3b8; /* slate-400 */
 	}
 
 	:global(.prose-excelsior strong) {
-		color: #f8fafc;
+		color: white;
 		font-weight: 700;
 	}
 
 	:global(.prose-excelsior blockquote) {
-		border-left-width: 4px;
+		border-left: 4px solid var(--primary);
 		background: rgba(99, 102, 241, 0.05);
-		padding: 1.5rem 2rem;
-		border-radius: 1rem;
+		padding: 2rem;
+		border-radius: 1.5rem;
 		font-size: 1.1em;
-		border-color: #6366f1;
-		margin: 2rem 0;
+		margin: 3rem 0;
 		font-style: italic;
+		color: #cbd5e1; /* slate-300 */
+	}
+
+	:global(.prose-excelsior pre) {
+		background: #0f172a; /* Custom dark slate */
+		border: 1px solid rgba(255, 255, 255, 0.05);
+		padding: 2rem;
+		border-radius: 1.5rem;
+		margin: 2.5rem 0;
+		overflow-x: auto;
+		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 	}
 
 	:global(.prose-excelsior code) {
-		background: rgba(129, 140, 248, 0.1);
-		padding: 0.25rem 0.5rem;
-		border-radius: 0.5rem;
+		font-family: 'JetBrains Mono', 'Fira Code', monospace;
+		padding: 0.2rem 0.4rem;
+		border-radius: 0.4rem;
 		font-size: 0.9em;
-		color: #818cf8;
+		color: #818cf8; /* indigo-400 */
+		background: rgba(129, 140, 248, 0.1);
+	}
+
+	:global(.prose-excelsior pre code) {
+		background: transparent;
+		padding: 0;
+		color: #e2e8f0; /* slate-200 */
+		line-height: 1.6;
+		font-size: 0.875rem;
 	}
 
 	:global(.prose-excelsior ul, .prose-excelsior ol) {
-		margin-top: 1.5em;
-		margin-bottom: 1.5em;
+		margin-top: 2em;
+		margin-bottom: 2em;
 		padding-left: 1.5em;
+		list-style-type: disc;
 	}
 
 	:global(.prose-excelsior li) {
-		margin-top: 0.75em;
-		margin-bottom: 0.75em;
-		font-family: var(--font-serif);
+		margin-top: 1em;
+		margin-bottom: 1em;
+		font-family: var(--font-sans);
 		font-size: 1.125rem;
 		line-height: 1.7;
+		color: #94a3b8;
 	}
 </style>
