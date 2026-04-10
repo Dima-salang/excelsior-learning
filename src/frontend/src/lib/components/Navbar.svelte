@@ -10,7 +10,7 @@
     };
 </script>
 
-<nav class="flex items-center justify-between py-4 border-b border-white/5 w-full bg-transparent/10 backdrop-blur-3xl sticky top-0 z-50 backdrop-saturate-150" in:fade>
+<nav class="flex items-center justify-between py-4 border-b border-border w-full bg-background/80 backdrop-blur-3xl sticky top-0 z-50 backdrop-saturate-150" in:fade>
 	<div class="flex items-center gap-12">
 		<a href="/" class="flex items-center gap-3 group px-2">
 			<div class="rounded-xl bg-primary p-2 group-hover:scale-110 transition-transform shadow-lg shadow-primary/20">
@@ -54,7 +54,7 @@
 			<span class="text-xs font-black text-foreground group-hover:text-primary transition-colors">{auth.user?.username || 'Guest'}</span>
 			<span class="text-[9px] text-muted-foreground/60 leading-none lowercase italic">Connected</span>
 		</div>
-		<div class="h-10 w-10 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center group-hover:border-primary/40 group-hover:shadow-[0_0_15px_rgba(99,102,241,0.2)] transition-all">
+		<div class="h-10 w-10 rounded-full bg-secondary border border-border flex items-center justify-center group-hover:border-primary/40 group-hover:shadow-[0_0_15px_rgba(99,102,241,0.2)] transition-all">
 			<span class="text-xs font-black text-primary uppercase">{auth.user?.username?.[0] || 'G'}</span>
 		</div>
 	</div>
