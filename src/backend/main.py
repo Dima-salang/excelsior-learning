@@ -1,15 +1,19 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
-from sqlmodel import SQLModel
-from db.engine import engine
+from alembic.config import Config
+from alembic import command
 from api.llm import router as llm_router
 from api.auth.auth import router as auth_router
 from api.lectures import router as lectures_router
 from api.decks import router as decks_router
 from api.quiz import router as quiz_router
 from typing import Annotated
+from db.engine import engine
+from core.logging_config import setup_logging
 
+# Setup structured logging
+setup_logging()
 
 app = FastAPI(
     title="Excelsior Learning", description="AI-powered lectures and flashcards"
@@ -45,4 +49,8 @@ async def dashboard(token: Annotated[str, Depends(oauth2_scheme)]):
 
 @app.on_event("startup")
 def on_startup():
-    SQLModel.metadata.create_all(engine)
+    # Run migrations on startup using the app's engine to avoid locks
+    alembic_cfg = Config("alembic.ini")
+    with engine.begin() as connection:
+        alembic_cfg.attributes["connection"] = connection
+        command.upgrade(alembic_cfg, "head")
