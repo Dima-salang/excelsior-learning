@@ -40,8 +40,11 @@
 		return `${mins}m ${secs}s`;
 	}
 
-	function formatDate(dateStr: string) {
-		return new Date(dateStr).toLocaleDateString('en-US', {
+	function formatDate(dateStr: string | undefined | null) {
+		if (!dateStr) return 'N/A';
+		const date = new Date(dateStr);
+		if (isNaN(date.getTime())) return 'Invalid Date';
+		return date.toLocaleDateString('en-US', {
 			weekday: 'long',
 			month: 'long',
 			day: 'numeric',

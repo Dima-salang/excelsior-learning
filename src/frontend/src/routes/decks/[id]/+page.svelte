@@ -4,9 +4,9 @@
 	import { apiFetch } from '$lib/api';
 	import { fade, fly, slide } from 'svelte/transition';
 	import { Button } from '$lib/components/ui/button';
-	import { 
-		ArrowLeft, 
-		BrainCircuit, 
+	import {
+		ArrowLeft,
+		BrainCircuit,
 		Layers,
 		CheckCircle2,
 		RotateCcw,
@@ -71,7 +71,7 @@
 		}
 	}
 
-	let masteredCount = $derived(deck?.cards.filter(c => c.is_correct).length || 0);
+	let masteredCount = $derived(deck?.cards.filter((c) => c.is_correct).length || 0);
 	let totalCount = $derived(deck?.cards.length || 0);
 	let progress = $derived(totalCount > 0 ? (masteredCount / totalCount) * 100 : 0);
 </script>
@@ -80,29 +80,29 @@
 	<title>{deck?.title || 'Neural Deck'} — Excelsior</title>
 </svelte:head>
 
-<div class="min-h-screen bg-transparent pt-32 pb-32 px-6">
-	<div class="max-w-6xl mx-auto space-y-12">
+<div class="min-h-screen bg-transparent px-6 pt-32 pb-32">
+	<div class="mx-auto max-w-6xl space-y-12">
 		<!-- Navigation and Progress -->
-		<div class="flex flex-col md:flex-row md:items-center justify-between gap-6" in:fade>
-			<Button 
-				variant="ghost" 
+		<div class="flex flex-col justify-between gap-6 md:flex-row md:items-center" in:fade>
+			<Button
+				variant="ghost"
 				onclick={() => goto('/decks')}
-				class="w-fit flex items-center gap-2 text-muted-foreground hover:text-foreground group px-0"
+				class="group flex w-fit items-center gap-2 px-0 text-muted-foreground hover:text-foreground"
 			>
-				<ArrowLeft class="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+				<ArrowLeft class="h-4 w-4 transition-transform group-hover:-translate-x-1" />
 				<span class="text-[10px] font-black tracking-widest uppercase">Back to Decks</span>
 			</Button>
 
 			{#if deck}
 				<div class="flex items-center gap-6">
 					<div class="flex items-center gap-2">
-						<CheckCircle2 class="w-4 h-4 text-emerald-400" />
+						<CheckCircle2 class="h-4 w-4 text-emerald-400" />
 						<span class="text-[10px] font-black tracking-widest text-emerald-400 uppercase">
 							{masteredCount} / {totalCount} Mastered
 						</span>
 					</div>
-					<div class="w-32 h-1.5 rounded-full bg-muted overflow-hidden">
-						<div 
+					<div class="h-1.5 w-32 overflow-hidden rounded-full bg-muted">
+						<div
 							class="h-full bg-primary transition-all duration-1000"
 							style="width: {progress}%"
 						></div>
@@ -112,56 +112,75 @@
 		</div>
 
 		{#if isLoading}
-			<div class="flex flex-col items-center justify-center py-32 space-y-6">
-				<Loader2 class="w-12 h-12 text-primary animate-spin" />
-				<p class="font-sans italic text-muted-foreground">Accessing neural storage units...</p>
+			<div class="flex flex-col items-center justify-center space-y-6 py-32">
+				<Loader2 class="h-12 w-12 animate-spin text-primary" />
+				<p class="font-sans text-muted-foreground italic">Accessing neural storage units...</p>
 			</div>
 		{:else if error}
-			<div class="flex flex-col items-center justify-center py-20 text-center space-y-6">
-				<div class="p-6 rounded-full bg-red-500/10 border border-red-500/20">
-					<BrainCircuit class="w-12 h-12 text-red-500" />
+			<div class="flex flex-col items-center justify-center space-y-6 py-20 text-center">
+				<div class="rounded-full border border-red-500/20 bg-red-500/10 p-6">
+					<BrainCircuit class="h-12 w-12 text-red-500" />
 				</div>
-				<h2 class="text-2xl font-unbounded font-black text-white uppercase italic">{error}</h2>
-				<Button onclick={fetchDeck} variant="outline" class="rounded-xl border-white/10">Retry Sync</Button>
+				<h2 class="font-display text-2xl font-black text-white uppercase italic">{error}</h2>
+				<Button onclick={fetchDeck} variant="outline" class="rounded-xl border-white/10"
+					>Retry Sync</Button
+				>
 			</div>
 		{:else if deck}
-			<header class="flex flex-col md:flex-row md:items-end justify-between gap-8" in:fade>
+			<header class="flex flex-col justify-between gap-8 md:flex-row md:items-end" in:fade>
 				<div class="space-y-6">
-					<div class="flex items-center gap-4 text-[10px] font-black tracking-[0.4em] text-primary uppercase">
-						<Sparkles class="w-4 h-4" />
+					<div
+						class="flex items-center gap-4 text-[10px] font-black tracking-[0.4em] text-primary uppercase"
+					>
+						<Sparkles class="h-4 w-4" />
 						<span>Deck Interface v1.0</span>
 					</div>
-					<h1 class="text-4xl md:text-6xl font-unbounded font-black tracking-tighter text-foreground uppercase leading-tight">
+					<h1
+						class="font-display text-4xl leading-tight font-black tracking-tighter text-foreground uppercase md:text-6xl"
+					>
 						{deck.title}
 					</h1>
-					<p class="text-xl text-muted-foreground font-sans italic leading-relaxed max-w-2xl">
+					<p class="max-w-2xl font-sans text-xl leading-relaxed text-muted-foreground italic">
 						{deck.description || 'Synergizing multiple concepts into unified neural mapping.'}
 					</p>
 				</div>
-				<Button 
-					size="lg"
-					onclick={() => goto(`/quiz/${id}`)}
-					class="h-16 px-12 rounded-2xl bg-primary font-black tracking-widest uppercase shadow-[0_0_30_rgba(79,70,229,0.3)] hover:-translate-y-1 transition-all"
-				>
-					Start Quiz
-				</Button>
+				<div class="flex flex-col gap-4 sm:flex-row">
+					<Button
+						size="lg"
+						variant="outline"
+						onclick={() => goto(`/quiz`)}
+						class="h-16 rounded-2xl border-border px-8 font-black tracking-widest uppercase transition-all hover:bg-card"
+					>
+						View History
+					</Button>
+					<Button
+						size="lg"
+						onclick={() => goto(`/quiz/${id}`)}
+						class="h-16 rounded-2xl bg-primary px-12 font-black tracking-widest uppercase shadow-[0_0_30_rgba(79,70,229,0.3)] transition-all hover:-translate-y-1"
+					>
+						Start Quiz
+					</Button>
+				</div>
 			</header>
 
 			<!-- Flashcards Grid -->
 			<div class="space-y-12">
 				<div class="flex items-center gap-4">
 					<div class="h-px flex-grow bg-border"></div>
-					<span class="text-[10px] font-black tracking-[0.4em] text-muted-foreground uppercase">Interactive Nodes</span>
+					<span class="text-[10px] font-black tracking-[0.4em] text-muted-foreground uppercase"
+						>Interactive Nodes</span
+					>
 					<div class="h-px flex-grow bg-border"></div>
 				</div>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 					{#each deck.cards as card, i}
 						<div in:fly={{ y: 20, delay: i * 100 }}>
-							<Flashcard 
-								{...card} 
+							<Flashcard
+								{...card}
 								compact={true}
-								onAnswered={(isCorrect, selectedIdx) => updateCardMastery(card.id, isCorrect, selectedIdx)}
+								onAnswered={(isCorrect, selectedIdx) =>
+									updateCardMastery(card.id, isCorrect, selectedIdx)}
 							/>
 						</div>
 					{/each}
@@ -172,6 +191,10 @@
 </div>
 
 <style>
-	.font-unbounded { font-family: var(--font-display); }
-	.font-sans { font-family: var(--font-sans); }
+	:global(.font-display) {
+		font-family: var(--font-display, 'Unbounded', sans-serif);
+	}
+	:global(.font-sans) {
+		font-family: var(--font-sans, 'Inter', sans-serif);
+	}
 </style>
