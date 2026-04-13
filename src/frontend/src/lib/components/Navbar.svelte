@@ -61,6 +61,19 @@
 				{/if}
 			</a>
 			<a
+				href="/generate"
+				class="relative pb-1 transition-all hover:text-foreground {isActive('/generate')
+					? 'text-foreground'
+					: ''}"
+			>
+				Generate
+				{#if isActive('/generate')}
+					<div
+						class="absolute -bottom-1 left-0 h-0.5 w-full rounded-full bg-primary shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+					></div>
+				{/if}
+			</a>
+			<a
 				href="/decks"
 				class="relative pb-1 transition-all hover:text-foreground {isActive('/decks')
 					? 'text-foreground'
