@@ -46,7 +46,7 @@
 			isLoading = true;
 			deck = await apiFetch(`/decks/${id}`);
 		} catch (err: any) {
-			error = err.message || 'Quantum interface failed to retrieve deck architecture.';
+			error = err.message || 'System failed to retrieve deck data.';
 		} finally {
 			isLoading = false;
 		}
@@ -114,7 +114,9 @@
 		{#if isLoading}
 			<div class="flex flex-col items-center justify-center space-y-6 py-32">
 				<Loader2 class="h-12 w-12 animate-spin text-primary" />
-				<p class="font-sans text-muted-foreground italic">Accessing neural storage units...</p>
+				<p class="max-w-2xl font-sans text-lg leading-relaxed text-muted-foreground opacity-80">
+					Retrieving your study materials...
+				</p>
 			</div>
 		{:else if error}
 			<div class="flex flex-col items-center justify-center space-y-6 py-20 text-center">
@@ -123,7 +125,7 @@
 				</div>
 				<h2 class="font-display text-2xl font-black text-white uppercase italic">{error}</h2>
 				<Button onclick={fetchDeck} variant="outline" class="rounded-xl border-white/10"
-					>Retry Sync</Button
+					>Retry Connection</Button
 				>
 			</div>
 		{:else if deck}
@@ -133,7 +135,7 @@
 						class="flex items-center gap-4 text-[10px] font-black tracking-[0.4em] text-primary uppercase"
 					>
 						<Sparkles class="h-4 w-4" />
-						<span>Deck Interface v1.0</span>
+						<span>Study Deck v1.0</span>
 					</div>
 					<h1
 						class="font-display text-4xl leading-tight font-black tracking-tighter text-foreground uppercase md:text-6xl"
@@ -141,7 +143,7 @@
 						{deck.title}
 					</h1>
 					<p class="max-w-2xl font-sans text-xl leading-relaxed text-muted-foreground italic">
-						{deck.description || 'Synergizing multiple concepts into unified neural mapping.'}
+						{deck.description || 'Combining concepts into a unified study guide.'}
 					</p>
 				</div>
 				<div class="flex flex-col gap-4 sm:flex-row">
@@ -168,7 +170,7 @@
 				<div class="flex items-center gap-4">
 					<div class="h-px flex-grow bg-border"></div>
 					<span class="text-[10px] font-black tracking-[0.4em] text-muted-foreground uppercase"
-						>Interactive Nodes</span
+						>Study Cards</span
 					>
 					<div class="h-px flex-grow bg-border"></div>
 				</div>

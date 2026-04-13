@@ -217,7 +217,9 @@
 		goto(`/lectures/${lectureId}/step/${targetId}`);
 	}
 
-	let renderedContent = $derived(step?.content ? marked.parse(step.content, { breaks: true, gfm: true }) : '');
+	let renderedContent = $derived(
+		step?.content ? marked.parse(step.content, { breaks: true, gfm: true }) : ''
+	);
 </script>
 
 <div class="flex h-screen overflow-hidden bg-background text-foreground">
@@ -294,7 +296,7 @@
 									<button
 										onclick={() => navigateTo(s.id)}
 										class="w-full rounded-xl border p-3 text-left text-xs font-bold transition-all {s.id ===
-                                        Number(stepId)
+										Number(stepId)
 											? 'border-primary/30 bg-primary/10 text-primary-foreground'
 											: 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground'} flex items-center gap-3"
 									>
@@ -332,9 +334,7 @@
 	<!-- Main Content Canvas -->
 	<main class="relative flex flex-grow flex-col overflow-hidden">
 		<!-- Mobile Header -->
-		<div
-			class="flex items-center justify-between border-b border-border bg-card p-4 lg:hidden"
-		>
+		<div class="flex items-center justify-between border-b border-border bg-card p-4 lg:hidden">
 			<button
 				onclick={() => (isSidebarOpen = !isSidebarOpen)}
 				class="p-2 text-slate-400 hover:text-white"
@@ -365,7 +365,7 @@
 					></div>
 					<BookOpen class="absolute inset-0 m-auto h-8 w-8 animate-pulse text-indigo-400" />
 				</div>
-				<p class="font-serif text-lg text-slate-500 italic">Acquiring learning materials...</p>
+				<p class="font-serif text-lg text-slate-500 italic">Preparing your study materials...</p>
 			</div>
 		{:else if error}
 			<div class="flex flex-grow flex-col items-center justify-center space-y-8 p-12 text-center">
@@ -377,7 +377,7 @@
 				</div>
 				<div class="max-w-2xl space-y-4">
 					<h2 class="font-unbounded text-3xl font-black tracking-tighter text-white uppercase">
-						Neural Signal Lost
+						Connection Lost
 					</h2>
 					<p class="font-serif text-xl leading-relaxed text-slate-400 italic">{error}</p>
 				</div>
@@ -481,7 +481,7 @@
 									<div class="mb-8 flex items-center gap-4">
 										<div class="h-px flex-grow bg-white/5"></div>
 										<span class="text-[10px] font-black tracking-[0.4em] text-slate-500 uppercase"
-											>Knowledge Checkpoint</span
+											>Unit Review</span
 										>
 										<div class="h-px flex-grow bg-white/5"></div>
 									</div>

@@ -65,7 +65,7 @@
 </script>
 
 <svelte:head>
-	<title>Evaluation History — Excelsior</title>
+	<title>Quiz History — Excelsior</title>
 </svelte:head>
 
 <div class="relative min-h-[calc(100vh-64px)] w-full">
@@ -75,17 +75,17 @@
 				class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-black tracking-widest text-primary uppercase"
 			>
 				<History class="h-3.5 w-3.5" />
-				Neural Records
+				Past Results
 			</div>
 			<div class="flex flex-col justify-between gap-6 md:flex-row md:items-end">
 				<div class="space-y-2">
 					<h1
 						class="font-display text-4xl leading-none font-black tracking-tighter uppercase md:text-6xl"
 					>
-						Evaluation <span class="text-primary italic">Archive</span>
+						Quiz <span class="text-primary italic">History</span>
 					</h1>
 					<p class="max-w-xl font-sans text-lg text-muted-foreground">
-						Review your past performance and neural synchronization history.
+						Review your past performance and study records.
 					</p>
 				</div>
 
@@ -122,7 +122,7 @@
 					<Loader2 class="relative z-10 h-16 w-16 animate-spin text-primary" />
 				</div>
 				<p class="font-sans text-sm tracking-widest text-muted-foreground uppercase italic">
-					Accessing Neural Archives...
+					Accessing Quiz History...
 				</p>
 			</div>
 		{:else if error}
@@ -144,8 +144,8 @@
 				<div class="space-y-2">
 					<h3 class="font-display text-2xl font-black uppercase">No Data Found</h3>
 					<p class="mx-auto max-w-md text-muted-foreground">
-						You haven't completed any evaluations yet. Start a quiz from your decks to begin
-						building your record.
+						You haven't completed any quizzes yet. Start a quiz from your decks to begin building
+						your record.
 					</p>
 				</div>
 				<Button
@@ -216,7 +216,7 @@
 								>
 									<span
 										class="pb-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase"
-										>Sync Time</span
+										>Time Spent</span
 									>
 									<div
 										class="flex items-center gap-2 font-display text-xl font-black text-foreground"

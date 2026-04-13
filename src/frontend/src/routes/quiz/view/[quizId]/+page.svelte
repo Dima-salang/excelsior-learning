@@ -28,7 +28,7 @@
 			isLoading = true;
 			quiz = await apiFetch(`/quiz/${quizId}`);
 		} catch (err: any) {
-			error = err.message || 'Neural record retrieval failed.';
+			error = err.message || 'Quiz record retrieval failed.';
 		} finally {
 			isLoading = false;
 		}
@@ -75,7 +75,7 @@
 			<div class="flex flex-col items-center justify-center space-y-8 py-32" in:fade>
 				<Loader2 class="h-16 w-16 animate-spin text-primary" />
 				<p class="font-display text-sm font-black tracking-widest text-muted-foreground uppercase">
-					Decoding Record...
+					Loading Results...
 				</p>
 			</div>
 		{:else if error}
@@ -88,7 +88,7 @@
 					variant="outline"
 					class="rounded-2xl border-border px-8"
 				>
-					<ArrowLeft class="mr-2 h-4 w-4" /> Return to Archives
+					<ArrowLeft class="mr-2 h-4 w-4" /> Return to History
 				</Button>
 			</div>
 		{:else if quiz}
@@ -101,7 +101,7 @@
 							class="group mb-4 flex items-center gap-2 text-muted-foreground hover:text-foreground"
 						>
 							<ChevronLeft class="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-							<span class="text-[10px] font-black tracking-widest uppercase">Back to Archive</span>
+							<span class="text-[10px] font-black tracking-widest uppercase">Back to History</span>
 						</Button>
 
 						<div class="relative">
@@ -124,7 +124,7 @@
 						<h1
 							class="font-display text-5xl leading-tight font-black tracking-tighter uppercase md:text-7xl"
 						>
-							Session <span class="text-primary italic">Summary</span>
+							Quiz <span class="text-primary italic">Result</span>
 						</h1>
 					</div>
 				</header>
@@ -200,7 +200,7 @@
 						<div>
 							<h3 class="font-display text-2xl font-black uppercase">Ready for another?</h3>
 							<p class="text-muted-foreground">
-								Re-synchronize with this deck to improve your score.
+								Practice again with this deck to improve your score.
 							</p>
 						</div>
 					</div>

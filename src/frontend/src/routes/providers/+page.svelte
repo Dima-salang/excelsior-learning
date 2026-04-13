@@ -21,7 +21,8 @@
 		Info,
 		CheckCircle2,
 		XCircle,
-		Terminal
+		Terminal,
+		Copy
 	} from '@lucide/svelte';
 	import { fade, fly, scale } from 'svelte/transition';
 	import { goto } from '$app/navigation';
@@ -132,6 +133,17 @@
 		}
 	}
 
+	async function copyApiKey(id: number) {
+		try {
+			const { api_key } = await apiFetch(`/llm/providers/${id}/key`);
+			await navigator.clipboard.writeText(api_key);
+			successMessage = 'API key copied to your clipboard.';
+			setTimeout(() => (successMessage = ''), 3000);
+		} catch (err: any) {
+			error = 'Failed to retrieve the API key.';
+		}
+	}
+
 	function startEdit(provider: Provider) {
 		form = {
 			provider_name: provider.provider_name,
@@ -158,19 +170,25 @@
 </script>
 
 <div class="container mx-auto max-w-7xl space-y-12 p-6 lg:p-12">
-
 	<!-- Header -->
-	<header class="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4">
+	<header class="flex flex-col justify-between gap-8 pt-4 md:flex-row md:items-end">
 		<div class="max-w-2xl space-y-4">
-			<div class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-primary uppercase">
+			<div
+				class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-primary uppercase"
+			>
 				<Settings2 class="h-4 w-4" />
 				<span>AI Configuration</span>
 			</div>
-			<h1 class="font-display text-4xl md:text-6xl font-black tracking-tighter text-white leading-none uppercase">
-				AI <span class="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Models</span>
+			<h1
+				class="font-display text-4xl leading-none font-black tracking-tighter text-white uppercase md:text-6xl"
+			>
+				AI <span class="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"
+					>Models</span
+				>
 			</h1>
-			<p class="font-sans text-lg text-muted-foreground leading-relaxed max-w-2xl opacity-80">
-				Configure the AI brains that power your learning experience. Add your API keys to get started.
+			<p class="max-w-2xl font-sans text-lg leading-relaxed text-muted-foreground opacity-80">
+				Configure the AI systems that power your learning experience. Add your API keys to get
+				started.
 			</p>
 		</div>
 
@@ -179,8 +197,8 @@
 				isAddingProvider = !isAddingProvider;
 				if (!isAddingProvider) resetForm();
 			}}
-			variant={isAddingProvider ? "outline" : "default"}
-			class="h-16 px-10 rounded-2xl font-black tracking-widest uppercase transition-all shadow-lg flex items-center gap-3"
+			variant={isAddingProvider ? 'outline' : 'default'}
+			class="flex h-16 items-center gap-3 rounded-2xl px-10 font-black tracking-widest uppercase shadow-lg transition-all"
 		>
 			{#if isAddingProvider}
 				<ChevronRight class="h-5 w-5 rotate-90 transition-transform" />
@@ -193,31 +211,42 @@
 	</header>
 
 	{#if successMessage}
-		<div transition:fade class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold flex items-center gap-3 mx-auto max-w-md shadow-2xl backdrop-blur-xl fixed top-24 left-1/2 -translate-x-1/2 z-50">
+		<div
+			transition:fade
+			class="fixed top-24 left-1/2 z-50 mx-auto flex max-w-md -translate-x-1/2 items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-400 shadow-2xl backdrop-blur-xl"
+		>
 			<CheckCircle2 class="h-4 w-4" />
 			{successMessage}
 		</div>
 	{/if}
 
 	{#if isAddingProvider}
-		<section in:fly={{ y: 20, duration: 600 }} class="max-w-3xl mx-auto relative">
-			<div class="absolute -z-10 inset-0 bg-indigo-500/5 blur-[100px] rounded-full"></div>
-			<Card.Root class="rounded-[2.5rem] border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl ring-1 ring-white/10 overflow-hidden">
-				<Card.Header class="p-10 border-b border-white/5 bg-white/2">
+		<section in:fly={{ y: 20, duration: 600 }} class="relative mx-auto max-w-3xl">
+			<div class="absolute inset-0 -z-10 rounded-full bg-indigo-500/5 blur-[100px]"></div>
+			<Card.Root
+				class="overflow-hidden rounded-[2.5rem] border-white/10 bg-slate-900/40 shadow-2xl ring-1 ring-white/10 backdrop-blur-3xl"
+			>
+				<Card.Header class="border-b border-white/5 bg-white/2 p-10">
 					<div class="flex items-center gap-4">
-						<div class="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
+						<div class="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 p-3">
 							<Cpu class="h-6 w-6 text-indigo-400" />
 						</div>
 						<div>
-							<Card.Title class="font-display text-3xl font-black text-white uppercase">{editingProviderId ? 'Edit Model' : 'New AI Model'}</Card.Title>
-							<Card.Description class="font-sans text-lg text-muted-foreground opacity-70">Configure access to an AI service provider.</Card.Description>
+							<Card.Title class="font-display text-3xl font-black text-white uppercase"
+								>{editingProviderId ? 'Edit Model' : 'New AI Model'}</Card.Title
+							>
+							<Card.Description class="font-sans text-lg text-muted-foreground opacity-70"
+								>Configure access to an AI service provider.</Card.Description
+							>
 						</div>
 					</div>
 				</Card.Header>
 
-				<Card.Content class="p-10 space-y-10">
+				<Card.Content class="space-y-10 p-10">
 					{#if error}
-						<div class="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold flex items-center gap-3">
+						<div
+							class="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 font-bold text-red-400"
+						>
 							<XCircle class="h-5 w-5" />
 							{error}
 						</div>
@@ -225,14 +254,16 @@
 
 					{#if !editingProviderId}
 						<div class="space-y-3">
-							<Label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Speed Presets</Label>
+							<Label class="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase"
+								>Speed Presets</Label
+							>
 							<div class="flex flex-wrap gap-3">
 								{#each ['openai', 'anthropic', 'gemini'] as preset}
-									<button 
+									<button
 										onclick={() => applyPreset(preset as any)}
-										class="px-5 py-2 rounded-full bg-slate-900 border border-border text-xs font-bold text-white hover:bg-muted hover:border-primary/50 transition-all flex items-center gap-2"
+										class="flex items-center gap-2 rounded-full border border-border bg-slate-900 px-5 py-2 text-xs font-bold text-white transition-all hover:border-primary/50 hover:bg-muted"
 									>
-										<Zap class="w-3 h-3 text-primary" />
+										<Zap class="h-3 w-3 text-primary" />
 										{preset.charAt(0).toUpperCase() + preset.slice(1)}
 									</button>
 								{/each}
@@ -241,32 +272,77 @@
 					{/if}
 
 					<form onsubmit={handleSubmit} class="space-y-8">
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+						<div class="grid grid-cols-1 gap-8 md:grid-cols-2">
 							<div class="space-y-3">
-								<Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">AI Provider</Label>
-								<Input bind:value={form.provider_name} placeholder="e.g. OpenAI" required class="h-14 bg-background border-border rounded-xl px-6 text-white" />
+								<Label
+									class="ml-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+									>AI Provider</Label
+								>
+								<Input
+									bind:value={form.provider_name}
+									placeholder="e.g. OpenAI"
+									required
+									class="h-14 rounded-xl border-border bg-background px-6 text-white"
+								/>
 							</div>
 							<div class="space-y-3">
-								<Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Model Name</Label>
-								<Input bind:value={form.model_name} placeholder="e.g. gpt-4o" required class="h-14 bg-background border-border rounded-xl px-6 text-white" />
+								<Label
+									class="ml-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+									>Model Name</Label
+								>
+								<Input
+									bind:value={form.model_name}
+									placeholder="e.g. gpt-4o"
+									required
+									class="h-14 rounded-xl border-border bg-background px-6 text-white"
+								/>
 							</div>
 						</div>
 
 						<div class="space-y-3">
-							<Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">API Key</Label>
-							<Input type="password" bind:value={form.api_key} placeholder={editingProviderId ? '••••••••' : 'sk-...'} required={!editingProviderId} class="h-14 bg-background border-border rounded-xl px-6 text-white" />
+							<Label
+								class="ml-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+								>API Key</Label
+							>
+							<Input
+								type="password"
+								bind:value={form.api_key}
+								placeholder={editingProviderId ? '••••••••' : 'sk-...'}
+								required={!editingProviderId}
+								class="h-14 rounded-xl border-border bg-background px-6 text-white"
+							/>
 						</div>
 
 						<div class="space-y-3">
-							<Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Base URL (Optional)</Label>
-							<Input bind:value={form.base_url} placeholder="https://api.openai.com/v1" class="h-14 bg-background border-border rounded-xl px-6 text-white" />
+							<Label
+								class="ml-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+								>Base URL (Optional)</Label
+							>
+							<Input
+								bind:value={form.base_url}
+								placeholder="https://api.openai.com/v1"
+								class="h-14 rounded-xl border-border bg-background px-6 text-white"
+							/>
 						</div>
 
 						<div class="flex gap-4 pt-4">
-							<Button variant="ghost" type="button" onclick={() => { isAddingProvider = false; resetForm(); }} class="flex-1 h-14 rounded-xl font-bold">Cancel</Button>
-							<Button type="submit" variant="default" disabled={isSubmitting} class="flex-1 h-14 font-black rounded-xl">
+							<Button
+								variant="ghost"
+								type="button"
+								onclick={() => {
+									isAddingProvider = false;
+									resetForm();
+								}}
+								class="h-14 flex-1 rounded-xl font-bold">Cancel</Button
+							>
+							<Button
+								type="submit"
+								variant="default"
+								disabled={isSubmitting}
+								class="h-14 flex-1 rounded-xl font-black"
+							>
 								{#if isSubmitting}
-									<Loader2 class="w-4 h-4 animate-spin mr-2" />
+									<Loader2 class="mr-2 h-4 w-4 animate-spin" />
 									Saving...
 								{:else}
 									{editingProviderId ? 'Update Model' : 'Save Model'}
@@ -280,90 +356,134 @@
 	{:else}
 		<section class="space-y-8">
 			<div class="flex items-center justify-between border-b border-white/5 pb-4">
-				<h2 class="text-2xl font-black text-white uppercase tracking-tight font-syne flex items-center gap-3">
+				<h2
+					class="font-syne flex items-center gap-3 text-2xl font-black tracking-tight text-white uppercase"
+				>
 					<Globe class="h-6 w-6 text-indigo-400" />
 					Active Models
 				</h2>
-				<span class="text-[10px] bg-white/5 px-4 py-2 rounded-full font-black text-slate-500 uppercase tracking-widest">
+				<span
+					class="rounded-full bg-white/5 px-4 py-2 text-[10px] font-black tracking-widest text-slate-500 uppercase"
+				>
 					{providers.length} Registered
 				</span>
 			</div>
 
 			{#if isLoading}
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {#each Array(3) as _}
-                        <div class="rounded-[2rem] border border-white/5 bg-slate-950/40 p-8 h-[320px] space-y-8 flex flex-col justify-between">
-                            <div class="space-y-6">
-                                <div class="flex justify-between items-start">
-                                    <Skeleton class="h-14 w-14 rounded-2xl" />
-                                    <div class="flex gap-2">
-                                        <Skeleton class="h-8 w-8 rounded-lg" />
-                                        <Skeleton class="h-8 w-8 rounded-lg" />
-                                    </div>
-                                </div>
-                                <div class="space-y-3">
-                                    <Skeleton class="h-8 w-1/2" />
-                                    <Skeleton class="h-3 w-1/3" />
-                                </div>
-                            </div>
-                            <div class="space-y-4">
-                                <Skeleton class="h-10 w-full rounded-xl" />
-                                <Skeleton class="h-10 w-full rounded-xl" />
-                            </div>
-                        </div>
-                    {/each}
+				<div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+					{#each Array(3) as _}
+						<div
+							class="flex h-[320px] flex-col justify-between space-y-8 rounded-[2rem] border border-white/5 bg-slate-950/40 p-8"
+						>
+							<div class="space-y-6">
+								<div class="flex items-start justify-between">
+									<Skeleton class="h-14 w-14 rounded-2xl" />
+									<div class="flex gap-2">
+										<Skeleton class="h-8 w-8 rounded-lg" />
+										<Skeleton class="h-8 w-8 rounded-lg" />
+									</div>
+								</div>
+								<div class="space-y-3">
+									<Skeleton class="h-8 w-1/2" />
+									<Skeleton class="h-3 w-1/3" />
+								</div>
+							</div>
+							<div class="space-y-4">
+								<Skeleton class="h-10 w-full rounded-xl" />
+								<Skeleton class="h-10 w-full rounded-xl" />
+							</div>
+						</div>
+					{/each}
 				</div>
 			{:else if providers.length === 0}
-				<div class="py-32 text-center bg-slate-900/20 border-2 border-dashed border-white/5 rounded-[3rem] space-y-8" in:scale>
-					<div class="bg-slate-950 rounded-full h-24 w-24 flex items-center justify-center mx-auto border border-white/10">
+				<div
+					class="space-y-8 rounded-[3rem] border-2 border-dashed border-white/5 bg-slate-900/20 py-32 text-center"
+					in:scale
+				>
+					<div
+						class="mx-auto flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-slate-950"
+					>
 						<Terminal class="h-10 w-10 text-slate-700" />
 					</div>
-					<div class="max-w-sm mx-auto space-y-3">
+					<div class="mx-auto max-w-sm space-y-3">
 						<h3 class="text-2xl font-bold text-white uppercase">No AI Models Ready</h3>
-						<p class="text-slate-500 font-serif italic">Add an AI provider to start generating course content.</p>
+						<p class="font-serif text-slate-500 italic">
+							Add an AI provider to start generating study materials.
+						</p>
 					</div>
-					<Button onclick={() => isAddingProvider = true} variant="outline" class="rounded-xl border-indigo-500/50 text-indigo-400 px-8">Add First Model</Button>
+					<Button
+						onclick={() => (isAddingProvider = true)}
+						variant="outline"
+						class="rounded-xl border-indigo-500/50 px-8 text-indigo-400">Add First Model</Button
+					>
 				</div>
 			{:else}
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+				<div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
 					{#each providers as provider, i (provider.id)}
 						<div in:fly={{ y: 20, delay: i * 100 }}>
-							<Card.Root class="group relative rounded-[2rem] border-white/5 bg-slate-950/40 hover:bg-slate-900/60 ring-1 ring-white/10 hover:ring-indigo-500/30 transition-all duration-500 overflow-hidden shadow-xl h-full flex flex-col">
+							<Card.Root
+								class="group relative flex h-full flex-col overflow-hidden rounded-[2rem] border-white/5 bg-slate-950/40 shadow-xl ring-1 ring-white/10 transition-all duration-500 hover:bg-slate-900/60 hover:ring-indigo-500/30"
+							>
 								<Card.Header class="p-8 pb-4">
-									<div class="flex items-start justify-between mb-6">
-										<div class="p-4 rounded-xl bg-indigo-500/10 group-hover:scale-110 transition-transform">
+									<div class="mb-6 flex items-start justify-between">
+										<div
+											class="rounded-xl bg-indigo-500/10 p-4 transition-transform group-hover:scale-110"
+										>
 											<Cpu class="h-6 w-6 text-indigo-400" />
 										</div>
 										<div class="flex items-center gap-1">
-											<Button variant="ghost" size="icon" onclick={() => startEdit(provider)} class="text-slate-600 hover:text-white rounded-lg"><Settings2 class="w-4 h-4" /></Button>
-											<Button variant="ghost" size="icon" onclick={() => deleteProvider(provider.id)} class="text-slate-600 hover:text-red-400 rounded-lg"><Trash2 class="w-4 h-4" /></Button>
+											<Button
+												variant="ghost"
+												size="icon"
+												onclick={() => copyApiKey(provider.id)}
+												class="rounded-lg text-slate-600 hover:text-indigo-400"
+												title="Copy API Key"><Copy class="h-4 w-4" /></Button
+											>
+											<Button
+												variant="ghost"
+												size="icon"
+												onclick={() => startEdit(provider)}
+												class="rounded-lg text-slate-600 hover:text-white"
+												><Settings2 class="h-4 w-4" /></Button
+											>
+											<Button
+												variant="ghost"
+												size="icon"
+												onclick={() => deleteProvider(provider.id)}
+												class="rounded-lg text-slate-600 hover:text-red-400"
+												><Trash2 class="h-4 w-4" /></Button
+											>
 										</div>
 									</div>
 									<div class="space-y-1">
-										<Card.Title class="text-2xl font-black text-white font-syne">{provider.provider_name}</Card.Title>
+										<Card.Title class="font-syne text-2xl font-black text-white"
+											>{provider.provider_name}</Card.Title
+										>
 										<div class="flex items-center gap-2">
-											<div class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-											<span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">{provider.model_name}</span>
+											<div class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500"></div>
+											<span class="text-[10px] font-black tracking-widest text-slate-500 uppercase"
+												>{provider.model_name}</span
+											>
 										</div>
 									</div>
 								</Card.Header>
 
-								<Card.Content class="p-8 pt-4 flex-grow">
+								<Card.Content class="flex-grow p-8 pt-4">
 									<div class="space-y-4">
-										<div class="p-3 bg-white/2 rounded-xl text-xs text-slate-400 font-medium truncate flex items-center gap-3">
-											<Globe class="w-3 h-3 text-slate-600" />
+										<div
+											class="flex items-center gap-3 truncate rounded-xl bg-white/2 p-3 text-xs font-medium text-slate-400"
+										>
+											<Globe class="h-3 w-3 text-slate-600" />
 											{provider.base_url || 'Default API Endpoint'}
 										</div>
-										<div class="p-3 bg-white/2 rounded-xl text-xs text-slate-400 font-medium flex items-center gap-3">
-											<ShieldCheck class="w-3 h-3 text-emerald-500/50" />
+										<div
+											class="flex items-center gap-3 rounded-xl bg-white/2 p-3 text-xs font-medium text-slate-400"
+										>
+											<ShieldCheck class="h-3 w-3 text-emerald-500/50" />
 											API Key Encrypted
 										</div>
 									</div>
 								</Card.Content>
-
-								<Card.Footer class="p-6 bg-white/2 border-t border-white/5">
-									<Button variant="ghost" class="w-full text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] group-hover:text-white transition-colors">Configure Details</Button>
-								</Card.Footer>
 							</Card.Root>
 						</div>
 					{/each}
@@ -374,6 +494,10 @@
 </div>
 
 <style>
-	.font-display { font-family: var(--font-display); }
-	.font-sans { font-family: var(--font-sans); }
+	.font-display {
+		font-family: var(--font-display);
+	}
+	.font-sans {
+		font-family: var(--font-sans);
+	}
 </style>

@@ -78,7 +78,7 @@
 				error = 'No flashcards available in this node.';
 			}
 		} catch (err: any) {
-			error = err.message || 'Neural link failed to initialize.';
+			error = err.message || 'Connection failed to initialize.';
 		} finally {
 			isLoading = false;
 		}
@@ -170,7 +170,7 @@
 </script>
 
 <svelte:head>
-	<title>Neural Evaluation — Excelsior</title>
+	<title>Quiz — Excelsior</title>
 </svelte:head>
 
 <div class="min-h-[calc(100vh-64px)] w-full text-foreground selection:bg-primary/30">
@@ -183,9 +183,9 @@
 				</div>
 				<div class="space-y-2 text-center">
 					<h2 class="font-display text-xl font-black tracking-widest uppercase italic">
-						Synthesizing Evaluation
+						Preparing Quiz
 					</h2>
-					<p class="font-sans text-muted-foreground italic">Calibrating neural synapses...</p>
+					<p class="font-sans text-muted-foreground italic">Setting up your questions...</p>
 				</div>
 			</div>
 		{:else if error}
@@ -196,7 +196,7 @@
 				<div class="space-y-4">
 					<h2 class="font-display text-3xl font-black text-foreground uppercase italic">{error}</h2>
 					<p class="mx-auto max-w-md text-muted-foreground">
-						The connection to the knowledge base was interrupted. Please re-initialize the link.
+						The connection to the server was interrupted. Please try again.
 					</p>
 				</div>
 				<Button
@@ -214,14 +214,12 @@
 						class="inline-flex items-center gap-3 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-6 py-2 text-emerald-400"
 					>
 						<Trophy class="h-5 w-5" />
-						<span class="text-[10px] font-black tracking-[0.2em] uppercase"
-							>Evaluation Terminated</span
-						>
+						<span class="text-[10px] font-black tracking-[0.2em] uppercase">Quiz Completed</span>
 					</div>
 					<h1
 						class="font-display text-5xl leading-tight font-black tracking-tighter uppercase md:text-7xl"
 					>
-						Neural Sync <span class="text-primary italic">Complete</span>
+						Quiz <span class="text-primary italic">Result</span>
 					</h1>
 				</header>
 
@@ -240,7 +238,7 @@
 						class="flex flex-col items-center justify-center space-y-2 rounded-[2.5rem] border border-border bg-card/50 p-8 text-center backdrop-blur-xl"
 					>
 						<span class="text-[10px] font-black tracking-widest text-muted-foreground uppercase"
-							>Correct Nodes</span
+							>Correct Answers</span
 						>
 						<div class="font-display text-4xl font-black text-emerald-400">
 							{quiz.score} / {totalCards}
@@ -265,7 +263,7 @@
 						class="h-16 rounded-2xl bg-primary px-10 font-black tracking-widest text-primary-foreground uppercase transition-transform hover:scale-105"
 					>
 						<RotateCcw class="mr-3 h-5 w-5" />
-						Re-Synchronize
+						Try Again
 					</Button>
 					<Button
 						variant="outline"
@@ -287,7 +285,7 @@
 						class="group flex items-center gap-2 text-slate-500 hover:text-white"
 					>
 						<ChevronLeft class="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-						<span class="text-[10px] font-black tracking-widest uppercase">Abort Session</span>
+						<span class="text-[10px] font-black tracking-widest uppercase">Quit Quiz</span>
 					</Button>
 
 					<div class="flex items-center gap-6">
@@ -299,7 +297,7 @@
 						</div>
 						<div class="flex items-center gap-3">
 							<span class="text-[10px] font-black tracking-widest text-indigo-400 uppercase">
-								Node {currentIndex + 1} of {totalCards}
+								Question {currentIndex + 1} of {totalCards}
 							</span>
 							<div class="h-1.5 w-32 overflow-hidden rounded-full bg-slate-800">
 								<div
@@ -359,7 +357,7 @@
 								size="lg"
 								class="group h-16 rounded-2xl bg-emerald-600 px-12 font-black tracking-[0.2em] uppercase shadow-[0_0_40px_rgba(16,185,129,0.4)] transition-all hover:scale-105 active:scale-95"
 							>
-								Conclude Sync
+								Finish Quiz
 								<CheckCircle2 class="ml-3 h-5 w-5" />
 							</Button>
 						{:else}
@@ -368,7 +366,7 @@
 								size="lg"
 								class="group h-16 rounded-2xl bg-indigo-600 px-12 font-black tracking-[0.2em] uppercase shadow-[0_0_40px_rgba(79,70,229,0.4)] transition-all hover:scale-105 active:scale-95"
 							>
-								Next Node
+								Next Question
 								<ArrowRight class="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" />
 							</Button>
 						{/if}
