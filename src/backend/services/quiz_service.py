@@ -4,6 +4,7 @@ from models.quiz import Quiz, QuizDB
 from models.card import Card, CardStatus
 import random
 from datetime import datetime
+from fastapi import HTTPException
 
 
 class QuizService:
@@ -18,6 +19,28 @@ class QuizService:
         self.session.merge(db_quiz)
         self.session.commit()
         return db_quiz
+
+    # get quiz
+    def get_quiz(self, quiz_id: int) -> Quiz:
+        quiz = self.session.get(QuizDB, quiz_id)
+        if not quiz:
+            raise HTTPException(status_code=404, detail="Quiz not found")
+        return quiz
+
+    # list the quizzes
+    def list_quizzes(self, user_id: int) -> list[Quiz]:
+        quizzes = (
+            self.session.query(QuizDB)
+            .filter(QuizDB.user_id == user_id)
+            .order_by(QuizDB.created_at.desc())
+            .all()
+        )
+        result = []
+        for q in quizzes:
+            quiz_model = Quiz.model_validate(q)
+            quiz_model.deck_title = q.deck.title if q.deck else "Unknown Deck"
+            result.append(quiz_model)
+        return result
 
     def start_quiz(self, deck_id: int, num_flashcards: int, random_order: bool = True):
         # get cards from deck
@@ -44,14 +67,17 @@ class QuizService:
         if is_correct:
             quiz.score += 1
 
-        # remove card from quiz queue
-        quiz.cards.remove(quiz_card)
-
-        # update card status
-        if is_correct:
+            # update card status
             card.status = CardStatus.MASTERED
         else:
             card.status = CardStatus.NOT_MASTERED
+
+        # update card in session
+        self.session.merge(card)
+        self.session.commit()
+
+        # remove card from quiz queue
+        quiz.cards.remove(quiz_card)
 
         # return whether answer is correct
         return is_correct
