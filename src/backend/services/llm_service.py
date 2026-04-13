@@ -8,7 +8,8 @@ from models.llm_provider import (
 from models.lecture import Lecture
 from models.lecture_section import LectureSection
 from models.lecture_step import LectureStep
-from models.deck import Deck
+from models.deck import Deck, DeckWithCardsFlashcard, DeckPublicWithCards
+from pydantic import BaseModel
 from schema.lecture_schema_json import LectureSchema, LectureStepSchema
 from sqlmodel import Session
 from cryptography.fernet import Fernet
@@ -17,9 +18,16 @@ from fastapi import HTTPException
 from litellm import completion
 from google import genai
 from datetime import datetime
+import logging
+
+logger = logging.getLogger("excelsior.llm")
 from models.card import Card, CardBase
 from models.llm_provider import PromptManager
 from models.lecture import LectureStepPublic
+
+
+class CardList(BaseModel):
+    cards: list[CardBase]
 
 
 class LLMService:
@@ -169,8 +177,74 @@ class LLMService:
         return db_lecture
 
     # FLASHCARDS
-    def generate_flashcards(self, prompt: str, provider_id: int) -> str:
-        pass
+    def generate_cards(
+        self,
+        prompt: str,
+        provider_id: int,
+        user_id: int,
+        deck_id: int = None,
+        num_flashcards: int = 10,
+        difficulty: str = "normal",
+    ) -> int:
+        logger.info(
+            f"Initiating card generation for user {user_id} (Deck: {deck_id or 'New'})"
+        )
+        provider = self.session.get(UserLLMConfig, provider_id)
+        if not provider:
+            raise HTTPException(status_code=404, detail=self.PROVIDER_NOT_FOUND)
+
+        # decrypt the api key
+        api_key = self.decrypt_api_key(provider.api_key)
+
+        # create llm provider
+        llm_provider = LLMProvider(
+            provider, api_key, prompt_manager=self.prompt_manager
+        )
+
+        # generate flashcards
+        data = llm_provider.generate(
+            prompt,
+            type="flashcard" if deck_id else "deck",
+            num_flashcards=num_flashcards,
+            difficulty=difficulty,
+        )
+
+        # save and return flashcards
+        return self.save_cards(data, user_id, deck_id)
+
+    def save_cards(
+        self,
+        data: DeckWithCardsFlashcard | list[CardBase],
+        user_id: int,
+        deck_id: int = None,
+    ) -> int:
+        # create a deck for the flashcards if it does not exist
+        if not deck_id:
+            db_deck = Deck(
+                title=data.title,
+                description=data.description,
+                user_id=user_id,
+            )
+            self.session.add(db_deck)
+            self.session.commit()
+            self.session.refresh(db_deck)
+        else:
+            # get the deck
+            db_deck = self.session.get(Deck, deck_id)
+            if not db_deck:
+                raise HTTPException(status_code=404, detail="Deck not found")
+
+        # create cards
+        for card_schema in data.cards:
+            db_card = Card(
+                **card_schema.dict(),
+                deck_id=db_deck.id,
+            )
+            self.session.add(db_card)
+
+        self.session.commit()
+        self.session.refresh(db_deck)
+        return db_deck.id
 
     # CHAT
     def generate_chat(self, prompt: str, provider_id: int) -> str:
@@ -211,8 +285,8 @@ class LLMService:
         self.session.commit()
         self.session.refresh(step)
 
-        if data.flashcards:
-            self.save_step_cards(step_id, data.flashcards)
+        if data.cards:
+            self.save_step_cards(step_id, data.cards)
 
         return LectureStepPublic.model_validate(step)
 
@@ -262,11 +336,17 @@ class LLMProvider:
         self.prompt_manager = prompt_manager
 
     def generate(
-        self, prompt: str, type: str, num_flashcards: int | None = None
+        self,
+        prompt: str,
+        type: str,
+        num_flashcards: int | None = None,
+        difficulty: str | None = None,
     ) -> str:
         # resolve the type
         json_schema = self.resolve_json_schema(type)
-        prompt = self.resolve_prompt(type, topic=prompt, num_flashcards=num_flashcards)
+        prompt = self.resolve_prompt(
+            type, topic=prompt, num_flashcards=num_flashcards, difficulty=difficulty
+        )
         provider = self.config.provider_name.lower()
 
         if provider == "openai":
@@ -364,25 +444,39 @@ class LLMProvider:
         elif type == "step":
             return LectureStepSchema
         elif type == "flashcard":
-            return CardBase
+            return CardList
+        elif type == "deck":
+            return DeckWithCardsFlashcard
         elif type == "chat":
             # TODO: implement chat schema
             pass
         else:
+            print(type)
             raise HTTPException(status_code=400, detail="Invalid generation type")
 
     def resolve_prompt(
-        self, type: str, topic: str | None, num_flashcards: int | None = None
+        self,
+        type: str,
+        topic: str | None,
+        num_flashcards: int | None = None,
+        difficulty: str | None = None,
     ) -> str:
         """
         Function for resolving the prompt based on the type of generation
         """
+        # determine the type of generation
         if type == "lecture":
             return self.prompt_manager.get_lecture_system_prompt(topic)
         elif type == "step":
             return self.prompt_manager.get_generate_content_prompt(topic)
         elif type == "flashcard":
-            return self.prompt_manager.get_flashcard_prompt(topic, num_flashcards)
+            return self.prompt_manager.get_flashcard_prompt(
+                topic, num_flashcards, difficulty
+            )
+        elif type == "deck":
+            return self.prompt_manager.get_deck_prompt(
+                topic, num_flashcards, difficulty
+            )
         elif type == "chat":
             # TODO: implement chat prompt
             pass
