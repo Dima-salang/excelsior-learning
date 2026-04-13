@@ -4,13 +4,13 @@
 	import { apiFetch } from '$lib/api';
 	import { fade, fly, slide, scale } from 'svelte/transition';
 	import { Button } from '$lib/components/ui/button';
-	import { 
-		BrainCircuit, 
-		CheckCircle2, 
-		XCircle, 
-		RotateCcw, 
-		Sparkles, 
-		Loader2, 
+	import {
+		BrainCircuit,
+		CheckCircle2,
+		XCircle,
+		RotateCcw,
+		Sparkles,
+		Loader2,
 		ArrowRight,
 		Trophy,
 		Timer,
@@ -44,16 +44,16 @@
 	let allCards = $state<Card[]>([]);
 	let currentIndex = $state(0);
 	let currentCard = $derived(allCards[currentIndex] || null);
-	
+
 	let isLoading = $state(true);
 	let error = $state('');
 	let quizStarted = $state(false);
 	let quizFinished = $state(false);
-	
+
 	// Track which cards have been answered locally to allow navigation
 	let answeredIndices = $state<boolean[]>([]);
 	let isCurrentAnswered = $derived(answeredIndices[currentIndex] || false);
-	
+
 	let totalCards = $derived(allCards.length);
 	let startTime = $state(0);
 	let elapsedTime = $state(0);
@@ -115,14 +115,14 @@
 			});
 
 			const { quiz: updatedQuiz, is_correct: wasCorrect } = response;
-			
+
 			quiz = updatedQuiz;
-			
+
 			// Update local card status
 			if (allCards[currentIndex]) {
 				allCards[currentIndex].status = wasCorrect ? 'MASTERED' : 'NOT_MASTERED';
 			}
-			
+
 			answeredIndices[currentIndex] = true;
 		} catch (err) {
 			console.error('Submission failed:', err);
@@ -149,10 +149,12 @@
 		if (quiz) {
 			quiz.time_spent = elapsedTime;
 			try {
-				await apiFetch('/quiz/save', {
+				const response = await apiFetch('/quiz/save', {
 					method: 'POST',
 					body: JSON.stringify(quiz)
 				});
+				// Optionally redirect to the permanent results page
+				// goto(`/quiz/view/${response.id}`);
 			} catch (err) {
 				console.error('Failed to save quiz results:', err);
 			}
@@ -171,88 +173,107 @@
 	<title>Neural Evaluation — Excelsior</title>
 </svelte:head>
 
-<div class="min-h-screen bg-slate-950 text-slate-50 selection:bg-indigo-500/30">
-	<!-- Background grid/blobs -->
-	<div class="fixed inset-0 overflow-hidden pointer-events-none">
-		<div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full"></div>
-		<div class="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-emerald-500/10 blur-[120px] rounded-full"></div>
-		<div class="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:radial-gradient(white,transparent)] opacity-20"></div>
-	</div>
-
-	<div class="relative z-10 container mx-auto max-w-4xl px-6 py-12 md:py-24">
+<div class="min-h-[calc(100vh-64px)] w-full text-foreground selection:bg-primary/30">
+	<div class="relative z-10 container mx-auto max-w-4xl px-6 py-12 md:py-20">
 		{#if isLoading}
-			<div class="flex flex-col items-center justify-center py-32 space-y-8" in:fade>
+			<div class="flex flex-col items-center justify-center space-y-8 py-32" in:fade>
 				<div class="relative">
-					<div class="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full animate-pulse"></div>
-					<Loader2 class="w-16 h-16 text-indigo-400 animate-spin relative z-10" />
+					<div class="absolute inset-0 animate-pulse rounded-full bg-primary/20 blur-2xl"></div>
+					<Loader2 class="relative z-10 h-16 w-16 animate-spin text-primary" />
 				</div>
-				<div class="text-center space-y-2">
-					<h2 class="text-xl font-unbounded font-black tracking-widest uppercase italic">Synthesizing Evaluation</h2>
-					<p class="text-slate-400 font-sans italic">Calibrating neural synapses...</p>
+				<div class="space-y-2 text-center">
+					<h2 class="font-display text-xl font-black tracking-widest uppercase italic">
+						Synthesizing Evaluation
+					</h2>
+					<p class="font-sans text-muted-foreground italic">Calibrating neural synapses...</p>
 				</div>
 			</div>
 		{:else if error}
-			<div class="flex flex-col items-center justify-center py-20 text-center space-y-8" in:fade>
-				<div class="p-8 rounded-[2.5rem] bg-red-500/5 border border-red-500/10 shadow-2xl">
-					<XCircle class="w-16 h-16 text-red-500 mx-auto" />
+			<div class="flex flex-col items-center justify-center space-y-8 py-20 text-center" in:fade>
+				<div class="rounded-[2.5rem] border border-destructive/10 bg-destructive/5 p-8 shadow-2xl">
+					<XCircle class="mx-auto h-16 w-16 text-destructive" />
 				</div>
 				<div class="space-y-4">
-					<h2 class="text-3xl font-unbounded font-black text-white uppercase italic">{error}</h2>
-					<p class="text-slate-400 max-w-md mx-auto">The connection to the knowledge base was interrupted. Please re-initialize the link.</p>
+					<h2 class="font-display text-3xl font-black text-foreground uppercase italic">{error}</h2>
+					<p class="mx-auto max-w-md text-muted-foreground">
+						The connection to the knowledge base was interrupted. Please re-initialize the link.
+					</p>
 				</div>
-				<Button onclick={() => goto(`/decks/${deckId}`)} variant="outline" class="rounded-2xl border-white/10 px-8 h-14 uppercase font-black tracking-widest">
+				<Button
+					onclick={() => goto(`/decks/${deckId}`)}
+					variant="outline"
+					class="h-14 rounded-2xl border-border px-8 font-black tracking-widest uppercase"
+				>
 					Return to Deck
 				</Button>
 			</div>
 		{:else if quizFinished && quiz}
 			<div class="space-y-12" in:fly={{ y: 40, duration: 800 }}>
-				<header class="text-center space-y-6">
-					<div class="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-						<Trophy class="w-5 h-5" />
-						<span class="text-sm font-black tracking-[0.2em] uppercase">Evaluation Terminated</span>
+				<header class="space-y-6 text-center">
+					<div
+						class="inline-flex items-center gap-3 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-6 py-2 text-emerald-400"
+					>
+						<Trophy class="h-5 w-5" />
+						<span class="text-[10px] font-black tracking-[0.2em] uppercase"
+							>Evaluation Terminated</span
+						>
 					</div>
-					<h1 class="text-5xl md:text-7xl font-unbounded font-black tracking-tighter uppercase leading-tight">
-						Neural Sync Complete
+					<h1
+						class="font-display text-5xl leading-tight font-black tracking-tighter uppercase md:text-7xl"
+					>
+						Neural Sync <span class="text-primary italic">Complete</span>
 					</h1>
 				</header>
 
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-					<div class="p-8 rounded-[2.5rem] bg-slate-900/50 border border-white/5 backdrop-blur-xl space-y-2 flex flex-col items-center justify-center text-center">
-						<span class="text-[10px] font-black tracking-widest text-slate-500 uppercase">Accuracy</span>
-						<div class="text-4xl font-unbounded font-black text-indigo-400">
+				<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+					<div
+						class="flex flex-col items-center justify-center space-y-2 rounded-[2.5rem] border border-border bg-card/50 p-8 text-center backdrop-blur-xl"
+					>
+						<span class="text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+							>Accuracy</span
+						>
+						<div class="font-display text-4xl font-black text-primary">
 							{Math.round((quiz.score / totalCards) * 100)}%
 						</div>
 					</div>
-					<div class="p-8 rounded-[2.5rem] bg-slate-900/50 border border-white/5 backdrop-blur-xl space-y-2 flex flex-col items-center justify-center text-center">
-						<span class="text-[10px] font-black tracking-widest text-slate-500 uppercase">Correct Nodes</span>
-						<div class="text-4xl font-unbounded font-black text-emerald-400">
+					<div
+						class="flex flex-col items-center justify-center space-y-2 rounded-[2.5rem] border border-border bg-card/50 p-8 text-center backdrop-blur-xl"
+					>
+						<span class="text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+							>Correct Nodes</span
+						>
+						<div class="font-display text-4xl font-black text-emerald-400">
 							{quiz.score} / {totalCards}
 						</div>
 					</div>
-					<div class="p-8 rounded-[2.5rem] bg-slate-900/50 border border-white/5 backdrop-blur-xl space-y-2 flex flex-col items-center justify-center text-center">
-						<span class="text-[10px] font-black tracking-widest text-slate-500 uppercase">Time Spent</span>
-						<div class="text-4xl font-unbounded font-black text-amber-400">
+					<div
+						class="flex flex-col items-center justify-center space-y-2 rounded-[2.5rem] border border-border bg-card/50 p-8 text-center backdrop-blur-xl"
+					>
+						<span class="text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+							>Time Spent</span
+						>
+						<div class="font-display text-4xl font-black text-accent">
 							{formatTime(elapsedTime)}
 						</div>
 					</div>
 				</div>
 
-				<div class="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-					<Button 
+				<div class="flex flex-col justify-center gap-4 pt-8 sm:flex-row">
+					<Button
 						size="lg"
 						onclick={() => location.reload()}
-						class="h-16 px-10 rounded-2xl bg-white text-slate-950 font-black tracking-widest uppercase hover:scale-105 transition-transform"
+						class="h-16 rounded-2xl bg-primary px-10 font-black tracking-widest text-primary-foreground uppercase transition-transform hover:scale-105"
 					>
-						<RotateCcw class="w-5 h-5 mr-3" />
+						<RotateCcw class="mr-3 h-5 w-5" />
 						Re-Synchronize
 					</Button>
-					<Button 
+					<Button
 						variant="outline"
 						size="lg"
-						onclick={() => goto(`/decks/${deckId}`)}
-						class="h-16 px-10 rounded-2xl border-white/10 font-black tracking-widest uppercase hover:bg-white/5"
+						onclick={() => goto(`/quiz`)}
+						class="h-16 rounded-2xl border-border px-10 font-black tracking-widest uppercase hover:bg-card"
 					>
-						Return to Nexus
+						View History
 					</Button>
 				</div>
 			</div>
@@ -260,26 +281,28 @@
 			<div class="space-y-8" in:fade>
 				<!-- Quiz Header / Progress -->
 				<div class="flex items-center justify-between">
-					<Button 
-						variant="ghost" 
+					<Button
+						variant="ghost"
 						onclick={() => goto(`/decks/${deckId}`)}
-						class="flex items-center gap-2 text-slate-500 hover:text-white group"
+						class="group flex items-center gap-2 text-slate-500 hover:text-white"
 					>
-						<ChevronLeft class="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+						<ChevronLeft class="h-4 w-4 transition-transform group-hover:-translate-x-1" />
 						<span class="text-[10px] font-black tracking-widest uppercase">Abort Session</span>
 					</Button>
 
 					<div class="flex items-center gap-6">
-						<div class="hidden md:flex items-center gap-2 text-slate-400">
-							<Timer class="w-4 h-4" />
-							<span class="text-[10px] font-black tracking-widest tabular-nums uppercase">{formatTime(elapsedTime)}</span>
+						<div class="hidden items-center gap-2 text-slate-400 md:flex">
+							<Timer class="h-4 w-4" />
+							<span class="text-[10px] font-black tracking-widest uppercase tabular-nums"
+								>{formatTime(elapsedTime)}</span
+							>
 						</div>
 						<div class="flex items-center gap-3">
 							<span class="text-[10px] font-black tracking-widest text-indigo-400 uppercase">
 								Node {currentIndex + 1} of {totalCards}
 							</span>
-							<div class="w-32 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-								<div 
+							<div class="h-1.5 w-32 overflow-hidden rounded-full bg-slate-800">
+								<div
 									class="h-full bg-indigo-500 transition-all duration-700 ease-out"
 									style="width: {((currentIndex + 1) / totalCards) * 100}%"
 								></div>
@@ -289,59 +312,64 @@
 				</div>
 
 				<!-- Main Card Area -->
-				<div class="relative py-8 flex items-center justify-center gap-4">
+				<div class="relative flex items-center justify-center gap-4 py-8">
 					<!-- Previous Arrow -->
-					<button 
-						onclick={(e) => { e.preventDefault(); e.stopPropagation(); prevCard(); }}
+					<button
+						onclick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							prevCard();
+						}}
 						disabled={currentIndex === 0}
-						class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-900/80 text-white shadow-2xl transition-all hover:bg-indigo-600 disabled:opacity-10 disabled:cursor-not-allowed relative z-50 cursor-pointer"
+						class="relative z-50 flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-slate-900/80 text-white shadow-2xl transition-all hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-10"
 						aria-label="Previous card"
 					>
-						<ChevronLeft class="w-8 h-8" />
+						<ChevronLeft class="h-8 w-8" />
 					</button>
 
-					<div class="flex-grow max-w-2xl min-w-0 relative z-10">
+					<div class="relative z-10 max-w-2xl min-w-0 flex-grow">
 						{#key currentIndex}
 							<div in:fly={{ x: 20, duration: 400 }} out:fade={{ duration: 200 }}>
-								<Flashcard 
-									{...currentCard}
-									onAnswered={handleAnswer}
-								/>
+								<Flashcard {...currentCard} onAnswered={handleAnswer} />
 							</div>
 						{/key}
 					</div>
 
 					<!-- Next Arrow -->
-					<button 
-						onclick={(e) => { e.preventDefault(); e.stopPropagation(); nextCard(); }}
+					<button
+						onclick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							nextCard();
+						}}
 						disabled={!isCurrentAnswered && currentIndex < totalCards - 1}
-						class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-900/80 text-white shadow-2xl transition-all hover:bg-indigo-600 disabled:opacity-10 disabled:cursor-not-allowed relative z-50 cursor-pointer"
+						class="relative z-50 flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-slate-900/80 text-white shadow-2xl transition-all hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-10"
 						aria-label="Next card"
 					>
-						<ChevronRight class="w-8 h-8" />
+						<ChevronRight class="h-8 w-8" />
 					</button>
 				</div>
-					
+
 				<!-- Floating Action Button - Only appears after answer or at the end -->
 				{#if isCurrentAnswered || currentIndex === totalCards - 1}
-					<div class="flex justify-center mt-12" in:scale={{ start: 0.8, duration: 400 }}>
+					<div class="mt-12 flex justify-center" in:scale={{ start: 0.8, duration: 400 }}>
 						{#if currentIndex === totalCards - 1}
-							<Button 
+							<Button
 								onclick={finishQuiz}
 								size="lg"
-								class="h-16 px-12 rounded-2xl bg-emerald-600 font-black tracking-[0.2em] uppercase shadow-[0_0_40px_rgba(16,185,129,0.4)] hover:scale-105 active:scale-95 transition-all group"
+								class="group h-16 rounded-2xl bg-emerald-600 px-12 font-black tracking-[0.2em] uppercase shadow-[0_0_40px_rgba(16,185,129,0.4)] transition-all hover:scale-105 active:scale-95"
 							>
 								Conclude Sync
-								<CheckCircle2 class="w-5 h-5 ml-3" />
+								<CheckCircle2 class="ml-3 h-5 w-5" />
 							</Button>
 						{:else}
-							<Button 
+							<Button
 								onclick={nextCard}
 								size="lg"
-								class="h-16 px-12 rounded-2xl bg-indigo-600 font-black tracking-[0.2em] uppercase shadow-[0_0_40px_rgba(79,70,229,0.4)] hover:scale-105 active:scale-95 transition-all group"
+								class="group h-16 rounded-2xl bg-indigo-600 px-12 font-black tracking-[0.2em] uppercase shadow-[0_0_40px_rgba(79,70,229,0.4)] transition-all hover:scale-105 active:scale-95"
 							>
 								Next Node
-								<ArrowRight class="w-5 h-5 ml-3 transition-transform group-hover:translate-x-1" />
+								<ArrowRight class="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" />
 							</Button>
 						{/if}
 					</div>
@@ -353,16 +381,14 @@
 
 <style>
 	:global(body) {
-		background-color: #020617;
+		background-color: var(--background);
 	}
 
-	.font-unbounded {
-		font-family: var(--font-display, 'Inter', sans-serif);
+	:global(.font-display) {
+		font-family: var(--font-display, 'Unbounded', sans-serif);
 	}
-	
-	.font-sans {
+
+	:global(.font-sans) {
 		font-family: var(--font-sans, 'Inter', sans-serif);
 	}
-
-	/* Custom font fallback if needed, but we should use the one from theme */
 </style>
