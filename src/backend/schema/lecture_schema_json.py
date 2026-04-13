@@ -28,13 +28,17 @@ class LectureStepSchema(BaseModel):
 
 
 class LectureSectionSchema(BaseModel):
-    title: str
+    title: str = Field(description="Title of the section")
     order_key: int = Field(description="Order key of the lecture section")
-    steps: list[LectureStepSchema]
+    steps: list[LectureStepSchema] = Field(
+        description="List of steps for this section. YOU MUST GENERATE AT LEAST 5 STEPS PER SECTION."
+    )
 
 
 class LectureSchema(BaseModel):
-    title: str
-    description: str
-    sections: list[LectureSectionSchema]
+    title: str = Field(description="Title of the lecture")
+    description: str = Field(description="Brief overview of the lecture")
+    sections: list[LectureSectionSchema] = Field(
+        description="List of sections for the lecture. YOU MUST GENERATE AT LEAST 5 SECTIONS."
+    )
     cards: Optional[list[StepFlashcardSchema]] = Field(default=None)
