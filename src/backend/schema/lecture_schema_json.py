@@ -37,4 +37,4 @@ class LectureSchema(BaseModel):
     title: str
     description: str
     sections: list[LectureSectionSchema]
-    flashcards: Optional[list[StepFlashcardSchema]] = Field(default=None)
+    cards: Optional[list[StepFlashcardSchema]] = Field(default=None)
