@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 from typing import List
 from db.session import get_session
@@ -82,3 +82,16 @@ def generate_lecture(
     return service.generate_lecture(
         request.prompt, request.provider_id, request.user_id
     )
+
+
+@router.get("/providers/{provider_id}/key")
+def get_provider_key(provider_id: int, session: Session = Depends(get_session)):
+    """
+    Get the decrypted API key for a specific provider.
+    """
+    service = LLMService(session)
+    try:
+        key = service.get_api_key(provider_id)
+        return {"api_key": key}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

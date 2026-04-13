@@ -19,6 +19,7 @@ from google import genai
 from datetime import datetime
 from models.card import Card, CardBase
 from models.llm_provider import PromptManager
+from models.lecture import LectureStepPublic
 
 
 class LLMService:
@@ -74,6 +75,13 @@ class LLMService:
         self.session.delete(provider)
         self.session.commit()
         return provider
+
+    # get api key by provider for reuse
+    def get_api_key(self, provider_id: int) -> str:
+        provider = self.session.get(UserLLMConfig, provider_id)
+        if not provider:
+            raise HTTPException(status_code=404, detail=self.PROVIDER_NOT_FOUND)
+        return self.decrypt_api_key(provider.api_key)
 
     def encrypt_api_key(self, api_key: str) -> str:
         # get the master key
@@ -169,9 +177,6 @@ class LLMService:
         pass
 
     def generate_step_content(self, lecture_id: int, step_id: int, provider_id: int):
-        from models.lecture_step import LectureStep
-        from models.lecture_section import LectureSection
-        from models.lecture import LectureStepPublic
 
         provider = self.session.get(UserLLMConfig, provider_id)
         if not provider:
