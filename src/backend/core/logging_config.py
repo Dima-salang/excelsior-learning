@@ -15,7 +15,7 @@ def setup_logging():
 
     # Configure the root logger
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.ERROR,
         format=log_format,
         handlers=[
             # Console output

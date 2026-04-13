@@ -132,6 +132,15 @@ def generate_cards(
     )
 
 
+@router.get("/models/{provider}")
+def get_model_list(provider: str, session: Session = Depends(get_session)):
+    """
+    Get a list of available models for a specific provider.
+    """
+    service = LLMService(session)
+    return service.get_model_list(provider)
+
+
 @router.get("/providers/{provider_id}/key")
 def get_provider_key(provider_id: int, session: Session = Depends(get_session)):
     """
