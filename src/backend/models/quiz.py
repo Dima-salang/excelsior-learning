@@ -21,6 +21,9 @@ class QuizBase(SQLModel):
 
 
 class Quiz(QuizBase):
+    id: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
     # card queue (transient)
     cards: list["Card"] = []
     # deck title (optional for display)
