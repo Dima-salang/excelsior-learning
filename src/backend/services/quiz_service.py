@@ -1,4 +1,4 @@
-from sqlmodel import Session
+from sqlmodel import Session, select
 from services.llm_service import LLMService
 from models.quiz import Quiz, QuizDB
 from models.card import Card, CardStatus, QuizCard, QuizCardPublic
@@ -14,7 +14,7 @@ class QuizService:
         self.quiz: Quiz = quiz
 
     def save_quiz(self, quiz: Quiz):
-        db_quiz = QuizDB(**quiz.dict(exclude={"cards"}))
+        db_quiz = QuizDB(**quiz.model_dump(exclude={"cards"}))
         db_quiz.time_spent = (datetime.now() - quiz.time_started).total_seconds()
         self.session.merge(db_quiz)
         self.session.commit()
@@ -26,19 +26,20 @@ class QuizService:
         if not db_quiz:
             raise HTTPException(status_code=404, detail="Quiz not found")
 
-        cards = self.session.query(QuizCard).filter(QuizCard.quiz_id == quiz_id).all()
+        cards = self.session.exec(
+            select(QuizCard).where(QuizCard.quiz_id == quiz_id)
+        ).all()
         quiz_model = Quiz.model_validate(db_quiz)
         quiz_model.cards = [QuizCardPublic.model_validate(qc) for qc in cards]
         return quiz_model
 
     # list the quizzes
     def list_quizzes(self, user_id: int) -> list[Quiz]:
-        quizzes = (
-            self.session.query(QuizDB)
-            .filter(QuizDB.user_id == user_id)
+        quizzes = self.session.exec(
+            select(QuizDB)
+            .where(QuizDB.user_id == user_id)
             .order_by(QuizDB.created_at.desc())
-            .all()
-        )
+        ).all()
         result = []
         for q in quizzes:
             quiz_model = Quiz.model_validate(q)
@@ -56,7 +57,7 @@ class QuizService:
         self.session.refresh(db_quiz)
 
         # 2. Get cards from deck
-        cards = self.session.query(Card).filter(Card.deck_id == deck_id).all()
+        cards = self.session.exec(select(Card).where(Card.deck_id == deck_id)).all()
         if random_order:
             random.shuffle(cards)
 
@@ -74,7 +75,7 @@ class QuizService:
     ) -> list[QuizCard]:
         quiz_cards = []
         for card in cards:
-            # Create a snapshot object (not yet saved to DB)
+            # Create a snapshot object
             q_card = QuizCard(
                 card_id=card.id,
                 quiz_id=quiz_id,
