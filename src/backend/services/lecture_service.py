@@ -1,4 +1,5 @@
-from sqlmodel import Session
+from sqlmodel import Session, select
+from datetime import datetime
 from models.lecture import (
     Lecture,
     LectureCreate,
@@ -21,25 +22,32 @@ class LectureService:
         self.session = session
 
     def create_lecture(self, lecture: LectureCreate) -> LecturePublic:
-        lecture = Lecture(**lecture.dict())
+        lecture = Lecture(**lecture.model_dump(exclude_unset=True))
         self.session.add(lecture)
         self.session.commit()
         self.session.refresh(lecture)
-        return lecture
+
+        # validate by LecturePublic
+        return LecturePublic.model_validate(lecture)
 
     def get_lecture(self, lecture_id: int) -> LecturePublic:
         lecture = self.session.get(Lecture, lecture_id)
         if not lecture:
             raise HTTPException(status_code=404, detail="Lecture not found")
-        return lecture
+        lecture.last_accessed_at = datetime.now()
+        lecture.updated_at = datetime.now()
+        self.session.add(lecture)
+        self.session.commit()
+        self.session.refresh(lecture)
+        # validate by LecturePublic
+        return LecturePublic.model_validate(lecture)
 
     def get_lectures(self, user_id: int) -> list[LecturePublic]:
-        lectures = (
-            self.session.query(Lecture)
-            .filter(Lecture.user_id == user_id)
+        lectures = self.session.exec(
+            select(Lecture)
+            .where(Lecture.user_id == user_id)
             .order_by(Lecture.last_accessed_at.desc())
-            .all()
-        )
+        ).all()
         return [LecturePublic.model_validate(lecture) for lecture in lectures]
 
     def update_lecture(
@@ -48,13 +56,14 @@ class LectureService:
         lecture = self.session.get(Lecture, lecture_id)
         if not lecture:
             raise HTTPException(status_code=404, detail="Lecture not found")
-        lecture.title = lecture_update.title
-        lecture.description = lecture_update.description
-        lecture.completion_percentage = lecture_update.completion_percentage
+        update_data = lecture_update.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            if hasattr(lecture, key):
+                setattr(lecture, key, value)
         self.session.add(lecture)
         self.session.commit()
         self.session.refresh(lecture)
-        return lecture
+        return LecturePublic.model_validate(lecture)
 
     def delete_lecture(self, lecture_id: int) -> LecturePublic:
         lecture = self.session.get(Lecture, lecture_id)
@@ -81,12 +90,11 @@ class LectureService:
         return lecture_section
 
     def get_lecture_sections(self, lecture_id: int) -> list[LectureSectionPublic]:
-        lecture_sections = (
-            self.session.query(LectureSection)
-            .filter(LectureSection.lecture_id == lecture_id)
+        lecture_sections = self.session.exec(
+            select(LectureSection)
+            .where(LectureSection.lecture_id == lecture_id)
             .order_by(LectureSection.order_key.asc())
-            .all()
-        )
+        ).all()
         return [
             LectureSectionPublic.model_validate(lecture_section)
             for lecture_section in lecture_sections
@@ -130,12 +138,11 @@ class LectureService:
         return lecture_step
 
     def get_lecture_steps(self, lecture_section_id: int) -> list[LectureStepPublic]:
-        lecture_steps = (
-            self.session.query(LectureStep)
-            .filter(LectureStep.lecture_section_id == lecture_section_id)
+        lecture_steps = self.session.exec(
+            select(LectureStep)
+            .where(LectureStep.lecture_section_id == lecture_section_id)
             .order_by(LectureStep.order_key.asc())
-            .all()
-        )
+        ).all()
         return [
             LectureStepPublic.model_validate(lecture_step)
             for lecture_step in lecture_steps
