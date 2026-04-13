@@ -1,5 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship
+from pydantic import ConfigDict
 from datetime import datetime
 
 from .lecture_section import LectureSectionBase
@@ -37,25 +38,21 @@ class LectureStepPublic(LectureStepBase):
     id: int
     cards: list["CardPublic"] = []
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class LectureSectionPublic(LectureSectionBase):
     id: int
     steps: list[LectureStepPublic] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LecturePublic(LectureBase):
     id: int
     sections: list[LectureSectionPublic] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LectureCreate(LectureBase):

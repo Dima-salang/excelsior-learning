@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship
+from pydantic import ConfigDict
 from datetime import datetime
 
 if TYPE_CHECKING:
@@ -24,8 +25,7 @@ class LectureStepBase(SQLModel):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class LectureStep(LectureStepBase, table=True):
