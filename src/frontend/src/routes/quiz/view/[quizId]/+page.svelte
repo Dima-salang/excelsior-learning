@@ -17,6 +17,7 @@
 		Zap
 	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
+	import { marked } from 'marked';
 
 	let quizId = $derived((page.params as any).quizId as string);
 	let quiz = $state<any>(null);
@@ -212,6 +213,97 @@
 						<RotateCcw class="mr-3 h-5 w-5" />
 						New Session
 					</Button>
+				</div>
+
+				<!-- Card Review Section -->
+				<div class="space-y-8" in:fade={{ delay: 200 }}>
+					<div class="flex items-center gap-4">
+						<div class="h-[1px] flex-1 bg-border"></div>
+						<h2
+							class="font-display text-xs font-black tracking-[0.3em] text-muted-foreground uppercase"
+						>
+							Session Review
+						</h2>
+						<div class="h-[1px] flex-1 bg-border"></div>
+					</div>
+
+					<div class="grid grid-cols-1 gap-6">
+						{#each quiz.cards as card, i}
+							<div
+								class="group relative overflow-hidden rounded-[2.5rem] border border-border bg-card/50 p-8 backdrop-blur-xl transition-all"
+							>
+								<!-- Correct/Incorrect Indicator -->
+								<div class="absolute top-0 right-0 p-6">
+									{#if card.is_correct}
+										<div
+											class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500"
+										>
+											<Target class="h-5 w-5" />
+										</div>
+									{:else}
+										<div
+											class="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive"
+										>
+											<Zap class="h-5 w-5" />
+										</div>
+									{/if}
+								</div>
+
+								<div class="mb-6 flex items-center gap-3">
+									<span
+										class="font-display text-[10px] font-black tracking-widest text-primary uppercase"
+										>Question {i + 1}</span
+									>
+									<span class="h-1 w-1 rounded-full bg-border"></span>
+									<span
+										class="text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+										>{card.type}</span
+									>
+								</div>
+
+								<h3 class="markdown-content mb-8 font-display text-xl leading-relaxed font-black">
+									{@html marked.parse(card.front)}
+								</h3>
+
+								{#if card.options && card.options.length > 0}
+									<div class="grid grid-cols-1 gap-3">
+										{#each card.options as option, idx}
+											<div
+												class="flex items-center justify-between rounded-2xl border p-4 transition-all
+                                                {idx === card.options_ans
+													? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-500'
+													: idx === card.user_selected_ans && !card.is_correct
+														? 'border-destructive/30 bg-destructive/5 text-destructive'
+														: 'border-border bg-muted/30 text-muted-foreground'}"
+											>
+												<span class="markdown-content text-sm font-medium"
+													>{@html marked.parse(option)}</span
+												>
+												{#if idx === card.options_ans}
+													<Target class="h-4 w-4" />
+												{:else if idx === card.user_selected_ans && !card.is_correct}
+													<Zap class="h-4 w-4" />
+												{/if}
+											</div>
+										{/each}
+									</div>
+								{/if}
+
+								{#if card.explanation}
+									<div
+										class="mt-8 rounded-2xl bg-muted/50 p-6 text-sm text-muted-foreground italic"
+									>
+										<p class="mb-2 font-display text-[8px] font-black tracking-[0.2em] uppercase">
+											Explanation
+										</p>
+										<div class="markdown-content">
+											{@html marked.parse(card.explanation)}
+										</div>
+									</div>
+								{/if}
+							</div>
+						{/each}
+					</div>
 				</div>
 			</div>
 		{/if}
