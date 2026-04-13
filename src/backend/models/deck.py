@@ -1,8 +1,7 @@
 from typing import TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
-
-from .card import CardPublic
+from .card import CardBase, CardPublic
 
 if TYPE_CHECKING:
     from .card import Card
@@ -23,7 +22,9 @@ class Deck(DeckBase, table=True):
     cards: list["Card"] = Relationship(back_populates="deck")
 
     # lecture it belongs to
-    lecture_id: int | None = Field(default=None, foreign_key="lecture.id")
+    lecture_id: int | None = Field(
+        default=None, foreign_key="lecture.id", nullable=True
+    )
     lecture: "Lecture" = Relationship(back_populates="deck")
 
     created_at: datetime = Field(default_factory=datetime.now)
@@ -38,6 +39,10 @@ class DeckPublic(DeckBase):
 
 class DeckPublicWithCards(DeckPublic):
     cards: list["CardPublic"] = []
+
+
+class DeckWithCardsFlashcard(DeckBase):
+    cards: list["CardBase"] = []
 
 
 class DeckCreate(DeckBase):

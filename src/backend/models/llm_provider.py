@@ -87,7 +87,9 @@ class PromptManager:
         """
         return LECTURE_SYSTEM_PROMPT
 
-    def get_flashcard_prompt(self, topic: str, num_flashcards: int) -> str:
+    def get_flashcard_prompt(
+        self, topic: str, num_flashcards: int, difficulty: str
+    ) -> str:
         FLASHCARD_PROMPT = f"""
             System Prompt:
             You are a Flashcard Generator. Your goal is to generate flashcards for a specific topic.
@@ -106,4 +108,29 @@ class PromptManager:
 
             Topic: {topic}
             Number of Flashcards: {num_flashcards}
+            Difficulty: {difficulty}
         """
+        return FLASHCARD_PROMPT
+
+    def get_deck_prompt(self, topic: str, num_flashcards: int, difficulty: str) -> str:
+        DECK_PROMPT = f"""
+            System Prompt:
+            You are a Deck Generator. Your goal is to generate a deck and cards for a specific topic.
+
+            Task:
+            Generate a deck for the topic.
+
+            Structural Requirements:
+
+            Deck: Must represent a logical progression of mental models.
+
+            Formatting: Use full Markdown capabilities (bolding, tables, LaTeX for formulas, and bullet points) within the content strings.
+
+            Output Format (Strict JSON):
+            You must output the result in a single, valid JSON object
+
+            Topic: {topic}
+            Number of Flashcards: {num_flashcards}
+            Difficulty: {difficulty}
+        """
+        return DECK_PROMPT

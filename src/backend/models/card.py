@@ -35,10 +35,12 @@ class CardBase(SQLModel):
 
 class Card(CardBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    deck_id: int | None = Field(default=None, foreign_key="deck.id")
+    deck_id: int | None = Field(default=None, foreign_key="deck.id", nullable=True)
     deck: "Deck" = Relationship(back_populates="cards")
 
-    step_id: int | None = Field(default=None, foreign_key="lecturestep.id")
+    step_id: int | None = Field(
+        default=None, foreign_key="lecturestep.id", nullable=True
+    )
     step: "LectureStep" = Relationship(back_populates="cards")
 
     created_at: datetime = Field(default_factory=datetime.now)
