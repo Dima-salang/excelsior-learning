@@ -9,7 +9,9 @@ class DeckService:
         self.session = session
 
     def get_decks(self, user_id: int) -> List[Deck]:
-        statement = select(Deck).where(Deck.user_id == user_id)
+        statement = (
+            select(Deck).where(Deck.user_id == user_id).order_by(Deck.created_at.desc())
+        )
         results = self.session.exec(statement)
         return results.all()
 
