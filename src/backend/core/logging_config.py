@@ -2,8 +2,8 @@ import logging
 import sys
 from pathlib import Path
 
-# Create logs directory if it doesn't exist
-LOGS_DIR = Path(__file__).parent.parent / "logs"
+# Create logs directory in the project root to avoid reload loops
+LOGS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "logs"
 LOGS_DIR.mkdir(exist_ok=True)
 
 
