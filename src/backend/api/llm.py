@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
-from typing import List
+from typing import List, Literal
 from db.session import get_session
 from services.llm_service import LLMService
 from models.llm_provider import (
@@ -10,6 +10,8 @@ from models.llm_provider import (
 )
 from pydantic import BaseModel
 from models.lecture import Lecture
+from models.card import CardBase
+from models.deck import DeckWithCardsFlashcard
 
 router = APIRouter(prefix="/llm", tags=["llm"])
 
@@ -18,6 +20,14 @@ class GenerateLectureRequest(BaseModel):
     prompt: str
     provider_id: int
     user_id: int
+
+
+class GenerateCardsRequest(BaseModel):
+    prompt: str
+    provider_id: int
+    user_id: int
+    num_flashcards: int = 10
+    difficulty: Literal["easy", "normal", "hard"] = "normal"
 
 
 @router.post("/providers", response_model=UserLLMConfigPublic)
@@ -81,6 +91,44 @@ def generate_lecture(
     service = LLMService(session)
     return service.generate_lecture(
         request.prompt, request.provider_id, request.user_id
+    )
+
+
+@router.post("/generate/{deck_id}/cards", response_model=int)
+def generate_cards_for_deck(
+    deck_id: int,
+    request: GenerateCardsRequest,
+    session: Session = Depends(get_session),
+):
+    """
+    Generate a deck of cards from a prompt using a specific provider and existing deck
+    """
+    service = LLMService(session)
+    return service.generate_cards(
+        prompt=request.prompt,
+        provider_id=request.provider_id,
+        user_id=request.user_id,
+        deck_id=deck_id,
+        num_flashcards=request.num_flashcards,
+        difficulty=request.difficulty,
+    )
+
+
+@router.post("/generate/cards", response_model=int)
+def generate_cards(
+    request: GenerateCardsRequest,
+    session: Session = Depends(get_session),
+):
+    """
+    Generate a deck of cards from a prompt using a specific provider.
+    """
+    service = LLMService(session)
+    return service.generate_cards(
+        prompt=request.prompt,
+        provider_id=request.provider_id,
+        user_id=request.user_id,
+        num_flashcards=request.num_flashcards,
+        difficulty=request.difficulty,
     )
 
 
