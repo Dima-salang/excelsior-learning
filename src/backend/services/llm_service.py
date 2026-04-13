@@ -18,6 +18,7 @@ from fastapi import HTTPException
 from litellm import completion
 from google import genai
 from datetime import datetime
+
 import logging
 
 logger = logging.getLogger("excelsior.llm")
@@ -37,6 +38,27 @@ class LLMService:
     def __init__(self, session: Session):
         self.session = session
         self.prompt_manager = PromptManager()
+
+    def get_model_list(self, provider: str):
+        if provider.lower() == "gemini":
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key:
+                # fall back to checking if there is a provider with an api key
+                raise HTTPException(
+                    status_code=400,
+                    detail="GEMINI_API_KEY not found in environment. Please set it or provide an API key.",
+                )
+            client = genai.Client(api_key=api_key)
+            try:
+                models = client.models.list()
+                return [
+                    {"name": m.name, "display_name": m.display_name}
+                    for m in models
+                    if "generateContent" in m.supported_generation_methods
+                ]
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+        return []
 
     def add_provider(self, provider: UserLLMConfigCreate):
         db_provider = UserLLMConfig(**provider.dict())
@@ -100,7 +122,9 @@ class LLMService:
         f = Fernet(master_key)
         return f.encrypt(api_key.encode()).decode()
 
-    def decrypt_api_key(self, api_key: str) -> str:
+    def decrypt_api_key(self, api_key: str | None) -> str:
+        if not api_key:
+            return ""
         # get the master key
         master_key = os.getenv("MASTER_KEY")
         if not master_key:
@@ -123,11 +147,20 @@ class LLMService:
             provider, api_key, prompt_manager=self.prompt_manager
         )
 
-        # generate lecture
-        lecture = llm_provider.generate(prompt, type="lecture")
+        try:
+            # generate lecture
+            lecture = llm_provider.generate(prompt, type="lecture")
+            if not lecture or not hasattr(lecture, "title"):
+                raise HTTPException(
+                    status_code=500,
+                    detail="LLM failed to generate valid lecture structure",
+                )
 
-        # save and return lecture
-        return self.save_lecture(lecture, user_id)
+            # save and return lecture
+            return self.save_lecture(lecture, user_id)
+        except Exception as e:
+            logger.error(f"Error generating lecture: {str(e)}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
 
     def save_lecture(self, lecture: LectureSchema, user_id: int) -> Lecture:
         # create lecture
@@ -275,20 +308,29 @@ class LLMService:
             f"Lecture: {lecture.title}\nSection: {section.title}\nStep: {step.title}"
         )
 
-        # generate content
-        data = llm_provider.generate(prompt, type="step")
+        try:
+            # generate content
+            data = llm_provider.generate(prompt, type="step")
 
-        # save the step to the db
-        step.content = data.content
-        step.updated_at = datetime.now()
-        self.session.add(step)
-        self.session.commit()
-        self.session.refresh(step)
+            if not data or not hasattr(data, "content"):
+                raise HTTPException(
+                    status_code=500, detail="LLM failed to generate valid content"
+                )
 
-        if data.cards:
-            self.save_step_cards(step_id, data.cards)
+            # save the step to the db
+            step.content = data.content
+            step.updated_at = datetime.now()
+            self.session.add(step)
+            self.session.commit()
+            self.session.refresh(step)
 
-        return LectureStepPublic.model_validate(step)
+            if hasattr(data, "flashcards") and data.flashcards:
+                self.save_step_cards(step_id, data.flashcards)
+
+            return LectureStepPublic.model_validate(step)
+        except Exception as e:
+            logger.error(f"Error generating step content: {str(e)}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
 
     def update_card(self, card_id: int, card_update: dict) -> Card:
         card = self.session.get(Card, card_id)
@@ -337,7 +379,7 @@ class LLMProvider:
 
     def generate(
         self,
-        prompt: str,
+        user_prompt: str,
         type: str,
         num_flashcards: int | None = None,
         difficulty: str | None = None,
@@ -345,7 +387,10 @@ class LLMProvider:
         # resolve the type
         json_schema = self.resolve_json_schema(type)
         prompt = self.resolve_prompt(
-            type, topic=prompt, num_flashcards=num_flashcards, difficulty=difficulty
+            type,
+            topic=user_prompt,
+            num_flashcards=num_flashcards,
+            difficulty=difficulty,
         )
         provider = self.config.provider_name.lower()
 
@@ -360,7 +405,7 @@ class LLMProvider:
                     },
                     {
                         "role": "user",
-                        "content": prompt,
+                        "content": user_prompt,
                     },
                 ],
                 response_format={"type": "json_object"}
@@ -373,17 +418,28 @@ class LLMProvider:
         elif provider == "gemini":
             os.environ["GEMINI_API_KEY"] = self.api_key
             client = genai.Client()
+
+            system_instruction = prompt
+            user_content = user_prompt
+
             config = genai.types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_schema=json_schema.model_json_schema(),
+                system_instruction=system_instruction,
+                temperature=0.7,
             )
-            response = client.models.generate_content(
-                model=self.config.model_name,
-                contents=prompt,
-                config=config,
-            )
-            data = json_schema.model_validate_json(response.text)
-            return data
+            try:
+                response = client.models.generate_content(
+                    model=self.config.model_name,
+                    contents=user_content,
+                    config=config,
+                )
+                data = json_schema.model_validate_json(response.text)
+                return data
+            except Exception as e:
+                # Fallback to without system instruction if it failed
+                print(f"Gemini generation error: {e}")
+                raise e
         return ""
 
     def generate_stream(
