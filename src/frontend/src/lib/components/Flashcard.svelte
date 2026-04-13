@@ -4,6 +4,13 @@
 	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils';
 	import { marked } from 'marked';
+	import markedKatex from 'marked-katex-extension';
+
+	marked.use(
+		markedKatex({
+			throwOnError: false
+		})
+	);
 
 	interface CardProps {
 		id: number;
@@ -29,16 +36,18 @@
 
 	let selectedIdx = $state<number | null>(null);
 	let isRevealed = $state(false);
-	
+
 	let displayOptions = $derived(
-		options && options.length > 0 
-			? options 
-			: (type === 'truefalse' ? ['True', 'False'] : [])
+		options && options.length > 0 ? options : type === 'truefalse' ? ['True', 'False'] : []
 	);
 
 	let renderedFront = $derived(marked.parse(front, { breaks: true, gfm: true }));
-	let renderedOptions = $derived(displayOptions.map(opt => marked.parse(opt, { breaks: true, gfm: true })));
-	let renderedExplanation = $derived(explanation ? marked.parse(explanation, { breaks: true, gfm: true }) : '');
+	let renderedOptions = $derived(
+		displayOptions.map((opt) => marked.parse(opt, { breaks: true, gfm: true }))
+	);
+	let renderedExplanation = $derived(
+		explanation ? marked.parse(explanation, { breaks: true, gfm: true }) : ''
+	);
 
 	let isCorrect = $derived(selectedIdx !== null && selectedIdx === options_ans);
 
@@ -62,18 +71,18 @@
 	class={cn(
 		'group relative mb-8 overflow-hidden rounded-3xl border border-border bg-card/40 p-8 shadow-2xl backdrop-blur-md transition-all duration-500 hover:border-primary/30 hover:bg-muted/60',
 		isRevealed && !isCorrect && 'animate-reject',
-		compact && 'p-5 mb-4 rounded-2xl shadow-lg'
+		compact && 'mb-4 rounded-2xl p-5 shadow-lg'
 	)}
 >
 	<!-- Decorative background element -->
 	<div
 		class={cn(
-			"absolute -top-10 -right-10 h-40 w-40 rounded-full bg-indigo-600/10 blur-[80px] transition-all duration-700 group-hover:bg-indigo-600/20",
-			compact && "h-24 w-24 blur-[60px]"
+			'absolute -top-10 -right-10 h-40 w-40 rounded-full bg-indigo-600/10 blur-[80px] transition-all duration-700 group-hover:bg-indigo-600/20',
+			compact && 'h-24 w-24 blur-[60px]'
 		)}
 	></div>
 
-	<div class={cn("relative z-10 space-y-6", compact && "space-y-4")}>
+	<div class={cn('relative z-10 space-y-6', compact && 'space-y-4')}>
 		<div class="flex items-center justify-between">
 			<span
 				class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-indigo-400 uppercase"
@@ -102,11 +111,16 @@
 			{/if}
 		</div>
 
-		<div class={cn("markdown-content text-xl leading-relaxed font-bold text-white md:text-2xl", compact && "text-base md:text-lg")}>
+		<div
+			class={cn(
+				'markdown-content text-xl leading-relaxed font-bold text-white md:text-2xl',
+				compact && 'text-base md:text-lg'
+			)}
+		>
 			{@html renderedFront}
 		</div>
 
-		<div class={cn("space-y-3", compact && "space-y-2")} style="perspective: 1000px;">
+		<div class={cn('space-y-3', compact && 'space-y-2')} style="perspective: 1000px;">
 			{#if displayOptions && displayOptions.length > 0}
 				{#each displayOptions as option, idx}
 					<button
@@ -114,7 +128,7 @@
 						disabled={isRevealed}
 						class={cn(
 							'group/opt flex w-full items-center justify-between rounded-xl border p-4 text-left text-sm font-medium transition-all duration-300',
-							compact && "p-3 text-xs rounded-lg",
+							compact && 'rounded-lg p-3 text-xs',
 							selectedIdx === idx
 								? idx === options_ans
 									? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
@@ -146,9 +160,12 @@
 		{#if isRevealed && explanation}
 			<div
 				in:slide={{ duration: 400 }}
-				class={cn("mt-6 rounded-2xl border border-indigo-500/10 bg-indigo-500/5 p-4", compact && "mt-4 rounded-xl")}
+				class={cn(
+					'mt-6 rounded-2xl border border-indigo-500/10 bg-indigo-500/5 p-4',
+					compact && 'mt-4 rounded-xl'
+				)}
 			>
-				<div class="font-serif text-xs leading-relaxed text-indigo-300 italic markdown-content">
+				<div class="markdown-content font-serif text-xs leading-relaxed text-indigo-300 italic">
 					<strong
 						class="mr-2 text-[9px] font-black tracking-widest text-indigo-400 uppercase not-italic"
 						>Insight:</strong
@@ -170,7 +187,6 @@
 		{/if}
 	</div>
 </div>
-
 
 <style>
 	@keyframes reject {
@@ -212,7 +228,9 @@
 		border-radius: 0.25rem;
 		background-color: rgba(255, 255, 255, 0.1);
 		color: #a5b4fc;
-		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+		font-family:
+			ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+			monospace;
 		font-size: 0.9em;
 	}
 	:global(.markdown-content pre) {
@@ -224,12 +242,14 @@
 		margin-bottom: 1rem;
 		overflow-x: auto;
 	}
-	:global(.markdown-content ul), :global(.markdown-content ol) {
+	:global(.markdown-content ul),
+	:global(.markdown-content ol) {
 		margin-left: 1rem;
 		margin-bottom: 0.5rem;
 		list-style-type: disc;
 	}
-	:global(.markdown-content ul > * + *), :global(.markdown-content ol > * + *) {
+	:global(.markdown-content ul > * + *),
+	:global(.markdown-content ol > * + *) {
 		margin-top: 0.25rem;
 	}
 	:global(.markdown-content strong) {
@@ -237,4 +257,3 @@
 		color: white;
 	}
 </style>
-

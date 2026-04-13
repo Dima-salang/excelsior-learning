@@ -167,13 +167,6 @@
 							</div>
 
 							<div class="flex w-full items-center justify-between border-t border-border pt-6">
-								<div class="flex items-center gap-2">
-									<Sparkles class="h-4 w-4 text-primary" />
-									<span
-										class="text-[10px] font-black tracking-widest text-muted-foreground uppercase"
-										>Interactive Deck</span
-									>
-								</div>
 								<div
 									class="flex items-center gap-1 text-[10px] font-black tracking-widest text-primary uppercase transition-transform group-hover:translate-x-1"
 								>

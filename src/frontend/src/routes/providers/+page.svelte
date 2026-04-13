@@ -53,6 +53,20 @@
 	let isSubmitting = $state(false);
 	let error = $state('');
 	let successMessage = $state('');
+	let availableModels = $state<{ name: string; display_name: string }[]>([]);
+	let isFetchingModels = $state(false);
+
+	$effect(() => {
+		if (
+			form.provider_name.toLowerCase() === 'gemini' &&
+			availableModels.length === 0 &&
+			!isFetchingModels
+		) {
+			fetchAvailableModels('gemini');
+		} else if (form.provider_name.toLowerCase() !== 'gemini' && availableModels.length > 0) {
+			availableModels = [];
+		}
+	});
 
 	$effect(() => {
 		if (!auth.token) {
@@ -165,6 +179,23 @@
 		const p = presets[type];
 		form.provider_name = p.provider;
 		form.model_name = p.model;
+
+		if (type === 'gemini') {
+			fetchAvailableModels('gemini');
+		} else {
+			availableModels = [];
+		}
+	}
+
+	async function fetchAvailableModels(provider: string) {
+		isFetchingModels = true;
+		try {
+			availableModels = await apiFetch(`/llm/models/${provider}`);
+		} catch (err) {
+			console.error('Failed to fetch models:', err);
+		} finally {
+			isFetchingModels = false;
+		}
 	}
 	import { Skeleton } from '$lib/components/ui/skeleton';
 </script>
@@ -290,12 +321,30 @@
 									class="ml-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase"
 									>Model Name</Label
 								>
-								<Input
-									bind:value={form.model_name}
-									placeholder="e.g. gpt-4o"
-									required
-									class="h-14 rounded-xl border-border bg-background px-6 text-white"
-								/>
+								{#if availableModels.length > 0}
+									<select
+										bind:value={form.model_name}
+										class="transition-focus h-14 w-full rounded-xl border-border bg-background px-6 text-white shadow-sm outline-none focus:ring-2 focus:ring-primary/50"
+									>
+										{#each availableModels as model}
+											<option value={model.name}>{model.display_name}</option>
+										{/each}
+									</select>
+								{:else}
+									<div class="relative">
+										<Input
+											bind:value={form.model_name}
+											placeholder="e.g. gpt-4o"
+											required
+											class="h-14 rounded-xl border-border bg-background px-6 text-white"
+										/>
+										{#if isFetchingModels}
+											<div class="absolute top-0 right-4 flex h-full items-center">
+												<Loader2 class="h-4 w-4 animate-spin text-primary" />
+											</div>
+										{/if}
+									</div>
+								{/if}
 							</div>
 						</div>
 

@@ -69,8 +69,10 @@
 		"svelte"
 	],
 	"dependencies": {
+		"katex": "^0.16.45",
 		"lucide-svelte": "^0.575.0",
 		"marked": "^17.0.3",
+		"marked-katex-extension": "^5.1.8",
 		"sveltekit-superforms": "^2.30.0",
 		"zod": "^4.3.6"
 	}

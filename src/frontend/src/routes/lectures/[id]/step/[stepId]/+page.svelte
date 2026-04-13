@@ -27,6 +27,8 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { marked } from 'marked';
+	import markedKatex from 'marked-katex-extension';
+	import 'katex/dist/katex.min.css';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Flashcard from '$lib/components/Flashcard.svelte';
 
@@ -216,6 +218,13 @@
 		isSidebarOpen = false;
 		goto(`/lectures/${lectureId}/step/${targetId}`);
 	}
+
+	// Configure marked with Katex
+	marked.use(
+		markedKatex({
+			throwOnError: false
+		})
+	);
 
 	let renderedContent = $derived(
 		step?.content ? marked.parse(step.content, { breaks: true, gfm: true }) : ''

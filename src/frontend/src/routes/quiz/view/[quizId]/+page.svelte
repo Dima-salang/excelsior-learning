@@ -18,6 +18,13 @@
 	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { marked } from 'marked';
+	import markedKatex from 'marked-katex-extension';
+
+	marked.use(
+		markedKatex({
+			throwOnError: false
+		})
+	);
 
 	let quizId = $derived((page.params as any).quizId as string);
 	let quiz = $state<any>(null);
