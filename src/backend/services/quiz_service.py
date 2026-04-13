@@ -1,7 +1,7 @@
 from sqlmodel import Session
 from services.llm_service import LLMService
 from models.quiz import Quiz, QuizDB
-from models.card import Card, CardStatus
+from models.card import Card, CardStatus, QuizCard, QuizCardPublic
 import random
 from datetime import datetime
 from fastapi import HTTPException
@@ -22,10 +22,14 @@ class QuizService:
 
     # get quiz
     def get_quiz(self, quiz_id: int) -> Quiz:
-        quiz = self.session.get(QuizDB, quiz_id)
-        if not quiz:
+        db_quiz = self.session.get(QuizDB, quiz_id)
+        if not db_quiz:
             raise HTTPException(status_code=404, detail="Quiz not found")
-        return quiz
+
+        cards = self.session.query(QuizCard).filter(QuizCard.quiz_id == quiz_id).all()
+        quiz_model = Quiz.model_validate(db_quiz)
+        quiz_model.cards = [QuizCardPublic.model_validate(qc) for qc in cards]
+        return quiz_model
 
     # list the quizzes
     def list_quizzes(self, user_id: int) -> list[Quiz]:
@@ -43,41 +47,89 @@ class QuizService:
         return result
 
     def start_quiz(self, deck_id: int, num_flashcards: int, random_order: bool = True):
-        # get cards from deck
+        # 1. Create the Quiz session record first to get an ID
+        db_quiz = QuizDB(
+            deck_id=deck_id, score=0.0, time_spent=0.0, time_started=datetime.now()
+        )
+        self.session.add(db_quiz)
+        self.session.commit()
+        self.session.refresh(db_quiz)
+
+        # 2. Get cards from deck
         cards = self.session.query(Card).filter(Card.deck_id == deck_id).all()
         if random_order:
             random.shuffle(cards)
-        return Quiz(
-            cards=cards[:num_flashcards], deck_id=deck_id, time_spent=0, score=0.0
+
+        # 3. Create and SAVE quiz card snapshots linked to this quiz
+        selected_cards = cards[:num_flashcards]
+        db_quiz_cards = self.create_quiz_cards(selected_cards, db_quiz.id)
+
+        # 4. Return the full Quiz model for the frontend (clean serialization)
+        quiz_model = Quiz.model_validate(db_quiz)
+        quiz_model.cards = [QuizCardPublic.model_validate(qc) for qc in db_quiz_cards]
+        return quiz_model
+
+    def create_quiz_cards(
+        self, cards: list[Card], quiz_id: int | None
+    ) -> list[QuizCard]:
+        quiz_cards = []
+        for card in cards:
+            # Create a snapshot object (not yet saved to DB)
+            q_card = QuizCard(
+                card_id=card.id,
+                quiz_id=quiz_id,
+                type=card.type,
+                front=card.front,
+                options=card.options,
+                options_ans=card.options_ans,
+                explanation=card.explanation,
+                user_selected_ans=None,
+                is_correct=None,
+                status=card.status,
+            )
+            quiz_cards.append(q_card)
+
+        self.session.add_all(quiz_cards)
+        self.session.commit()
+        return quiz_cards
+
+    def submit_answer(
+        self, quiz_card_id: int, user_selected_ans: int, quiz: Quiz
+    ) -> bool:
+        # find quiz card in the session storage (for logic)
+        quiz_card = next((c for c in quiz.cards if c.id == quiz_card_id), None)
+        if not quiz_card:
+            raise Exception("Card not found in this quiz session")
+
+        # get the actual QuizCard record from DB to update it
+        db_quiz_card = self.session.get(QuizCard, quiz_card_id)
+        if not db_quiz_card:
+            raise Exception("Database record for QuizCard not found")
+
+        # check if answer is correct using the snapshot data
+        is_correct = db_quiz_card.options_ans == user_selected_ans
+
+        # update the snapshot record
+        db_quiz_card.user_selected_ans = user_selected_ans
+        db_quiz_card.is_correct = is_correct
+        db_quiz_card.status = (
+            CardStatus.MASTERED if is_correct else CardStatus.NOT_MASTERED
         )
 
-    def submit_answer(self, card_id: int, user_selected_ans: int, quiz: Quiz) -> bool:
-        # get card from session to check answer
-        card = self.session.get(Card, card_id)
-        if not card:
-            raise Exception("Card not found")
-
-        # find card in quiz queue
-        quiz_card = next((c for c in quiz.cards if c.id == card_id), None)
-        if not quiz_card:
-            raise Exception("Card not in this quiz session")
-
-        # check if answer is correct
-        is_correct = card.options_ans == user_selected_ans
         if is_correct:
             quiz.score += 1
 
-            # update card status
-            card.status = CardStatus.MASTERED
-        else:
-            card.status = CardStatus.NOT_MASTERED
+        # also update the original card's global status
+        if db_quiz_card.card_id:
+            original_card = self.session.get(Card, db_quiz_card.card_id)
+            if original_card:
+                original_card.status = db_quiz_card.status
+                self.session.add(original_card)
 
-        # update card in session
-        self.session.merge(card)
+        self.session.add(db_quiz_card)
         self.session.commit()
 
-        # remove card from quiz queue
+        # remove from the active queue
         quiz.cards.remove(quiz_card)
 
-        # return whether answer is correct
         return is_correct

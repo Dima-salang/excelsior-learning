@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship
-from models.card import Card
+from models.card import QuizCard, QuizCardPublic
 from datetime import datetime
 
 if TYPE_CHECKING:
@@ -25,7 +25,7 @@ class Quiz(QuizBase):
     created_at: datetime | None = None
     updated_at: datetime | None = None
     # card queue (transient)
-    cards: list["Card"] = []
+    cards: list["QuizCardPublic"] = []
     # deck title (optional for display)
     deck_title: str | None = None
 

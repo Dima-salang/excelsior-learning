@@ -15,6 +15,7 @@ class CardStatus(str, Enum):
 if TYPE_CHECKING:
     from .deck import Deck
     from .lecture_step import LectureStep
+    from .quiz import Quiz
 
 
 class CardType(str, Enum):
@@ -25,7 +26,7 @@ class CardType(str, Enum):
 class CardBase(SQLModel):
     type: str
     front: str
-    options: Optional[list[str]] = Field(default=None, sa_column=Column(JSON))
+    options: Optional[list[str]] = Field(default=None)
     options_ans: Optional[int] = Field(default=None)
     user_selected_ans: Optional[int] = Field(default=None)
     explanation: Optional[str] = Field(default=None)
@@ -35,6 +36,7 @@ class CardBase(SQLModel):
 
 class Card(CardBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    options: Optional[list[str]] = Field(default=None, sa_column=Column(JSON))
     deck_id: int | None = Field(default=None, foreign_key="deck.id", nullable=True)
     deck: "Deck" = Relationship(back_populates="cards")
 
@@ -65,3 +67,16 @@ class CardUpdate(SQLModel):
 
 class CardDelete(SQLModel):
     id: int
+
+
+class QuizCard(CardBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    options: list[str] | None = Field(default=None, sa_column=Column(JSON))
+    card_id: int | None = Field(default=None, foreign_key="card.id")
+    quiz_id: int | None = Field(default=None, foreign_key="quizdb.id")
+
+
+class QuizCardPublic(CardBase):
+    id: int
+    card_id: int | None = None
+    quiz_id: int | None = None
