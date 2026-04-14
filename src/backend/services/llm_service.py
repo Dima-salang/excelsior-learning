@@ -62,7 +62,7 @@ class LLMService:
         return []
 
     def add_provider(self, provider: UserLLMConfigCreate):
-        db_provider = UserLLMConfig(**provider.dict())
+        db_provider = UserLLMConfig(**provider.model_dump())
         db_provider.api_key = self.encrypt_api_key(provider.api_key)
         self.session.add(db_provider)
         self.session.commit()
@@ -76,12 +76,13 @@ class LLMService:
         return provider
 
     def get_providers(self, user_id: int) -> list[UserLLMConfigPublic]:
-        providers = (
-            self.session.query(UserLLMConfig)
+        from sqlmodel import select
+
+        providers = self.session.exec(
+            select(UserLLMConfig)
             .filter(UserLLMConfig.user_id == user_id)
             .order_by(UserLLMConfig.created_at.desc())
-            .all()
-        )
+        ).all()
         return [UserLLMConfigPublic.model_validate(provider) for provider in providers]
 
     def update_provider(
@@ -248,7 +249,7 @@ class LLMService:
 
     def save_cards(
         self,
-        data: DeckWithCardsFlashcard | list[CardBase],
+        data: DeckWithCardsFlashcard | CardList,
         user_id: int,
         deck_id: int = None,
     ) -> int:
@@ -271,7 +272,7 @@ class LLMService:
         # create cards
         for card_schema in data.cards:
             db_card = Card(
-                **card_schema.dict(),
+                **card_schema.model_dump(),
                 deck_id=db_deck.id,
             )
             self.session.add(db_card)
