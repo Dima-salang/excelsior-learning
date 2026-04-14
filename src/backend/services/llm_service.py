@@ -18,13 +18,14 @@ from fastapi import HTTPException
 from litellm import completion
 from google import genai
 from datetime import datetime
+from models.card import Card, CardBase
+from models.llm_provider import PromptManager
+from models.lecture import LectureStepPublic
+
 
 import logging
 
 logger = logging.getLogger("excelsior.llm")
-from models.card import Card, CardBase
-from models.llm_provider import PromptManager
-from models.lecture import LectureStepPublic
 
 
 class CardList(BaseModel):

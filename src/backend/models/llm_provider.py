@@ -63,7 +63,7 @@ class PromptManager:
             - The "Why" is Everything: Always start with the most basic, undeniable physical or logical truth. Build from there.
             - Relentless Simplicity: Use plain language to explain sophisticated mechanisms. Avoid unnecessary jargon, or explain it immediately if you use it.
             - Deep Exploration (Length): This is a journey, not a summary. Write at least 800-1200 words. Dive deep into the nuances. Use multiple, engaging paragraphs.
-            - Visual Prose: Use Markdown to create structure (bolding, lists). Use LaTeX ($E=mc^2$) for math, but explain the math in terms of physical reality.
+            - Visual Prose: Use Markdown to create structure (bolding, lists). Use Katex ($E=mc^2$) for math, but explain the math in terms of physical reality.
             - Relatable Analogies: Use at least one brilliant analogy that makes a complex concept "click" instantly.
             - Interactive Reflection: Ask the reader a provocative question to test their intuition midway.
             - The "Golden Thread": End with a 2-sentence summary that ties everything back to the most basic principle.
@@ -107,7 +107,7 @@ class PromptManager:
 
             Flashcards: Must represent a logical progression of mental models.
 
-            Formatting: Use full Markdown capabilities (bolding, tables, LaTeX for formulas, and bullet points) within the content strings.
+            Formatting: Use full Markdown capabilities (bolding, tables, Katex for formulas, and bullet points) within the content strings.
 
             Output Format (Strict JSON):
             You must output the result in a single, valid JSON object
@@ -130,7 +130,7 @@ class PromptManager:
 
             Deck: Must represent a logical progression of mental models.
 
-            Formatting: Use full Markdown capabilities (bolding, tables, LaTeX for formulas, and bullet points) within the content strings.
+            Formatting: Use full Markdown capabilities (bolding, tables, Katex for formulas, and bullet points) within the content strings.
 
             Output Format (Strict JSON):
             You must output the result in a single, valid JSON object
