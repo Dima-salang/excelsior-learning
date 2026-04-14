@@ -22,7 +22,8 @@
 		CheckCircle2,
 		XCircle,
 		Terminal,
-		Copy
+		Copy,
+		Search
 	} from '@lucide/svelte';
 	import { fade, fly, scale } from 'svelte/transition';
 	import { goto } from '$app/navigation';
@@ -55,16 +56,43 @@
 	let successMessage = $state('');
 	let availableModels = $state<{ name: string; display_name: string }[]>([]);
 	let isFetchingModels = $state(false);
+	let modelSearchQuery = $state('');
+	let isModelDropdownOpen = $state(false);
 
+	// Close dropdown when clicking outside
+	import { onMount } from 'svelte';
+	let dropdownRef = $state<HTMLElement | null>(null);
+	onMount(() => {
+		const handleClickOutside = (e: MouseEvent) => {
+			if (dropdownRef && !dropdownRef.contains(e.target as Node)) {
+				isModelDropdownOpen = false;
+				if (form.model_name && !filteredModels.find((m) => m.name === form.model_name)) {
+					// retain if it was manually typed but not in list
+				}
+			}
+		};
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	});
+
+	let filteredModels = $derived(
+		availableModels.filter(
+			(m) =>
+				m.name.toLowerCase().includes(modelSearchQuery.toLowerCase()) ||
+				m.display_name.toLowerCase().includes(modelSearchQuery.toLowerCase())
+		)
+	);
+
+	let lastProvider = $state('');
 	$effect(() => {
-		if (
-			form.provider_name.toLowerCase() === 'gemini' &&
-			availableModels.length === 0 &&
-			!isFetchingModels
-		) {
-			fetchAvailableModels('gemini');
-		} else if (form.provider_name.toLowerCase() !== 'gemini' && availableModels.length > 0) {
-			availableModels = [];
+		const currentProvider = form.provider_name.toLowerCase();
+		if (currentProvider !== lastProvider) {
+			if (currentProvider) {
+				fetchAvailableModels(currentProvider);
+			} else {
+				availableModels = [];
+			}
+			lastProvider = currentProvider;
 		}
 	});
 
@@ -170,18 +198,24 @@
 		isAddingProvider = true;
 	}
 
-	function applyPreset(type: 'openai' | 'anthropic' | 'gemini') {
+	function applyPreset(type: 'openai' | 'anthropic' | 'gemini' | 'openrouter') {
 		const presets = {
-			openai: { provider: 'OpenAI', model: 'gpt-4o' },
-			anthropic: { provider: 'Anthropic', model: 'claude-3-5-sonnet-latest' },
-			gemini: { provider: 'Gemini', model: 'gemini-1.5-pro' }
+			openai: { provider: 'OpenAI', model: 'gpt-4o', baseUrl: 'https://api.openai.com/v1' },
+			anthropic: { provider: 'Anthropic', model: 'claude-3-5-sonnet-latest', baseUrl: '' },
+			gemini: { provider: 'Gemini', model: 'gemini-1.5-pro', baseUrl: '' },
+			openrouter: {
+				provider: 'OpenRouter',
+				model: 'google/gemini-2.0-flash-001',
+				baseUrl: 'https://openrouter.ai/api/v1'
+			}
 		};
 		const p = presets[type];
 		form.provider_name = p.provider;
 		form.model_name = p.model;
+		form.base_url = p.baseUrl || '';
 
-		if (type === 'gemini') {
-			fetchAvailableModels('gemini');
+		if (type) {
+			fetchAvailableModels(type);
 		} else {
 			availableModels = [];
 		}
@@ -190,7 +224,7 @@
 	async function fetchAvailableModels(provider: string) {
 		isFetchingModels = true;
 		try {
-			availableModels = await apiFetch(`/llm/models/${provider}`);
+			availableModels = await apiFetch(`/llm/models`);
 		} catch (err) {
 			console.error('Failed to fetch models:', err);
 		} finally {
@@ -289,8 +323,9 @@
 								>Speed Presets</Label
 							>
 							<div class="flex flex-wrap gap-3">
-								{#each ['openai', 'anthropic', 'gemini'] as preset}
+								{#each ['openai', 'anthropic', 'gemini', 'openrouter'] as preset}
 									<button
+										type="button"
 										onclick={() => applyPreset(preset as any)}
 										class="flex items-center gap-2 rounded-full border border-border bg-slate-900 px-5 py-2 text-xs font-bold text-white transition-all hover:border-primary/50 hover:bg-muted"
 									>
@@ -322,14 +357,102 @@
 									>Model Name</Label
 								>
 								{#if availableModels.length > 0}
-									<select
-										bind:value={form.model_name}
-										class="transition-focus h-14 w-full rounded-xl border-border bg-background px-6 text-white shadow-sm outline-none focus:ring-2 focus:ring-primary/50"
-									>
-										{#each availableModels as model}
-											<option value={model.name}>{model.display_name}</option>
-										{/each}
-									</select>
+									<div class="relative space-y-2" bind:this={dropdownRef}>
+										<div class="relative w-full">
+											<Search
+												class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors {isModelDropdownOpen
+													? 'text-primary'
+													: ''}"
+											/>
+											<Input
+												value={isModelDropdownOpen
+													? modelSearchQuery
+													: availableModels.find((m) => m.name === form.model_name)?.display_name ||
+														form.model_name}
+												oninput={(e) => {
+													modelSearchQuery = e.currentTarget.value;
+													form.model_name = e.currentTarget.value;
+													isModelDropdownOpen = true;
+												}}
+												onfocus={() => {
+													isModelDropdownOpen = true;
+													modelSearchQuery = form.model_name;
+												}}
+												placeholder="Search or enter model name..."
+												class="h-14 w-full rounded-xl border-white/10 bg-white/5 pl-12 text-white shadow-sm ring-1 ring-white/5 transition-all focus:border-primary/50 focus:bg-slate-900/80 focus:ring-2 focus:ring-primary/50"
+											/>
+											{#if isModelDropdownOpen}
+												<button
+													type="button"
+													class="absolute top-1/2 right-4 -translate-y-1/2"
+													onclick={() => {
+														isModelDropdownOpen = false;
+													}}
+												>
+													<ChevronRight
+														class="h-4 w-4 rotate-[-90deg] text-muted-foreground transition-all hover:text-white"
+													/>
+												</button>
+											{:else}
+												<div class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2">
+													<ChevronRight class="h-4 w-4 rotate-90 text-muted-foreground" />
+												</div>
+											{/if}
+										</div>
+
+										{#if isModelDropdownOpen}
+											<div
+												transition:fly={{ y: -10, duration: 200 }}
+												class="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-white/10 bg-slate-950/90 shadow-2xl ring-1 ring-black/5 backdrop-blur-2xl"
+											>
+												<div
+													class="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 max-h-64 overflow-y-auto p-2"
+												>
+													{#if filteredModels.length === 0}
+														<div class="p-6 text-center">
+															<Terminal class="mx-auto mb-2 h-6 w-6 text-slate-600" />
+															<p class="text-sm font-medium text-slate-400">No models found</p>
+															<p class="text-xs text-slate-500">Press enter to use custom model</p>
+														</div>
+													{:else}
+														<div class="grid gap-1">
+															{#each filteredModels as model}
+																<button
+																	type="button"
+																	onclick={() => {
+																		form.model_name = model.name;
+																		modelSearchQuery = '';
+																		isModelDropdownOpen = false;
+																	}}
+																	class="flex w-full flex-col items-start gap-1 rounded-lg px-4 py-3 text-left transition-all hover:bg-white/10 {form.model_name ===
+																	model.name
+																		? 'bg-primary/20 ring-1 ring-primary/50'
+																		: ''}"
+																>
+																	<div class="flex w-full items-center justify-between">
+																		<span class="leading-none font-bold text-white"
+																			>{model.display_name}</span
+																		>
+																		{#if form.model_name === model.name}
+																			<CheckCircle2 class="h-3 w-3 text-primary" />
+																		{/if}
+																	</div>
+																	<span class="font-mono text-[10px] text-slate-500"
+																		>{model.name}</span
+																	>
+																</button>
+															{/each}
+														</div>
+													{/if}
+												</div>
+												<div class="border-t border-white/5 bg-black/40 px-4 py-2">
+													<p class="text-[10px] font-medium text-slate-500">
+														Showing {filteredModels.length} of {availableModels.length} models
+													</p>
+												</div>
+											</div>
+										{/if}
+									</div>
 								{:else}
 									<div class="relative">
 										<Input
