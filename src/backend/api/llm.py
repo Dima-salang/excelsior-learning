@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 from typing import List, Literal
+from fastapi.responses import StreamingResponse
 from db.session import get_session
 from services.llm_service import LLMService
 from models.llm_provider import (
@@ -152,3 +153,48 @@ def get_provider_key(provider_id: int, session: Session = Depends(get_session)):
         return {"api_key": key}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+class GenerateChatRequest(BaseModel):
+    prompt: str
+    provider_id: int
+    user_id: int
+    lecture_context: str | None = None
+    chat_history: list[dict[str, str]] | None = None
+
+
+@router.post("/chat")
+def generate_chat(
+    request: GenerateChatRequest, session: Session = Depends(get_session)
+):
+    """
+    Stream a chat response from the LLM as Server-Sent Events.
+    """
+    service = LLMService(session)
+    generator = service.generate_chat(
+        prompt=request.prompt,
+        provider_id=request.provider_id,
+        user_id=request.user_id,
+        lecture_context=request.lecture_context,
+        chat_history=request.chat_history,
+    )
+
+    def event_stream():
+        try:
+            for chunk in generator:
+                yield f"data: {chunk}\n\n"
+            yield "data: [DONE]\n\n"
+        except HTTPException as e:
+            yield f"data: [ERROR] {e.detail}\n\n"
+        except Exception as e:
+            yield f"data: [ERROR] {str(e)}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
