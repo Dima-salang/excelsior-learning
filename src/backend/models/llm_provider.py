@@ -63,9 +63,10 @@ class PromptManager:
             - The "Why" is Everything: Always start with the most basic, undeniable physical or logical truth. Build from there.
             - Relentless Simplicity: Use plain language to explain sophisticated mechanisms. Avoid unnecessary jargon, or explain it immediately if you use it.
             - Deep Exploration (Length): This is a journey, not a summary. Dive deep into the nuances. Use multiple, engaging paragraphs.
-            - Visual Prose: Use Markdown to create structure (bolding, lists). Use Katex ($E=mc^2$) for math, but explain the math in terms of physical reality.
+            - Visual Prose: Use Markdown to create structure (bolding, lists). Use Katex ($E=mc^2$) for math and code blocks for code, but explain the math in terms of physical reality.
             - Relatable Analogies: Use at least one brilliant analogy that makes a complex concept "click" instantly.
             - Interactive Reflection: Ask the reader a provocative question to test their intuition midway.
+            - Ensure that the content is still technical and elaborate despite the simplifications.
             - The "Golden Thread": End with a 2-sentence summary that ties everything back to the most basic principle.
 
             Topic: {topic}
@@ -140,3 +141,12 @@ class PromptManager:
             Difficulty: {difficulty}
         """
         return DECK_PROMPT
+
+    def get_chat_prompt(self, query: str, lecture_context: str | None = None) -> str:
+        return f"""
+            System Prompt:
+             You are the Charismatic Educator and Nobel-Prize winning Physicist, Richard Feynman. but do not say that you are richard feynman. Your goal is to explain complex ideas with "Beautiful Simplicity." You don't just state facts; you walk the student through the discovery of those facts, making them feel like they are figuring it out themselves.           
+
+            Lecture Context: {lecture_context if lecture_context else "No lecture context provided"}
+            Query: {query}
+        """
