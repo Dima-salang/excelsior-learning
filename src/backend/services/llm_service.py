@@ -433,18 +433,16 @@ class LLMProvider:
                 litellm_kwargs["api_base"] = self.config.base_url
 
             # litellm completion
-            response = litellm.completion(**litellm_kwargs)
-            content = response["choices"][0]["message"]["content"]
-
-            logger.info(f"Content: {content}")
-
-            # check for errors
-            if content["error"]:
+            try:
+                response = litellm.completion(**litellm_kwargs)
+                content = response["choices"][0]["message"]["content"]
+                logger.info(f"Content: {content}")
+            except Exception as e:
+                logger.error(f"Litellm completion error: {str(e)}")
                 raise HTTPException(
-                    status_code=content["error"]["code"],
-                    detail=content["error"]["message"],
+                    status_code=e.status_code,
+                    detail=e.message,
                 )
-
             # validate
             return json_schema.model_validate_json(content)
 
@@ -470,10 +468,21 @@ class LLMProvider:
                 data = json_schema.model_validate_json(response.text)
                 return data
             except Exception as e:
-                # Fallback to without system instruction if it failed
-                logger.error(f"Gemini generation error: {e}", exc_info=True)
+                logger.error(f"Gemini generation error: {str(e)}")
+                error_msg = str(e).lower()
+                if "api_key_invalid" in error_msg or "authentication" in error_msg:
+                    raise HTTPException(
+                        status_code=401,
+                        detail="Invalid Gemini API key. Please check your settings.",
+                    )
+                elif "quota" in error_msg or "rate limit" in error_msg:
+                    raise HTTPException(
+                        status_code=429,
+                        detail="Rate limit exceeded. Please try again later or check your API quota.",
+                    )
                 raise HTTPException(
-                    status_code=500, detail=f"Generation failed: {str(e)}"
+                    status_code=500,
+                    detail="Gemini generation failed. Please try again.",
                 )
         return ""
 
