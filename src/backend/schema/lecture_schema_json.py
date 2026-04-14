@@ -6,10 +6,10 @@ class StepFlashcardSchema(BaseModel):
     type: str = Field(description="Type of flashcard: 'multichoice' or 'truefalse'")
     front: str = Field(description="The question or front of the flashcard")
     options: Optional[list[str]] = Field(
-        default=None, description="Options for multichoice cards"
+        default=None, description="Options for multichoice cards and truefalse cards"
     )
     options_ans: Optional[int] = Field(
-        default=None, description="Index of the correct option"
+        default=None, description="Index of the correct option for multichoice cards and truefalse cards"
     )
     explanation: Optional[str] = Field(
         default=None, description="Explanation for the answer"
