@@ -15,12 +15,16 @@ from sqlmodel import Session
 from cryptography.fernet import Fernet
 import os
 from fastapi import HTTPException
-from litellm import completion
 from google import genai
 from datetime import datetime
 from models.card import Card, CardBase
 from models.llm_provider import PromptManager
 from models.lecture import LectureStepPublic
+import requests
+import litellm
+
+# url for openrouter model api
+OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
 
 
 import logging
@@ -40,26 +44,18 @@ class LLMService:
         self.session = session
         self.prompt_manager = PromptManager()
 
-    def get_model_list(self, provider: str):
-        if provider.lower() == "gemini":
-            api_key = os.getenv("GEMINI_API_KEY")
-            if not api_key:
-                # fall back to checking if there is a provider with an api key
-                raise HTTPException(
-                    status_code=400,
-                    detail="GEMINI_API_KEY not found in environment. Please set it or provide an API key.",
-                )
-            client = genai.Client(api_key=api_key)
-            try:
-                models = client.models.list()
-                return [
-                    {"name": m.name, "display_name": m.display_name}
-                    for m in models
-                    if "generateContent" in m.supported_generation_methods
-                ]
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
-        return []
+    def get_model_list(self):
+        # get the model list from openrouter
+        response = requests.get(OPENROUTER_MODELS_URL)
+        if response.status_code != 200:
+            raise HTTPException(status_code=500, detail=response.text)
+
+        # extract id and name
+        model_list = []
+        for model in response.json()["data"]:
+            model_list.append({"name": model["id"], "display_name": model["name"]})
+
+        return model_list
 
     def add_provider(self, provider: UserLLMConfigCreate):
         db_provider = UserLLMConfig(**provider.model_dump())
@@ -396,28 +392,41 @@ class LLMProvider:
         )
         provider = self.config.provider_name.lower()
 
-        if provider == "openai":
-            os.environ["OPENAI_API_KEY"] = self.api_key
-            response = completion(
-                model=self.config.model_name,
-                messages=[
+        # load api key into environment
+        os.environ[f"{provider.upper()}_API_KEY"] = self.api_key
+
+        model_name = self.config.model_name
+        # litellm expects "openrouter/" prefix for OpenRouter models
+        if provider == "openrouter" and not model_name.startswith("openrouter/"):
+            model_name = f"openrouter/{model_name}"
+
+            # Setup litellm completion kwargs
+            litellm_kwargs = {
+                "model": model_name,
+                "messages": [
                     {
                         "role": "system",
-                        "content": f"You are a helpful educational assistant. Return as JSON matching this schema: {json_schema.model_json_schema()}",
+                        "content": prompt
+                        + f"Return as JSON matching this schema: {json_schema.model_json_schema()}",
                     },
                     {
                         "role": "user",
                         "content": user_prompt,
                     },
                 ],
-                response_format={"type": "json_object"}
-                if "gpt-4" in self.config.model_name
-                or "gpt-3.5-turbo-0125" in self.config.model_name
-                else None,
-            )
+                "response_format": {"type": "json_object"},
+            }
+
+            # apply custom api_base if configured
+            if getattr(self.config, "base_url", None):
+                litellm_kwargs["api_base"] = self.config.base_url
+
+            # litellm completion
+            response = litellm.completion(**litellm_kwargs)
             content = response["choices"][0]["message"]["content"]
             return json_schema.model_validate_json(content)
-        elif provider == "gemini":
+
+        if provider == "gemini":
             os.environ["GEMINI_API_KEY"] = self.api_key
             client = genai.Client()
 
@@ -453,45 +462,45 @@ class LLMProvider:
         )
         provider = self.config.provider_name.lower()
 
-        if provider == "openai":
-            os.environ["OPENAI_API_KEY"] = self.api_key
-            response_stream = completion(
-                model=self.config.model_name,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": f"You are a helpful educational assistant. Return as JSON matching this schema: {json_schema.model_json_schema()}",
-                    },
-                    {
-                        "role": "user",
-                        "content": full_prompt + "\nContext details: " + prompt,
-                    },
-                ],
-                stream=True,
-                response_format={"type": "json_object"}
-                if "gpt-4" in self.config.model_name
-                else None,
-            )
+        # load api key into environment
+        os.environ[f"{provider.upper()}_API_KEY"] = self.api_key
+
+        model_name = self.config.model_name
+        # litellm expects "openrouter/" prefix for OpenRouter models
+        if provider == "openrouter" and not model_name.startswith("openrouter/"):
+            model_name = f"openrouter/{model_name}"
+
+        # Setup litellm completion kwargs
+        litellm_kwargs = {
+            "model": model_name,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": f"You are a helpful educational assistant. Return as JSON matching this schema: {json_schema.model_json_schema()}",
+                },
+                {
+                    "role": "user",
+                    "content": full_prompt + "\nContext details: " + prompt,
+                },
+            ],
+            "stream": True,
+            "response_format": {"type": "json_object"},
+        }
+
+        # apply custom api_base if configured
+        if getattr(self.config, "base_url", None):
+            litellm_kwargs["api_base"] = self.config.base_url
+
+        try:
+            # litellm completion
+            response_stream = litellm.completion(**litellm_kwargs)
             for chunk in response_stream:
                 content = chunk["choices"][0]["delta"].get("content", "")
                 if content:
                     yield content
-
-        elif provider == "gemini":
-            os.environ["GEMINI_API_KEY"] = self.api_key
-            client = genai.Client()
-            config = genai.types.GenerateContentConfig(
-                response_mime_type="application/json",
-                # response_schema=json_schema, # response_schema can sometimes break streaming in some SDK versions, or it works fine.
-            )
-            response_stream = client.models.generate_content_stream(
-                model=self.config.model_name,
-                contents=full_prompt + "\nContext details: " + prompt,
-                config=config,
-            )
-            for chunk in response_stream:
-                if chunk.text:
-                    yield chunk.text
+        except Exception as e:
+            logger.error(f"Litellm stream error: {e}")
+            raise e
 
     def resolve_json_schema(self, type: str):
         """
