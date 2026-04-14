@@ -16,7 +16,7 @@ def quiz_service(session: Session):
 
 
 @pytest.fixture
-def setup_data(session: Session):
+def setup_data(session: Session, quiz_service: QuizService):
     # Setup test user
     user = User(username="testuser", password="password")
     session.add(user)
@@ -43,11 +43,14 @@ def setup_data(session: Session):
     session.add_all(cards)
     session.commit()
 
-    return user, deck, cards
+    # create quiz
+    quiz_model = quiz_service.start_quiz(deck.id, num_flashcards=3)
+
+    return user, deck, cards, quiz_model
 
 
 def test_start_quiz(quiz_service: QuizService, setup_data, session: Session):
-    user, deck, cards = setup_data
+    user, deck, cards, _ = setup_data
 
     # Start quiz with 3 cards
     quiz_model = quiz_service.start_quiz(deck.id, num_flashcards=3)
@@ -71,7 +74,7 @@ def test_start_quiz(quiz_service: QuizService, setup_data, session: Session):
 
 
 def test_submit_answer_correct(quiz_service: QuizService, setup_data, session: Session):
-    user, deck, cards = setup_data
+    user, deck, cards, _ = setup_data
     quiz_model = quiz_service.start_quiz(deck.id, num_flashcards=1)
     quiz_card = quiz_model.cards[0]
 
@@ -95,7 +98,7 @@ def test_submit_answer_correct(quiz_service: QuizService, setup_data, session: S
 def test_submit_answer_incorrect(
     quiz_service: QuizService, setup_data, session: Session
 ):
-    user, deck, cards = setup_data
+    user, deck, cards, _ = setup_data
     quiz_model = quiz_service.start_quiz(deck.id, num_flashcards=1)
     quiz_card = quiz_model.cards[0]
 
@@ -116,7 +119,7 @@ def test_submit_answer_incorrect(
 
 
 def test_get_quiz_persistence(quiz_service: QuizService, setup_data, session: Session):
-    user, deck, cards = setup_data
+    user, deck, cards, _ = setup_data
     start_model = quiz_service.start_quiz(deck.id, num_flashcards=1)
     quiz_card_id = start_model.cards[0].id
 
@@ -133,7 +136,7 @@ def test_get_quiz_persistence(quiz_service: QuizService, setup_data, session: Se
 
 
 def test_list_quizzes(quiz_service: QuizService, setup_data, session: Session):
-    user, deck, cards = setup_data
+    user, deck, cards, _ = setup_data
 
     # Create two quizzes for this user
     q1 = quiz_service.start_quiz(deck.id, 1)
@@ -157,3 +160,19 @@ def test_list_quizzes(quiz_service: QuizService, setup_data, session: Session):
     # Verify ordering (newest first)
     assert user_quizzes[0].id == q2.id
     assert user_quizzes[1].id == q1.id
+
+
+def test_create_quiz_cards(quiz_service: QuizService, setup_data, session: Session):
+    user, deck, cards, quiz_model = setup_data
+    quiz_model.cards = quiz_service.create_quiz_cards(
+        cards=quiz_model.cards, quiz_id=quiz_model.id
+    )
+
+    # verify that the quiz model has 3 cards
+    assert len(quiz_model.cards) == 3
+
+    # verify that the cards are QuizCards
+    assert all([isinstance(card, QuizCard) for card in quiz_model.cards])
+
+    # verify that the cards are linked to the quiz
+    assert all([card.quiz_id == quiz_model.id for card in quiz_model.cards])

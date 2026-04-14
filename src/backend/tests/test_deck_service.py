@@ -31,8 +31,8 @@ def test_get_decks(session: Session):
 
     # Assert
     assert len(decks) == 2
-    assert decks[0].title == "Deck 1"
-    assert decks[1].title == "Deck 2"
+    assert decks[0].title == "Deck 2"
+    assert decks[1].title == "Deck 1"
 
 
 def test_get_deck(session: Session):
