@@ -27,6 +27,16 @@ import litellm
 OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
 
 
+class OpenRouterErrorDetail(BaseModel):
+    code: int
+    message: str
+    metadata: dict | None = None
+
+
+class OpenRouterErrorResponse(BaseModel):
+    error: OpenRouterErrorDetail
+
+
 import logging
 
 logger = logging.getLogger("excelsior.llm")
@@ -414,7 +424,8 @@ class LLMProvider:
                         "content": user_prompt,
                     },
                 ],
-                "response_format": {"type": "json_object"},
+                "response_format": {"type": "json_schema"},
+                "json_schema": json_schema.model_json_schema(),
             }
 
             # apply custom api_base if configured
@@ -424,6 +435,17 @@ class LLMProvider:
             # litellm completion
             response = litellm.completion(**litellm_kwargs)
             content = response["choices"][0]["message"]["content"]
+
+            logger.info(f"Content: {content}")
+
+            # check for errors
+            if content["error"]:
+                raise HTTPException(
+                    status_code=content["error"]["code"],
+                    detail=content["error"]["message"],
+                )
+
+            # validate
             return json_schema.model_validate_json(content)
 
         if provider == "gemini":
@@ -449,8 +471,10 @@ class LLMProvider:
                 return data
             except Exception as e:
                 # Fallback to without system instruction if it failed
-                print(f"Gemini generation error: {e}")
-                raise e
+                logger.error(f"Gemini generation error: {e}", exc_info=True)
+                raise HTTPException(
+                    status_code=500, detail=f"Generation failed: {str(e)}"
+                )
         return ""
 
     def generate_stream(
