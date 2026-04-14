@@ -17,6 +17,7 @@ from schema.lecture_schema_json import (
 from models.deck import DeckWithCardsFlashcard
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
+import litellm
 
 # Constants for testing
 MASTER_KEY = Fernet.generate_key().decode()
@@ -252,27 +253,22 @@ def test_update_card(llm_service, session):
     assert updated.explanation == "NewExplanation"
 
 
-@patch("services.llm_service.genai.Client")
-def test_get_model_list_success(mock_genai, llm_service):
-    with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}):
-        mock_client = MagicMock()
-        mock_genai.return_value = mock_client
+@patch("services.llm_service.requests.get")
+def test_get_model_list_success(mock_get, llm_service):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "data": [
+            {"id": "openrouter/model-1", "name": "OpenRouter Model 1"},
+            {"id": "openrouter/model-2", "name": "OpenRouter Model 2"},
+        ]
+    }
+    mock_get.return_value = mock_response
 
-        m1 = MagicMock()
-        m1.name = "models/gemini-pro"
-        m1.display_name = "Gemini Pro"
-        m1.supported_generation_methods = ["generateContent"]
-
-        m2 = MagicMock()
-        m2.name = "models/embedding-001"
-        m2.display_name = "Embedding 001"
-        m2.supported_generation_methods = ["embedContent"]
-
-        mock_client.models.list.return_value = [m1, m2]
-
-        models = llm_service.get_model_list("gemini")
-        assert len(models) == 1
-        assert models[0]["name"] == "models/gemini-pro"
+    models = llm_service.get_model_list()
+    assert len(models) == 2
+    assert models[0]["name"] == "openrouter/model-1"
+    assert models[0]["display_name"] == "OpenRouter Model 1"
 
 
 @patch("services.llm_service.LLMProvider.generate")
@@ -311,11 +307,17 @@ def test_llm_provider_resolution():
 
 
 # 5. ERROR HANDLING TESTS
-def test_get_model_list_missing_api_key(llm_service):
-    with patch.dict(os.environ, {"GEMINI_API_KEY": ""}, clear=True):
+def test_get_model_list_api_error(llm_service):
+    with patch("services.llm_service.requests.get") as mock_get:
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+        mock_get.return_value = mock_response
+
         with pytest.raises(HTTPException) as exc:
-            llm_service.get_model_list("gemini")
-        assert exc.value.status_code == 400
+            llm_service.get_model_list()
+        assert exc.value.status_code == 500
+        assert exc.value.detail == "Internal Server Error"
 
 
 @patch("services.llm_service.LLMProvider.generate")
@@ -335,3 +337,52 @@ def test_generate_lecture_llm_failure(mock_generate, llm_service, session):
         llm_service.generate_lecture("Topic", p.id, user_id=1)
     assert exc.value.status_code == 500
     assert "Generation failed" in exc.value.detail
+
+
+# chat generation tests
+@patch("services.llm_service.LLMProvider.generate_stream")
+def test_generate_chat_success(mock_generate_stream, llm_service, session):
+    p = UserLLMConfig(
+        provider_name="Gemini",
+        model_name="gemini-pro",
+        api_key=llm_service.encrypt_api_key("key"),
+        user_id=1,
+    )
+    session.add(p)
+    session.commit()
+
+    mock_generate_stream.return_value = "Hello World"
+
+    result = llm_service.generate_chat(
+        "Topic", p.id, user_id=1, lecture_context="Context"
+    )
+
+    assert result == "Hello World"
+
+
+@patch("services.llm_service.LLMProvider.generate_stream")
+def test_generate_chat_failure_api_error(mock_generate_stream, llm_service, session):
+    p = UserLLMConfig(
+        provider_name="Gemini",
+        model_name="gemini-pro",
+        api_key=llm_service.encrypt_api_key("key"),
+        user_id=1,
+    )
+    session.add(p)
+    session.commit()
+
+    # When generate_stream is mocked with side_effect, it raises on call
+    # (before yielding), so generate_chat itself will raise
+    mock_generate_stream.side_effect = litellm.APIError(
+        status_code=500,
+        message="Internal Server Error",
+        llm_provider="Gemini",
+        model="gemini-pro",
+    )
+
+    with pytest.raises(litellm.APIError):
+        result = llm_service.generate_chat(
+            "Topic", p.id, user_id=1, lecture_context="Context"
+        )
+        # Force iteration if it returns a generator
+        list(result)
