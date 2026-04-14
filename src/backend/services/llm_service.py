@@ -288,8 +288,34 @@ class LLMService:
         return db_deck.id
 
     # CHAT
-    def generate_chat(self, prompt: str, provider_id: int) -> str:
-        pass
+    def generate_chat(
+        self,
+        prompt: str,
+        provider_id: int,
+        user_id: int,
+        lecture_context: str | None = None,
+        chat_history: list[dict[str, str]] | None = None,
+    ) -> str:
+        provider = self.session.get(UserLLMConfig, provider_id)
+        if not provider:
+            raise HTTPException(status_code=404, detail=self.PROVIDER_NOT_FOUND)
+
+        # decrypt the api key
+        api_key = self.decrypt_api_key(provider.api_key)
+
+        # create llm provider
+        llm_provider = LLMProvider(
+            provider, api_key, prompt_manager=self.prompt_manager
+        )
+
+        # generate chat — returns a generator; errors during streaming
+        # are handled by the SSE event_stream in the API layer
+        return llm_provider.generate_stream(
+            user_prompt=prompt,
+            type="chat",
+            lecture_context=lecture_context,
+            chat_history=chat_history,
+        )
 
     def generate_step_content(self, lecture_id: int, step_id: int, provider_id: int):
 
@@ -400,14 +426,14 @@ class LLMProvider:
             num_flashcards=num_flashcards,
             difficulty=difficulty,
         )
-        provider = self.config.provider_name.lower()
+        provider_name = self.config.provider_name.lower()
 
         # load api key into environment
-        os.environ[f"{provider.upper()}_API_KEY"] = self.api_key
+        os.environ[f"{provider_name.upper()}_API_KEY"] = self.api_key
 
         model_name = self.config.model_name
         # litellm expects "openrouter/" prefix for OpenRouter models
-        if provider == "openrouter" and not model_name.startswith("openrouter/"):
+        if provider_name == "openrouter" and not model_name.startswith("openrouter/"):
             model_name = f"openrouter/{model_name}"
 
             # Setup litellm completion kwargs
@@ -424,8 +450,7 @@ class LLMProvider:
                         "content": user_prompt,
                     },
                 ],
-                "response_format": {"type": "json_schema"},
-                "json_schema": json_schema.model_json_schema(),
+                "response_format": {"type": "json_object"},
             }
 
             # apply custom api_base if configured
@@ -437,16 +462,35 @@ class LLMProvider:
                 response = litellm.completion(**litellm_kwargs)
                 content = response["choices"][0]["message"]["content"]
                 logger.info(f"Content: {content}")
-            except Exception as e:
-                logger.error(f"Litellm completion error: {str(e)}")
+                print(f"Content: {content}")
+            except litellm.APIError as e:
+                logger.error(f"{provider_name} completion error: {str(e)}")
                 raise HTTPException(
                     status_code=e.status_code,
                     detail=e.message,
                 )
+            except litellm.RateLimitError as e:
+                logger.error(f"{provider_name} rate limit error: {str(e)}")
+                raise HTTPException(
+                    status_code=429,
+                    detail=e.message,
+                )
+            except litellm.AuthenticationError as e:
+                logger.error(f"{provider_name} authentication error: {str(e)}")
+                raise HTTPException(
+                    status_code=401,
+                    detail=e.message,
+                )
+            except Exception as e:
+                logger.error(f"{provider_name} completion error: {str(e)}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"{provider_name} generation failed: {str(e)}",
+                )
             # validate
             return json_schema.model_validate_json(content)
 
-        if provider == "gemini":
+        if provider_name == "gemini":
             os.environ["GEMINI_API_KEY"] = self.api_key
             client = genai.Client()
 
@@ -487,37 +531,60 @@ class LLMProvider:
         return ""
 
     def generate_stream(
-        self, prompt: str, type: str, num_flashcards: int | None = None
+        self,
+        user_prompt: str,
+        type: str,
+        num_flashcards: int | None = None,
+        lecture_context: str | None = None,
+        chat_history: list[dict[str, str]] | None = None,
     ):
-        json_schema = self.resolve_json_schema(type)
+        json_schema = self.resolve_json_schema(type) if type != "chat" else None
         full_prompt = self.resolve_prompt(
-            type, topic=prompt, num_flashcards=num_flashcards
+            type,
+            topic=user_prompt,
+            num_flashcards=num_flashcards,
+            lecture_context=lecture_context,
         )
-        provider = self.config.provider_name.lower()
+        provider_name = self.config.provider_name.lower()
 
         # load api key into environment
-        os.environ[f"{provider.upper()}_API_KEY"] = self.api_key
+        os.environ[f"{provider_name.upper()}_API_KEY"] = self.api_key
 
         model_name = self.config.model_name
         # litellm expects "openrouter/" prefix for OpenRouter models
-        if provider == "openrouter" and not model_name.startswith("openrouter/"):
+        if provider_name == "openrouter" and not model_name.startswith("openrouter/"):
             model_name = f"openrouter/{model_name}"
 
         # Setup litellm completion kwargs
+        messages = [
+            {
+                "role": "system",
+                "content": full_prompt,
+            },
+        ]
+
+        # Inject chat history as prior conversation turns
+        if chat_history:
+            for msg in chat_history:
+                messages.append(
+                    {
+                        "role": msg.get("role", "user"),
+                        "content": msg.get("content", ""),
+                    }
+                )
+
+        # Add the current user prompt
+        messages.append(
+            {
+                "role": "user",
+                "content": user_prompt,
+            }
+        )
+
         litellm_kwargs = {
             "model": model_name,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": f"You are a helpful educational assistant. Return as JSON matching this schema: {json_schema.model_json_schema()}",
-                },
-                {
-                    "role": "user",
-                    "content": full_prompt + "\nContext details: " + prompt,
-                },
-            ],
+            "messages": messages,
             "stream": True,
-            "response_format": {"type": "json_object"},
         }
 
         # apply custom api_base if configured
@@ -531,9 +598,24 @@ class LLMProvider:
                 content = chunk["choices"][0]["delta"].get("content", "")
                 if content:
                     yield content
-        except Exception as e:
-            logger.error(f"Litellm stream error: {e}")
-            raise e
+        except litellm.AuthenticationError as e:
+            logger.error(f"{provider_name} authentication error: {e}")
+            raise HTTPException(
+                status_code=e.status_code,
+                detail=f"{provider_name} authentication error. Please check your API key.",
+            )
+        except litellm.RateLimitError as e:
+            logger.error(f"{provider_name} stream error: {e}")
+            raise HTTPException(
+                status_code=e.status_code,
+                detail=f"{provider_name} rate limit exceeded. Please try again later or check your API quota.",
+            )
+        except litellm.APIError as e:
+            logger.error(f"{provider_name} API error: {e}")
+            raise HTTPException(
+                status_code=e.status_code,
+                detail=e.message,
+            )
 
     def resolve_json_schema(self, type: str):
         """
@@ -547,9 +629,6 @@ class LLMProvider:
             return CardList
         elif type == "deck":
             return DeckWithCardsFlashcard
-        elif type == "chat":
-            # TODO: implement chat schema
-            pass
         else:
             print(type)
             raise HTTPException(status_code=400, detail="Invalid generation type")
@@ -560,6 +639,7 @@ class LLMProvider:
         topic: str | None,
         num_flashcards: int | None = None,
         difficulty: str | None = None,
+        lecture_context: str | None = None,
     ) -> str:
         """
         Function for resolving the prompt based on the type of generation
@@ -578,7 +658,6 @@ class LLMProvider:
                 topic, num_flashcards, difficulty
             )
         elif type == "chat":
-            # TODO: implement chat prompt
-            pass
+            return self.prompt_manager.get_chat_prompt(topic, lecture_context)
         else:
             raise HTTPException(status_code=400, detail="Invalid generation type")
