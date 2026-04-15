@@ -47,7 +47,9 @@ class QuizService:
             result.append(quiz_model)
         return result
 
-    def start_quiz(self, deck_id: int, num_flashcards: int, random_order: bool = True):
+    def start_quiz(
+        self, deck_id: int, num_flashcards: int, random_order: bool = True, ignore_interval: bool = False
+    ):
         # 1. Create the Quiz session record first to get an ID
         db_quiz = QuizDB(
             deck_id=deck_id, score=0.0, time_spent=0.0, time_started=datetime.now()
@@ -57,7 +59,10 @@ class QuizService:
         self.session.refresh(db_quiz)
 
         # 2. Get cards from deck
-        cards = self.session.exec(select(Card).where(Card.deck_id == deck_id)).all()
+        if ignore_interval:
+            cards = self.session.exec(select(Card).where(Card.deck_id == deck_id)).all()
+        else:
+            cards = self.session.exec(select(Card).where(Card.deck_id == deck_id).where(Card.next_review <= datetime.now())).all()
         if random_order:
             random.shuffle(cards)
 
