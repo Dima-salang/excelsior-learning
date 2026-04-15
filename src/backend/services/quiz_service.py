@@ -48,7 +48,11 @@ class QuizService:
         return result
 
     def start_quiz(
-        self, deck_id: int, num_flashcards: int, random_order: bool = True, ignore_interval: bool = False
+        self,
+        deck_id: int,
+        num_flashcards: int,
+        random_order: bool = True,
+        ignore_interval: bool = False,
     ):
         # 1. Create the Quiz session record first to get an ID
         db_quiz = QuizDB(
@@ -62,7 +66,11 @@ class QuizService:
         if ignore_interval:
             cards = self.session.exec(select(Card).where(Card.deck_id == deck_id)).all()
         else:
-            cards = self.session.exec(select(Card).where(Card.deck_id == deck_id).where(Card.next_review <= datetime.now())).all()
+            cards = self.session.exec(
+                select(Card)
+                .where(Card.deck_id == deck_id)
+                .where(Card.next_review <= datetime.now())
+            ).all()
         if random_order:
             random.shuffle(cards)
 
@@ -150,17 +158,19 @@ class QuizService:
         # get the card
         card = self.session.get(Card, card_id)
 
-        # growth of card
-        ease_factor = card.ease_factor
+        # growth of card — use defaults if null (old cards before SM-2 was added)
+        ease_factor = card.ease_factor or 1.3
 
         # streak
-        repetition_count = card.repetition_count
+        repetition_count = card.repetition_count or 0
 
         # card scheduling
-        day_interval = card.day_interval
+        day_interval = card.day_interval or 0
 
         # update ease factor
-        ease_factor = ease_factor + (0.1 - (5 - user_rating) * (0.08 + (5 - user_rating) * 0.02))
+        ease_factor = ease_factor + (
+            0.1 - (5 - user_rating) * (0.08 + (5 - user_rating) * 0.02)
+        )
         ease_factor = max(1.3, ease_factor)
 
         if user_rating >= 3:
@@ -173,9 +183,7 @@ class QuizService:
                 day_interval = round(day_interval * ease_factor)
             repetition_count += 1
         else:
-            # incorrect
-
-            # reset the rep count
+            # incorrect — reset the rep count
             repetition_count = 0
             day_interval = 1
 
@@ -186,7 +194,3 @@ class QuizService:
 
         self.session.add(card)
         self.session.commit()
-
-
-
-        

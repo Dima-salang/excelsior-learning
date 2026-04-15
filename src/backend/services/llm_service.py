@@ -19,7 +19,7 @@ from google import genai
 from datetime import datetime
 from models.card import Card, CardList
 from models.llm_provider import PromptManager
-from models.lecture import LectureStepPublic, LectureStepListPublic
+from models.lecture import LectureStepPublic
 import requests
 import litellm
 import logging
@@ -369,7 +369,10 @@ class LLMService:
             if hasattr(data, "flashcards") and data.flashcards:
                 self.save_step_cards(step_id, data.flashcards)
 
-            return LectureStepListPublic.model_validate(step)
+            # Refresh the step so that step.cards is populated with the newly created flashcards
+            self.session.refresh(step)
+
+            return step
         except Exception as e:
             logger.error(f"Error generating step content: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
