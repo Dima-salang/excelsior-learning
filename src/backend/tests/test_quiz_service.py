@@ -197,7 +197,7 @@ def test_update_card_interval(quiz_service: QuizService, setup_data, session: Se
     ease_factor = max(1.3, ease_factor)
 
     # update the interval status for review
-    quiz_service.update_card_interval(quiz_card.id, user_rating)
+    quiz_service.update_card_interval(quiz_card.card_id, user_rating)
 
     # verify the card's interval status
     assert original_card.ease_factor == ease_factor

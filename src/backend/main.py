@@ -1,4 +1,6 @@
 import os
+import logging
+import traceback
 
 try:
     from dotenv import load_dotenv
@@ -7,9 +9,11 @@ try:
 except ImportError:
     pass
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.responses import JSONResponse
+from fastapi import HTTPException
 from alembic.config import Config
 from alembic import command
 from api.llm import router as llm_router
@@ -21,21 +25,45 @@ from typing import Annotated
 from db.engine import engine
 from core.logging_config import setup_logging
 
-# Setup structured logging
 setup_logging()
+logger = logging.getLogger("excelsior")
 
 app = FastAPI(
     title="Excelsior Learning", description="AI-powered lectures and flashcards"
 )
 
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    logger.warning(f"HTTP {exc.status_code} on {request.url.path}: {exc.detail}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(
+        f"Unhandled exception on {request.url.path}:\n"
+        f"  Type: {type(exc).__name__}\n"
+        f"  Message: {str(exc)}\n"
+        f"  Traceback: {traceback.format_exc()}"
+    )
+    debug_mode = os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": f"{type(exc).__name__}: {str(exc)}"
+            if debug_mode
+            else "Internal server error"
+        },
+    )
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:4173",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:4173",
-    ],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):(5173|4173|3000)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,7 +71,6 @@ app.add_middleware(
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
-# Register routers
 app.include_router(llm_router)
 app.include_router(auth_router)
 app.include_router(lectures_router)
@@ -63,8 +90,9 @@ async def dashboard(token: Annotated[str, Depends(oauth2_scheme)]):
 
 @app.on_event("startup")
 def on_startup():
-    # Run migrations on startup using the app's engine to avoid locks
+    logger.info("Starting Excelsior Learning API...")
     alembic_cfg = Config("alembic.ini")
     with engine.begin() as connection:
         alembic_cfg.attributes["connection"] = connection
         command.upgrade(alembic_cfg, "head")
+    logger.info("Database migrations complete")
