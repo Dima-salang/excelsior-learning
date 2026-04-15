@@ -35,10 +35,10 @@ class CardBase(SQLModel):
     status: Optional[CardStatus] = Field(default=CardStatus.UNANSWERED)
 
     # sm-2
-    repetition_count: int = Field(default=0)
-    ease_factor: float = Field(default=1.3)
-    day_interval: int = Field(default=1)
-    next_review: datetime = Field(default_factory=datetime.now)
+    repetition_count: int = Field(default=0, nullable=True)
+    ease_factor: float = Field(default=1.3, nullable=True)
+    day_interval: int = Field(default=1, nullable=True)
+    next_review: datetime = Field(default_factory=datetime.now, nullable=True)
 
 
 class Card(CardBase, table=True):
