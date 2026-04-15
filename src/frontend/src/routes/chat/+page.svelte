@@ -278,7 +278,7 @@
 					bind:value={selectedLectureId}
 					class="h-10 w-56 cursor-pointer appearance-none rounded-xl border border-border bg-secondary px-3 pr-8 text-[10px] font-bold text-foreground shadow-lg transition-all outline-none focus:ring-1 focus:ring-primary"
 				>
-					<option value={null} class="bg-card text-foreground">No lecture context</option>
+					<option value={null} class="bg-card text-foreground">No course selected</option>
 					{#each lectures as lecture}
 						<option value={lecture.id} class="bg-card text-foreground">{lecture.title}</option>
 					{/each}
@@ -453,7 +453,7 @@
 					bind:value={selectedLectureId}
 					class="h-9 w-full cursor-pointer appearance-none rounded-lg border border-border bg-secondary px-3 text-[10px] font-bold text-foreground outline-none"
 				>
-					<option value={null}>No lecture context</option>
+					<option value={null}>No course selected</option>
 					{#each lectures as lecture}
 						<option value={lecture.id}>{lecture.title}</option>
 					{/each}

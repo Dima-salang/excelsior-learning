@@ -132,7 +132,7 @@
 					class="flex items-center gap-3 text-[10px] font-black tracking-[0.4em] text-indigo-400 uppercase"
 				>
 					<Sparkles class="h-4 w-4" />
-					<span>Synthesis Engine</span>
+					<span>Flashcard Generator</span>
 				</div>
 				<h1
 					class="font-unbounded text-5xl leading-tight font-black tracking-tighter text-white uppercase md:text-7xl"
@@ -143,8 +143,8 @@
 					>
 				</h1>
 				<p class="max-w-2xl font-sans text-xl leading-relaxed text-muted-foreground italic">
-					Transform any topic or concept into high-fidelity study modules. Select your model,
-					calibrate the difficulty, and manifest your knowledge.
+					Create study flashcards from any topic. Select your AI model, choose difficulty, and
+					generate cards to test your knowledge.
 				</p>
 			</div>
 
@@ -166,7 +166,7 @@
 					<BrainCircuit class="absolute inset-0 m-auto h-8 w-8 animate-pulse text-indigo-400" />
 				</div>
 				<p class="font-sans tracking-widest text-muted-foreground uppercase italic">
-					Aligning Neural Matrices...
+					Preparing generator...
 				</p>
 			</div>
 		{:else}
@@ -191,12 +191,12 @@
 								<Label
 									class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-slate-500 uppercase"
 								>
-									<Target class="h-4 w-4 text-indigo-400" /> Topic of Manifestation
+									<Target class="h-4 w-4 text-indigo-400" /> Topic
 								</Label>
 								<textarea
 									bind:value={prompt}
 									required
-									placeholder="e.g. 'Photosynthesis in deep-sea organisms' or 'The rise and fall of the Roman Empire'..."
+									placeholder="e.g. 'Photosynthesis' or 'World War II timeline'..."
 									class="min-h-[200px] w-full resize-none rounded-[2.5rem] border border-white/5 bg-slate-900/40 p-10 font-sans text-2xl text-white italic transition-all outline-none placeholder:text-slate-700 focus:bg-slate-900/60 focus:ring-2 focus:ring-indigo-500"
 								></textarea>
 							</div>
@@ -207,7 +207,7 @@
 									<Label
 										class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-slate-500 uppercase"
 									>
-										<Zap class="h-4 w-4 text-cyan-400" /> Intelligence Provider
+										<Zap class="h-4 w-4 text-cyan-400" /> AI Model
 									</Label>
 									<div class="relative">
 										<select
@@ -261,7 +261,7 @@
 									<Label
 										class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-slate-500 uppercase"
 									>
-										<Infinity class="h-4 w-4 text-amber-400" /> Card Quantity
+										<Infinity class="h-4 w-4 text-amber-400" /> Number of Cards
 									</Label>
 									<div class="flex items-center gap-6">
 										<input
@@ -285,7 +285,7 @@
 									<Label
 										class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-slate-500 uppercase"
 									>
-										<Trophy class="h-4 w-4 text-red-400" /> Difficulty Calibration
+										<Trophy class="h-4 w-4 text-red-400" /> Difficulty
 									</Label>
 									<div class="grid grid-cols-3 gap-3">
 										{#each ['easy', 'normal', 'hard'] as level}
@@ -313,12 +313,12 @@
 									{#if isGenerating}
 										<div class="flex items-center gap-4">
 											<Loader2 class="h-8 w-8 animate-spin" />
-											<span>Synthesizing Nodes...</span>
+											<span>Creating Flashcards...</span>
 										</div>
 									{:else}
 										<div class="flex items-center gap-4">
 											<Sparkles class="h-6 w-6" />
-											<span>Initialize Synthesis</span>
+											<span>Generate Flashcards</span>
 										</div>
 									{/if}
 								</Button>

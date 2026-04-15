@@ -159,7 +159,7 @@
 			resetForm();
 			setTimeout(() => (successMessage = ''), 3000);
 		} catch (err: any) {
-			error = err.message || 'Failed to save AI model. Check your settings.';
+			error = err.message || 'Failed to load AI models.';
 		} finally {
 			isSubmitting = false;
 		}
@@ -301,7 +301,7 @@
 								>{editingProviderId ? 'Edit Model' : 'New AI Model'}</Card.Title
 							>
 							<Card.Description class="font-sans text-lg text-muted-foreground opacity-70"
-								>Configure access to an AI service provider.</Card.Description
+								>Connect your preferred AI provider.</Card.Description
 							>
 						</div>
 					</div>

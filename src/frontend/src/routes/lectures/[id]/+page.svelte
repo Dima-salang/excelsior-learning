@@ -64,7 +64,7 @@
 		try {
 			const sectionData = await apiFetch(`/lectures/${lectureId}/sections`);
 			const sectionList = Array.isArray(sectionData) ? sectionData : [];
-			
+
 			const sectionsWithSteps = await Promise.all(
 				sectionList.map(async (section: Section) => {
 					try {
@@ -157,7 +157,7 @@
 						class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-indigo-400 uppercase"
 					>
 						<Layers class="h-4 w-4" />
-						<span>Lecture Outline</span>
+						<span>Course Content</span>
 					</div>
 					<h1
 						class="font-unbounded text-4xl leading-tight font-black tracking-tighter text-white uppercase md:text-6xl"

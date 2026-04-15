@@ -122,27 +122,33 @@
 </script>
 
 <div class="container mx-auto max-w-7xl space-y-12 p-6 lg:p-12">
-
 	<!-- Main Header -->
 	<header class="relative space-y-6 pt-4" in:fade={{ duration: 1000 }}>
-		<div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
+		<div class="flex flex-col justify-between gap-8 md:flex-row md:items-end">
 			<div class="max-w-3xl space-y-4">
-				<div class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-cyan-400 uppercase">
+				<div
+					class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-cyan-400 uppercase"
+				>
 					<LayoutDashboard class="h-4 w-4" />
-					<span>Learning Overview</span>
+					<span>Your Courses</span>
 				</div>
-				<h1 class="font-unbounded text-4xl md:text-6xl font-black tracking-tighter text-white leading-none uppercase">
-					Your <span class="bg-gradient-to-r from-indigo-500 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">Courses</span>
+				<h1
+					class="font-unbounded text-4xl leading-none font-black tracking-tighter text-white uppercase md:text-6xl"
+				>
+					Your <span
+						class="bg-gradient-to-r from-indigo-500 via-cyan-400 to-emerald-400 bg-clip-text text-transparent"
+						>Learning</span
+					>
 				</h1>
-				<p class="font-sans text-lg text-slate-400 leading-relaxed max-w-2xl opacity-80">
-					Manage your AI-generated lectures and continue your learning journey.
+				<p class="max-w-2xl font-sans text-lg leading-relaxed text-slate-400 opacity-80">
+					Continue your courses or create a new one to start learning.
 				</p>
 			</div>
-			
+
 			<Button
 				onclick={() => (showGenerator = !showGenerator)}
-				variant={showGenerator ? "outline" : "default"}
-				class="h-16 px-10 rounded-2xl font-black tracking-widest uppercase transition-all shadow-lg hover:-translate-y-1 flex items-center gap-3"
+				variant={showGenerator ? 'outline' : 'default'}
+				class="flex h-16 items-center gap-3 rounded-2xl px-10 font-black tracking-widest uppercase shadow-lg transition-all hover:-translate-y-1"
 			>
 				{#if showGenerator}
 					<Plus class="h-5 w-5 rotate-45 transition-transform" />
@@ -155,83 +161,112 @@
 		</div>
 
 		<!-- Background Blur Decor -->
-		<div class="absolute -top-24 -left-20 -z-10 h-64 w-64 rounded-full bg-indigo-500/10 blur-[100px]"></div>
+		<div
+			class="absolute -top-24 -left-20 -z-10 h-64 w-64 rounded-full bg-indigo-500/10 blur-[100px]"
+		></div>
 	</header>
 
 	{#if showGenerator}
-		<section in:fly={{ y: 20, duration: 600 }} class="relative max-w-4xl mx-auto">
-			<Card.Root class="overflow-hidden rounded-[2.5rem] border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl ring-1 ring-white/10">
-				<Card.Header class="p-10 border-b border-white/5 bg-white/2">
+		<section in:fly={{ y: 20, duration: 600 }} class="relative mx-auto max-w-4xl">
+			<Card.Root
+				class="overflow-hidden rounded-[2.5rem] border-white/10 bg-slate-900/40 shadow-2xl ring-1 ring-white/10 backdrop-blur-3xl"
+			>
+				<Card.Header class="border-b border-white/5 bg-white/2 p-10">
 					<div class="flex items-center gap-4">
-						<div class="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20">
+						<div class="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 p-3">
 							<Sparkles class="h-6 w-6 text-indigo-400" />
 						</div>
 						<div>
-							<Card.Title class="font-syne text-3xl font-black text-white uppercase">Generate Lecture</Card.Title>
-							<Card.Description class="font-serif text-lg text-slate-400 italic">Describe what you want to learn today.</Card.Description>
+							<Card.Title class="font-syne text-3xl font-black text-white uppercase"
+								>Create Course</Card.Title
+							>
+							<Card.Description class="font-serif text-lg text-slate-400 italic"
+								>Describe what you want to learn about.</Card.Description
+							>
 						</div>
 					</div>
 				</Card.Header>
-				
-				<Card.Content class="p-10 space-y-8">
+
+				<Card.Content class="space-y-8 p-10">
 					{#if error}
-						<div class="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-bold flex items-center gap-3" in:fade>
-							<div class="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></div>
+						<div
+							class="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm font-bold text-red-400"
+							in:fade
+						>
+							<div class="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500"></div>
 							{error}
 						</div>
 					{/if}
 
 					{#if providers.length === 0}
-						<div class="p-10 rounded-3xl border border-dashed border-white/10 bg-white/2 text-center space-y-6">
-							<Cpu class="h-12 w-12 text-slate-600 mx-auto" />
+						<div
+							class="space-y-6 rounded-3xl border border-dashed border-white/10 bg-white/2 p-10 text-center"
+						>
+							<Cpu class="mx-auto h-12 w-12 text-slate-600" />
 							<div class="space-y-2">
 								<h3 class="text-xl font-bold text-white">No AI Models Detected</h3>
-								<p class="text-slate-500 font-serif italic">You need to add at least one AI model provider to generate lectures.</p>
+								<p class="font-serif text-slate-500 italic">
+									You need to add at least one AI model provider to generate lectures.
+								</p>
 							</div>
-							<Button onclick={() => goto('/providers')} variant="outline" class="rounded-xl border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/10">
+							<Button
+								onclick={() => goto('/providers')}
+								variant="outline"
+								class="rounded-xl border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/10"
+							>
 								Manage AI Models
 							</Button>
 						</div>
 					{:else}
 						<form onsubmit={handleGenerate} class="space-y-8">
 							<div class="space-y-3">
-								<Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Learning Topic</Label>
-								<textarea 
+								<Label
+									class="ml-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+									>Learning Topic</Label
+								>
+								<textarea
 									bind:value={prompt}
 									required
 									placeholder="e.g. Introduction to Quantum Computing, or History of the Roman Empire..."
-									class="w-full min-h-[150px] p-6 rounded-2xl bg-slate-900 border border-border text-white font-sans text-lg focus:ring-2 focus:ring-primary outline-none transition-all resize-none shadow-xl"
+									class="min-h-[150px] w-full resize-none rounded-2xl border border-border bg-slate-900 p-6 font-sans text-lg text-white shadow-xl transition-all outline-none focus:ring-2 focus:ring-primary"
 								></textarea>
 							</div>
 
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+							<div class="grid grid-cols-1 items-end gap-8 md:grid-cols-2">
 								<div class="space-y-3">
-									<Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">AI Model Provider</Label>
+									<Label
+										class="ml-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+										>AI Model</Label
+									>
 									<div class="relative">
-										<select 
+										<select
 											bind:value={settings.selectedProviderId}
 											onchange={() => settings.setProvider(Number(settings.selectedProviderId))}
-											class="w-full h-14 bg-slate-900 border border-border rounded-xl px-4 text-white appearance-none outline-none focus:ring-2 focus:ring-primary shadow-xl"
+											class="h-14 w-full appearance-none rounded-xl border border-border bg-slate-900 px-4 text-white shadow-xl outline-none focus:ring-2 focus:ring-primary"
 										>
 											{#each providers as provider}
-												<option value={provider.id} class="bg-slate-900 text-white">{provider.provider_name} — {provider.model_name}</option>
+												<option value={provider.id} class="bg-slate-900 text-white"
+													>{provider.provider_name} — {provider.model_name}</option
+												>
 											{/each}
 										</select>
-										<ChevronRight class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rotate-90 pointer-events-none" />
+										<ChevronRight
+											class="pointer-events-none absolute top-1/2 right-4 h-4 w-4 -translate-y-1/2 rotate-90 text-muted-foreground"
+										/>
 									</div>
 								</div>
-								
-								<Button 
-									type="submit" 
+
+								<Button
+									type="submit"
 									variant="default"
 									disabled={isGenerating || !prompt}
-									class="h-14 w-full font-black tracking-widest uppercase rounded-xl shadow-lg"
+									class="h-14 w-full rounded-xl font-black tracking-widest uppercase shadow-lg"
 								>
 									{#if isGenerating}
-										<Loader2 class="h-5 w-5 animate-spin mr-2" />
+										<Loader2 class="mr-2 h-5 w-5 animate-spin" />
 										Generating...
 									{:else}
-										<Sparkles class="h-4 w-4 mr-2" />
+										<Sparkles class="mr-2 h-4 w-4" />
 										Generate
 									{/if}
 								</Button>
@@ -247,110 +282,150 @@
 	<section class="space-y-8">
 		<div class="flex items-center justify-between border-b border-white/5 pb-4">
 			<div class="flex items-center gap-3">
-				<div class="p-2 rounded-lg bg-indigo-500/10">
+				<div class="rounded-lg bg-indigo-500/10 p-2">
 					<LibraryBig class="h-5 w-5 text-indigo-400" />
 				</div>
-				<h2 class="font-syne text-2xl font-black text-white uppercase tracking-tight">Active Courses</h2>
+				<h2 class="font-syne text-2xl font-black tracking-tight text-white uppercase">
+					Active Courses
+				</h2>
 			</div>
-			<span class="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full">
-				{lectures.length} Total Lectures
+			<span
+				class="rounded-full bg-white/5 px-4 py-2 text-[10px] font-black tracking-widest text-slate-500 uppercase"
+			>
+				{lectures.length} Course{lectures.length === 1 ? '' : 's'}
 			</span>
 		</div>
 
 		{#if isLoading}
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {#each Array(6) as _}
-                    <div class="space-y-4 rounded-[2rem] border border-white/5 bg-slate-950/40 p-8 h-[360px] flex flex-col justify-between">
-                        <div class="space-y-6">
-                            <div class="flex justify-between items-start">
-                                <Skeleton class="h-14 w-14 rounded-2xl" />
-                                <div class="space-y-2 text-right">
-                                    <Skeleton class="h-3 w-16 ml-auto" />
-                                    <Skeleton class="h-6 w-12 ml-auto" />
-                                </div>
-                            </div>
-                            <div class="space-y-3">
-                                <Skeleton class="h-8 w-3/4" />
-                                <Skeleton class="h-4 w-full" />
-                                <Skeleton class="h-4 w-2/3" />
-                            </div>
-                        </div>
-                        <div class="space-y-4">
-                             <Skeleton class="h-1.5 w-full rounded-full" />
-                             <div class="grid grid-cols-2 gap-4 pt-2">
-                                <Skeleton class="h-10 rounded-xl" />
-                                <Skeleton class="h-10 rounded-xl" />
-                             </div>
-                        </div>
-                    </div>
-                {/each}
+			<div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+				{#each Array(6) as _}
+					<div
+						class="flex h-[360px] flex-col justify-between space-y-4 rounded-[2rem] border border-white/5 bg-slate-950/40 p-8"
+					>
+						<div class="space-y-6">
+							<div class="flex items-start justify-between">
+								<Skeleton class="h-14 w-14 rounded-2xl" />
+								<div class="space-y-2 text-right">
+									<Skeleton class="ml-auto h-3 w-16" />
+									<Skeleton class="ml-auto h-6 w-12" />
+								</div>
+							</div>
+							<div class="space-y-3">
+								<Skeleton class="h-8 w-3/4" />
+								<Skeleton class="h-4 w-full" />
+								<Skeleton class="h-4 w-2/3" />
+							</div>
+						</div>
+						<div class="space-y-4">
+							<Skeleton class="h-1.5 w-full rounded-full" />
+							<div class="grid grid-cols-2 gap-4 pt-2">
+								<Skeleton class="h-10 rounded-xl" />
+								<Skeleton class="h-10 rounded-xl" />
+							</div>
+						</div>
+					</div>
+				{/each}
 			</div>
 		{:else if lectures.length === 0}
-			<div class="py-32 text-center space-y-8 bg-slate-900/20 rounded-[3rem] border-2 border-dashed border-white/5" in:scale>
-				<div class="relative w-24 h-24 mx-auto">
-					<div class="absolute inset-0 bg-indigo-500/10 rounded-full blur-2xl animate-pulse"></div>
-					<div class="relative bg-slate-950 rounded-full border border-white/10 p-6">
+			<div
+				class="space-y-8 rounded-[3rem] border-2 border-dashed border-white/5 bg-slate-900/20 py-32 text-center"
+				in:scale
+			>
+				<div class="relative mx-auto h-24 w-24">
+					<div class="absolute inset-0 animate-pulse rounded-full bg-indigo-500/10 blur-2xl"></div>
+					<div class="relative rounded-full border border-white/10 bg-slate-950 p-6">
 						<BookOpen class="h-12 w-12 text-slate-700" />
 					</div>
 				</div>
-				<div class="max-w-sm mx-auto space-y-4">
+				<div class="mx-auto max-w-sm space-y-4">
 					<h3 class="text-2xl font-bold text-white uppercase">Your Library is Empty</h3>
-					<p class="text-slate-500 font-serif italic">Use the button above to generate your first AI-powered lecture.</p>
+					<p class="font-serif text-slate-500 italic">
+						Use the button above to generate your first AI-powered lecture.
+					</p>
 				</div>
-				<Button 
-					onclick={() => showGenerator = true}
-					variant="outline" 
-					class="rounded-xl border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/10 px-8"
+				<Button
+					onclick={() => (showGenerator = true)}
+					variant="outline"
+					class="rounded-xl border-indigo-500/50 px-8 text-indigo-400 hover:bg-indigo-500/10"
 				>
 					Start Learning
 				</Button>
 			</div>
 		{:else}
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+			<div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
 				{#each lectures as lecture, i (lecture.id)}
 					<div in:fly={{ y: 20, delay: i * 100 }} class="group">
-						<Card.Root 
+						<Card.Root
 							onclick={() => goto(`/lectures/${lecture.id}`)}
-							class="h-full cursor-pointer rounded-[2rem] border-border bg-card/40 hover:bg-muted/60 hover:border-primary/30 transition-all duration-500 overflow-hidden shadow-xl ring-1 ring-border/20"
+							class="h-full cursor-pointer overflow-hidden rounded-[2rem] border-border bg-card/40 shadow-xl ring-1 ring-border/20 transition-all duration-500 hover:border-primary/30 hover:bg-muted/60"
 						>
 							<Card.Header class="p-8 pb-4">
-								<div class="flex items-start justify-between mb-6">
-									<div class="p-4 rounded-2xl bg-indigo-500/10 group-hover:scale-110 transition-transform">
+								<div class="mb-6 flex items-start justify-between">
+									<div
+										class="rounded-2xl bg-indigo-500/10 p-4 transition-transform group-hover:scale-110"
+									>
 										<BookOpen class="h-6 w-6 text-indigo-400" />
 									</div>
 									<div class="text-right">
-										<span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Progress</span>
-										<div class="font-syne text-xl font-black text-white">{Math.round(lecture.completion_percentage)}%</div>
+										<span class="text-[9px] font-black tracking-widest text-slate-500 uppercase"
+											>Progress</span
+										>
+										<div class="font-syne text-xl font-black text-white">
+											{Math.round(lecture.completion_percentage)}%
+										</div>
 									</div>
 								</div>
 								<div class="space-y-3">
-									<Card.Title class="font-syne text-2xl font-black text-white leading-tight mt-2">{lecture.title}</Card.Title>
-									<p class="text-slate-500 font-serif italic line-clamp-2 text-base leading-relaxed">
+									<Card.Title class="font-syne mt-2 text-2xl leading-tight font-black text-white"
+										>{lecture.title}</Card.Title
+									>
+									<p
+										class="line-clamp-2 font-serif text-base leading-relaxed text-slate-500 italic"
+									>
 										{lecture.description || 'No description available for this course.'}
 									</p>
 								</div>
 							</Card.Header>
 
-							<Card.Content class="p-8 pt-4 space-y-6">
-								<div class="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-									<div class="h-full bg-primary transition-all duration-1000" style="width: {lecture.completion_percentage}%"></div>
+							<Card.Content class="space-y-6 p-8 pt-4">
+								<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+									<div
+										class="h-full bg-primary transition-all duration-1000"
+										style="width: {lecture.completion_percentage}%"
+									></div>
 								</div>
 
 								<div class="grid grid-cols-2 gap-4">
-									<div class="p-3 bg-muted/30 rounded-xl border border-border">
-										<span class="text-[8px] font-black text-muted-foreground tracking-widest uppercase block mb-1">Created</span>
-										<span class="text-xs font-bold text-foreground/70">{formatDate(lecture.created_at)}</span>
+									<div class="rounded-xl border border-border bg-muted/30 p-3">
+										<span
+											class="mb-1 block text-[8px] font-black tracking-widest text-muted-foreground uppercase"
+											>Created</span
+										>
+										<span class="text-xs font-bold text-foreground/70"
+											>{formatDate(lecture.created_at)}</span
+										>
 									</div>
-									<div class="p-3 bg-muted/30 rounded-xl border border-border">
-										<span class="text-[8px] font-black text-muted-foreground tracking-widest uppercase block mb-1">Last seen</span>
-										<span class="text-xs font-bold text-foreground/70">{formatDate(lecture.last_accessed_at)}</span>
+									<div class="rounded-xl border border-border bg-muted/30 p-3">
+										<span
+											class="mb-1 block text-[8px] font-black tracking-widest text-muted-foreground uppercase"
+											>Last seen</span
+										>
+										<span class="text-xs font-bold text-foreground/70"
+											>{formatDate(lecture.last_accessed_at)}</span
+										>
 									</div>
 								</div>
 							</Card.Content>
 
-							<Card.Footer class="p-6 bg-muted/30 border-t border-border flex items-center justify-between">
-								<span class="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Open Course</span>
-								<ArrowRight class="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+							<Card.Footer
+								class="flex items-center justify-between border-t border-border bg-muted/30 p-6"
+							>
+								<span class="text-[10px] font-black tracking-[0.2em] text-primary uppercase"
+									>Open Course</span
+								>
+								<ArrowRight
+									class="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1"
+								/>
 							</Card.Footer>
 						</Card.Root>
 					</div>

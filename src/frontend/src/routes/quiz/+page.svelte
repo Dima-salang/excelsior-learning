@@ -36,7 +36,7 @@
 			const response = await apiFetch('/quiz/');
 			quizzes = response;
 		} catch (err: any) {
-			error = err.message || 'Failed to load evaluation history.';
+			error = err.message || 'Failed to load quiz history.';
 		} finally {
 			isLoading = false;
 		}
@@ -122,7 +122,7 @@
 					<Loader2 class="relative z-10 h-16 w-16 animate-spin text-primary" />
 				</div>
 				<p class="font-sans text-sm tracking-widest text-muted-foreground uppercase italic">
-					Accessing Quiz History...
+					Loading quizzes...
 				</p>
 			</div>
 		{:else if error}
@@ -190,7 +190,7 @@
 										<span
 											class="flex items-center gap-1.5 text-[10px] font-black tracking-wider text-primary/70 uppercase"
 										>
-											Quiz #{quiz.id}
+											{quiz.deck_title}
 										</span>
 									</div>
 								</div>

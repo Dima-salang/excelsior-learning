@@ -159,19 +159,18 @@
 				class="ml-1 flex items-center gap-3 text-[10px] font-bold tracking-[0.3em] text-cyan-400 uppercase"
 			>
 				<LayoutDashboard class="h-4 w-4" />
-				<span>Central Intelligence Hub</span>
+				<span>Your Dashboard</span>
 			</div>
 			<h1
 				class="font-syne text-6xl leading-none font-black tracking-tighter text-white select-none md:text-8xl"
 			>
-				Academy <span
+				Learning <span
 					class="bg-gradient-to-br from-indigo-500 via-cyan-400 to-emerald-400 bg-clip-text text-transparent"
-					>Nexus</span
+					>Center</span
 				>
 			</h1>
 			<p class="font-serif text-xl leading-relaxed text-slate-500 italic">
-				Welcome back, scholar. Your cognitive blueprints are synchronized. Continue your ascent or
-				initialize a new path of discovery.
+				Welcome back! Continue your courses or create a new one to start learning.
 			</p>
 		</div>
 
@@ -181,7 +180,7 @@
 		>
 			{#if showGenerator}
 				<ChevronRight class="group-rotate-90 h-5 w-5 transition-transform" />
-				Close Conduit
+				Cancel
 			{:else}
 				<Plus class="h-5 w-5" />
 				Generate Lecture
@@ -208,10 +207,10 @@
 						</div>
 						<div>
 							<Card.Title class="font-syne text-3xl font-black text-white"
-								>Neural Manifestation</Card.Title
+								>Create New Lecture</Card.Title
 							>
 							<Card.Description class="font-serif text-lg text-slate-400 italic">
-								Articulate your prompt. The synthetic nodes will craft your curriculum.
+								Describe what topic you want to learn about.
 							</Card.Description>
 						</div>
 					</div>
@@ -233,14 +232,14 @@
 							class="space-y-4 rounded-[2rem] border border-amber-500/20 bg-amber-500/5 p-8 text-amber-400/80"
 						>
 							<p class="font-serif text-lg italic">
-								No intelligence nodes detected. You must establish a neural link before generation.
+								No AI models configured. Add a model first to start creating lectures.
 							</p>
 							<Button
 								variant="outline"
 								onclick={() => goto('/providers')}
 								class="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
 							>
-								Configure Providers
+								Add AI Model
 							</Button>
 						</div>
 					{:else}
@@ -249,11 +248,11 @@
 								<Label
 									class="ml-1 flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase"
 								>
-									<Target class="h-3 w-3" /> Cognitive Objective
+									<Target class="h-3 w-3" /> Learning Topic
 								</Label>
 								<textarea
 									bind:value={prompt}
-									placeholder="Describe the lecture topic in detail (e.g. 'Advanced Quantum Mechanics and the Wave-Particle Duality')..."
+									placeholder="Describe the lecture topic in detail (e.g. 'Introduction to Quantum Mechanics')..."
 									required
 									class="min-h-[160px] w-full resize-none rounded-3xl border border-white/5 bg-slate-900/50 p-8 font-serif text-xl text-white italic transition-all outline-none placeholder:text-slate-600 focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500"
 								></textarea>
@@ -264,7 +263,7 @@
 									<Label
 										class="ml-1 flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase"
 									>
-										<Zap class="h-3 w-3" /> Intelligence Source
+										<Zap class="h-3 w-3" /> AI Model
 									</Label>
 									<select
 										bind:value={selectedProviderId}
@@ -285,10 +284,10 @@
 								>
 									{#if isGenerating}
 										<Loader2 class="h-6 w-6 animate-spin" />
-										Manifesting Knowledge...
+										Creating...
 									{:else}
 										<Sparkles class="h-5 w-5" />
-										Initialize Generation
+										Generate Lecture
 									{/if}
 								</Button>
 							</div>
@@ -310,17 +309,17 @@
 				</div>
 				<div>
 					<h2 class="font-syne text-3xl font-black tracking-tight text-white uppercase">
-						Active Curriculums
+						Your Courses
 					</h2>
 					<p class="font-serif text-base text-slate-500 italic">
-						Your personalized path to mastery.
+						Continue learning where you left off.
 					</p>
 				</div>
 			</div>
 			<div
 				class="rounded-full border border-white/10 bg-white/5 px-6 py-2 text-[10px] font-black tracking-[0.3em] text-indigo-400 uppercase backdrop-blur-md"
 			>
-				{lectures.length} Total Path{lectures.length === 1 ? '' : 's'}
+				{lectures.length} Course{lectures.length === 1 ? '' : 's'}
 			</div>
 		</div>
 
@@ -337,11 +336,9 @@
 				</div>
 				<div class="space-y-2 text-center">
 					<p class="font-syne text-xl font-black tracking-widest text-white uppercase">
-						Synchronizing Nexus
+						Loading Courses
 					</p>
-					<p class="font-serif text-slate-500 italic">
-						Retrieving cognitive blueprints from secure storage...
-					</p>
+					<p class="font-serif text-slate-500 italic">Retrieving your learning data...</p>
 				</div>
 			</div>
 		{:else if lectures.length === 0}
@@ -363,10 +360,10 @@
 				</div>
 				<div class="max-w-sm space-y-4 px-6 text-center">
 					<h3 class="font-syne text-3xl font-black tracking-tight text-white uppercase">
-						The Library is Silent
+						No Courses Yet
 					</h3>
 					<p class="font-serif text-lg leading-relaxed text-slate-500 italic">
-						No active curriculums found. Use the power of synthesis to create your first lecture.
+						Start by creating your first course with AI.
 					</p>
 				</div>
 				<Button
@@ -374,7 +371,7 @@
 					onclick={() => (showGenerator = true)}
 					class="h-14 rounded-2xl border-indigo-500/50 px-10 font-black tracking-widest text-indigo-400 uppercase transition-all hover:scale-105 hover:bg-indigo-500/10 active:scale-95"
 				>
-					Initialize Discovery
+					Create Your First Course
 				</Button>
 			</div>
 		{:else}
@@ -402,7 +399,7 @@
 									</div>
 									<div class="flex flex-col items-end gap-1">
 										<span class="text-[10px] font-black tracking-widest text-slate-500 uppercase"
-											>Mastery</span
+											>Progress</span
 										>
 										<span class="font-syne text-2xl font-black text-white"
 											>{Math.round(lecture.completion_percentage)}%</span
@@ -437,7 +434,7 @@
 											<div
 												class="flex items-center gap-2 text-[10px] font-black tracking-widest text-slate-500 uppercase"
 											>
-												<Calendar class="h-3 w-3" /> Manifested
+												<Calendar class="h-3 w-3" /> Created
 											</div>
 											<div class="text-xs font-bold text-slate-300">
 												{formatDate(lecture.created_at)}
@@ -447,7 +444,7 @@
 											<div
 												class="flex items-center gap-2 text-[10px] font-black tracking-widest text-slate-500 uppercase"
 											>
-												<Clock class="h-3 w-3" /> Last Access
+												<Clock class="h-3 w-3" /> Last accessed
 											</div>
 											<div class="text-xs font-bold text-slate-300">
 												{formatDate(lecture.last_accessed_at)}
@@ -460,7 +457,7 @@
 							<Card.Footer class="border-t border-white/5 bg-white/[0.02] p-8">
 								<div class="group/btn flex w-full items-center justify-between">
 									<span class="text-[10px] font-black tracking-[0.3em] text-indigo-400 uppercase"
-										>Resynchronize Path</span
+										>Continue Learning</span
 									>
 									<div
 										class="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-all group-hover/btn:bg-white group-hover/btn:text-slate-950"
