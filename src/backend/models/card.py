@@ -37,7 +37,7 @@ class CardBase(SQLModel):
     # sm-2
     repetition_count: Optional[int] = Field(default=0, nullable=True)
     ease_factor: Optional[float] = Field(default=1.3, nullable=True)
-    day_interval: Optional[int] = Field(default=1, nullable=True)
+    day_interval: Optional[int] = Field(default=0, nullable=True)
     next_review: Optional[datetime] = Field(default_factory=datetime.now, nullable=True)
 
 
