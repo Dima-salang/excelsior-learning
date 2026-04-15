@@ -48,14 +48,13 @@
 	let currentIndex = $state(0);
 	let currentCard = $derived(allCards[currentIndex] || null);
 
-	let isLoading = $state(true);
+	let isLoading = $state(false);
 	let error = $state('');
 	let quizStarted = $state(false);
 	let quizFinished = $state(false);
-	let showSetupScreen = $state(true);
 
 	let randomOrder = $state(true);
-	let ignoreInterval = $state(false);
+	let ignoreInterval = $state(true);
 	let numFlashcards = $state(10);
 	let pendingAnswer = $state<{ isCorrect: boolean; selectedIdx: number } | null>(null);
 	let pendingRating = $state<number | null>(null);
@@ -69,6 +68,7 @@
 	let timerInterval = $state<number | null>(null);
 
 	async function startQuiz() {
+		error = '';
 		try {
 			isLoading = true;
 			const response = await apiFetch(
@@ -81,14 +81,13 @@
 				answeredIndices = new Array(allCards.length).fill(false);
 				currentIndex = 0;
 				quizStarted = true;
-				showSetupScreen = false;
 				startTime = Date.now();
 				startTimer();
 			} else {
-				error = 'No flashcards available in this node.';
+				error = 'No cards are due for review. Enable "Include All Cards" to study anyway.';
 			}
 		} catch (err: any) {
-			error = err.message || 'Connection failed to initialize.';
+			error = err.message || 'Failed to start quiz. Please try again.';
 		} finally {
 			isLoading = false;
 		}
@@ -182,9 +181,10 @@
 	<title>Quiz — Excelsior</title>
 </svelte:head>
 
-	<div class="min-h-[calc(100vh-64px)] w-full text-foreground selection:bg-primary/30">
+<div class="min-h-[calc(100vh-64px)] w-full text-foreground selection:bg-primary/30">
 	<div class="relative z-10 container mx-auto max-w-4xl px-6 py-12 md:py-20">
-		{#if showSetupScreen && !quizStarted}
+		{#if !quizStarted && !quizFinished}
+			<!-- Setup Screen -->
 			<div class="space-y-12" in:fade>
 				<header class="space-y-6 text-center">
 					<div class="relative inline-block">
@@ -207,58 +207,147 @@
 
 				<div class="rounded-[2.5rem] border border-border bg-card/50 p-8 backdrop-blur-xl">
 					<div class="space-y-8">
+						<!-- Card count slider -->
 						<div class="space-y-4">
-							<label class="flex items-center gap-3">
-								<span class="text-[10px] font-black tracking-widest uppercase text-muted-foreground">Number of Cards</span>
-							</label>
+							<div class="flex items-center justify-between">
+								<label for="num-cards" class="flex flex-col gap-1">
+									<span
+										class="text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+										>Number of Cards</span
+									>
+									<span class="text-xs text-muted-foreground"
+										>How many flashcards to include in this session</span
+									>
+								</label>
+								<span class="font-display text-2xl font-black text-primary">{numFlashcards}</span>
+							</div>
+							<input
+								type="range"
+								min="5"
+								max="50"
+								step="5"
+								bind:value={numFlashcards}
+								id="num-cards"
+								class="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-800 accent-primary"
+							/>
+							<div
+								class="flex justify-between text-[9px] font-black tracking-widest text-muted-foreground uppercase"
+							>
+								<span>5</span>
+								<span>10</span>
+								<span>15</span>
+								<span>20</span>
+								<span>25</span>
+								<span>30</span>
+								<span>35</span>
+								<span>40</span>
+								<span>45</span>
+								<span>50</span>
+							</div>
+						</div>
+
+						<!-- Divider -->
+						<div class="h-px bg-border"></div>
+
+						<!-- Randomize Order toggle -->
+						<div
+							class="flex items-center justify-between rounded-2xl border border-border bg-muted/30 p-5"
+						>
 							<div class="flex items-center gap-4">
-								<input
-									type="range"
-									min="5"
-									max="50"
-									step="5"
-									bind:value={numFlashcards}
-									class="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-slate-800 accent-primary"
-								/>
-								<span class="w-12 text-center font-display text-lg font-black text-primary">{numFlashcards}</span>
-							</div>
-						</div>
-
-						<div class="flex items-center justify-between rounded-2xl border border-border bg-muted/30 p-4">
-							<div class="flex items-center gap-3">
-								<Shuffle class="h-5 w-5 text-primary" />
+								<div
+									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10"
+								>
+									<Shuffle class="h-5 w-5 text-primary" />
+								</div>
 								<div>
-									<span class="block font-display text-sm font-black uppercase">Randomize Order</span>
-									<span class="text-xs text-muted-foreground">Shuffle cards for varied practice</span>
+									<span class="block font-display text-sm font-black uppercase">Shuffle Cards</span>
+									<span class="text-xs text-muted-foreground"
+										>Present cards in a random order each time</span
+									>
 								</div>
 							</div>
+							<!-- Toggle -->
 							<button
-								onclick={() => randomOrder = !randomOrder}
-								class="relative h-6 w-12 rounded-full transition-colors {randomOrder ? 'bg-primary' : 'bg-slate-700'}"
+								type="button"
+								role="switch"
+								aria-checked={randomOrder}
+								onclick={() => (randomOrder = !randomOrder)}
+								class="relative h-7 w-14 shrink-0 overflow-hidden rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none {randomOrder
+									? 'bg-primary'
+									: 'bg-slate-700'}"
 							>
 								<span
-									class="absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform {randomOrder ? 'translate-x-7' : 'translate-x-1'}"
+									class="pointer-events-none absolute top-[3px] left-[3px] h-[22px] w-[22px] rounded-full bg-white shadow-md transition-transform duration-200 {randomOrder
+										? 'translate-x-7'
+										: 'translate-x-0'}"
 								></span>
+								<span class="sr-only">{randomOrder ? 'On' : 'Off'}</span>
 							</button>
 						</div>
 
-						<div class="flex items-center justify-between rounded-2xl border border-border bg-muted/30 p-4">
-							<div class="flex items-center gap-3">
-								<AlertCircle class="h-5 w-5 text-accent" />
+						<!-- Ignore Interval toggle -->
+						<div
+							class="flex items-center justify-between rounded-2xl border border-border bg-muted/30 p-5"
+						>
+							<div class="flex items-center gap-4">
+								<div
+									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10"
+								>
+									<Calendar class="h-5 w-5 text-accent" />
+								</div>
 								<div>
-									<span class="block font-display text-sm font-black uppercase">Ignore Interval</span>
-									<span class="text-xs text-muted-foreground">Include all cards regardless of due date</span>
+									<span class="block font-display text-sm font-black uppercase"
+										>Include All Cards</span
+									>
+									<span class="text-xs text-muted-foreground"
+										>Study all cards now, ignoring the spaced repetition schedule</span
+									>
 								</div>
 							</div>
+							<!-- Toggle -->
 							<button
-								onclick={() => ignoreInterval = !ignoreInterval}
-								class="relative h-6 w-12 rounded-full transition-colors {ignoreInterval ? 'bg-primary' : 'bg-slate-700'}"
+								type="button"
+								role="switch"
+								aria-checked={ignoreInterval}
+								onclick={() => (ignoreInterval = !ignoreInterval)}
+								class="relative h-7 w-14 shrink-0 overflow-hidden rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none {ignoreInterval
+									? 'bg-primary'
+									: 'bg-slate-700'}"
 							>
 								<span
-									class="absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform {ignoreInterval ? 'translate-x-7' : 'translate-x-1'}"
+									class="pointer-events-none absolute top-[3px] left-[3px] h-[22px] w-[22px] rounded-full bg-white shadow-md transition-transform duration-200 {ignoreInterval
+										? 'translate-x-7'
+										: 'translate-x-0'}"
 								></span>
+								<span class="sr-only">{ignoreInterval ? 'On' : 'Off'}</span>
 							</button>
 						</div>
+
+						<!-- Info note about interval -->
+						{#if !ignoreInterval}
+							<div
+								class="flex items-start gap-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-4"
+								in:slide
+							>
+								<AlertCircle class="mt-0.5 h-4 w-4 shrink-0 text-yellow-400" />
+								<p class="text-xs text-yellow-300/80">
+									Only cards that are <strong>due for review</strong> today will appear. If no cards
+									are due, the quiz won't start. Toggle <strong>Include All Cards</strong> to study everything
+									regardless.
+								</p>
+							</div>
+						{/if}
+
+						<!-- Error message inline on setup screen -->
+						{#if error}
+							<div
+								class="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4"
+								in:slide
+							>
+								<XCircle class="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+								<p class="text-sm text-destructive">{error}</p>
+							</div>
+						{/if}
 					</div>
 				</div>
 
@@ -266,10 +355,16 @@
 					<Button
 						size="lg"
 						onclick={() => startQuiz()}
-						class="h-16 rounded-2xl bg-primary px-12 font-black tracking-widest uppercase shadow-[0_0_30px_rgba(var(--color-primary),0.3)] transition-all hover:scale-105"
+						disabled={isLoading}
+						class="h-16 rounded-2xl bg-primary px-12 font-black tracking-widest uppercase shadow-[0_0_30px_rgba(var(--color-primary),0.3)] transition-all hover:scale-105 disabled:opacity-60"
 					>
-						<Sparkles class="mr-3 h-5 w-5" />
-						Start Quiz
+						{#if isLoading}
+							<Loader2 class="mr-3 h-5 w-5 animate-spin" />
+							Starting...
+						{:else}
+							<Sparkles class="mr-3 h-5 w-5" />
+							Start Quiz
+						{/if}
 					</Button>
 					<Button
 						variant="outline"
@@ -277,7 +372,7 @@
 						onclick={() => goto(`/decks/${deckId}`)}
 						class="h-16 rounded-2xl border-border px-10 font-black tracking-widest uppercase hover:bg-card"
 					>
-						<ArrowRight class="mr-3 h-5 w-5" />
+						<ArrowRight class="mr-3 h-5 w-5 rotate-180" />
 						Back to Deck
 					</Button>
 				</div>
@@ -435,15 +530,24 @@
 					<div class="relative z-10 max-w-2xl min-w-0 flex-grow">
 						{#key currentIndex}
 							<div in:fly={{ x: 20, duration: 400 }} out:fade={{ duration: 200 }}>
-								<Flashcard {...currentCard} onAnswered={handleAnswer} showRating={pendingAnswer !== null && pendingRating === null} />
+								<Flashcard
+									{...currentCard}
+									onAnswered={handleAnswer}
+									showRating={pendingAnswer !== null && pendingRating === null}
+								/>
 							</div>
 						{/key}
 					</div>
 
 					{#if pendingAnswer !== null && pendingRating === null}
-						<div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full pt-6" in:scale={{ start: 0.8, duration: 400 }}>
+						<div
+							class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full pt-6"
+							in:scale={{ start: 0.8, duration: 400 }}
+						>
 							<div class="rounded-2xl border border-border bg-card/80 p-6 backdrop-blur-xl">
-								<p class="mb-4 text-center text-xs font-black tracking-widest uppercase text-muted-foreground">
+								<p
+									class="mb-4 text-center text-xs font-black tracking-widest text-muted-foreground uppercase"
+								>
 									How well did you know this?
 								</p>
 								<div class="flex gap-2">
@@ -451,17 +555,31 @@
 										<button
 											onclick={() => submitRating(rating)}
 											disabled={pendingRating !== null}
-											class="flex h-12 w-12 items-center justify-center rounded-xl border font-display text-lg font-black transition-all hover:scale-110 {rating <= 2 ? 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20' : rating === 3 ? 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20' : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}"
+											class="flex h-12 w-12 items-center justify-center rounded-xl border font-display text-lg font-black transition-all hover:scale-110 {rating <=
+											2
+												? 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+												: rating === 3
+													? 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20'
+													: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}"
 										>
 											{rating}
 										</button>
 									{/each}
 								</div>
-								<div class="mt-2 flex justify-between text-[9px] font-black tracking-widest uppercase text-muted-foreground">
+								<div
+									class="mt-3 flex justify-between text-[9px] font-black tracking-widest text-muted-foreground uppercase"
+								>
 									<span>Again</span>
 									<span>Hard</span>
 									<span>Good</span>
 									<span>Easy</span>
+								</div>
+								<div
+									class="mt-2 flex justify-between text-[8px] tracking-widest text-muted-foreground/60"
+								>
+									<span>1–2</span>
+									<span class="text-center">3</span>
+									<span class="text-right">4–5</span>
 								</div>
 							</div>
 						</div>
@@ -484,7 +602,7 @@
 
 				<!-- Floating Action Button - Only appears after answer or at the end -->
 				{#if isCurrentAnswered || currentIndex === totalCards - 1}
-					<div class="mt-12 flex justify-center" in:scale={{ start: 0.8, duration: 400 }}>
+					<div class="mt-12 flex justify-center" in:scale={{ start: 0.5, duration: 400 }}>
 						{#if currentIndex === totalCards - 1}
 							<Button
 								onclick={finishQuiz}
