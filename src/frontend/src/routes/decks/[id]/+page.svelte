@@ -12,7 +12,10 @@
 		RotateCcw,
 		Sparkles,
 		Clock,
-		Loader2
+		Loader2,
+		Calendar,
+		AlertCircle,
+		CalendarClock
 	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import Flashcard from '$lib/components/Flashcard.svelte';
@@ -26,6 +29,11 @@
 		explanation?: string;
 		is_correct?: boolean;
 		user_selected_ans?: number;
+		next_review?: string | null;
+		status?: string;
+		repetition_count?: number;
+		ease_factor?: number;
+		day_interval?: number;
 	}
 
 	interface Deck {
@@ -58,7 +66,6 @@
 
 	async function updateCardMastery(cardId: number, isCorrect: boolean, selectedAns: number) {
 		try {
-			// Update backend via the existing lectures/cards endpoint (which handles general card updates)
 			await apiFetch(`/lectures/cards/${cardId}`, {
 				method: 'PATCH',
 				body: JSON.stringify({
@@ -71,9 +78,37 @@
 		}
 	}
 
+	function formatNextReview(dateStr: string | null | undefined): string {
+		if (!dateStr) return 'Not scheduled';
+		const date = new Date(dateStr);
+		const now = new Date();
+		const diff = date.getTime() - now.getTime();
+		const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+		if (days < 0) return 'Past due';
+		if (days === 0) return 'Due today';
+		if (days === 1) return 'Due tomorrow';
+		return `Due in ${days} days`;
+	}
+
+	function isDue(dateStr: string | null | undefined): boolean {
+		if (!dateStr) return false;
+		const date = new Date(dateStr);
+		return date <= new Date();
+	}
+
+	function isPastDue(dateStr: string | null | undefined): boolean {
+		if (!dateStr) return false;
+		const date = new Date(dateStr);
+		const now = new Date();
+		return date < now;
+	}
+
 	let masteredCount = $derived(deck?.cards.filter((c) => c.is_correct).length || 0);
 	let totalCount = $derived(deck?.cards.length || 0);
 	let progress = $derived(totalCount > 0 ? (masteredCount / totalCount) * 100 : 0);
+	let dueCount = $derived(deck?.cards.filter((c) => isDue(c.next_review)).length || 0);
+	let pastDueCount = $derived(deck?.cards.filter((c) => isPastDue(c.next_review)).length || 0);
 </script>
 
 <svelte:head>
@@ -94,7 +129,7 @@
 			</Button>
 
 			{#if deck}
-				<div class="flex items-center gap-6">
+				<div class="flex flex-wrap items-center gap-6">
 					<div class="flex items-center gap-2">
 						<CheckCircle2 class="h-4 w-4 text-emerald-400" />
 						<span class="text-[10px] font-black tracking-widest text-emerald-400 uppercase">
@@ -107,6 +142,22 @@
 							style="width: {progress}%"
 						></div>
 					</div>
+					{#if pastDueCount > 0}
+						<div class="flex items-center gap-2">
+							<AlertCircle class="h-4 w-4 text-red-400" />
+							<span class="text-[10px] font-black tracking-widest text-red-400 uppercase">
+								{pastDueCount} Past Due
+							</span>
+						</div>
+					{/if}
+					{#if dueCount > 0}
+						<div class="flex items-center gap-2">
+							<CalendarClock class="h-4 w-4 text-yellow-400" />
+							<span class="text-[10px] font-black tracking-widest text-yellow-400 uppercase">
+								{dueCount} Due
+							</span>
+						</div>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -165,12 +216,52 @@
 				</div>
 			</header>
 
-			<!-- Flashcards Grid -->
-			<div class="space-y-12">
+			<!-- Due Cards Section -->
+			{#if dueCount > 0}
+				<div class="space-y-8">
+					<div class="flex items-center gap-4">
+						<div class="h-px flex-grow bg-yellow-500/30"></div>
+						<span class="flex items-center gap-2 text-[10px] font-black tracking-[0.4em] text-yellow-400 uppercase">
+							<AlertCircle class="h-4 w-4" />
+							Due for Review
+						</span>
+						<div class="h-px flex-grow bg-yellow-500/30"></div>
+					</div>
+
+					<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+						{#each deck.cards.filter(c => isDue(c.next_review)) as card, i}
+							<div in:fly={{ y: 20, delay: i * 100 }}>
+								<Flashcard
+									{...card}
+									compact={true}
+									onAnswered={(isCorrect, selectedIdx) =>
+										updateCardMastery(card.id, isCorrect, selectedIdx)}
+								/>
+								<div class="mt-2 flex items-center justify-between px-2">
+									<span class="flex items-center gap-1 text-[9px] font-black tracking-widest {isPastDue(card.next_review) ? 'text-red-400' : 'text-yellow-400'} uppercase">
+										{#if isPastDue(card.next_review)}
+											<AlertCircle class="h-3 w-3" />
+										{:else}
+											<CalendarClock class="h-3 w-3" />
+										{/if}
+										{formatNextReview(card.next_review)}
+									</span>
+									<span class="text-[9px] font-black tracking-widest text-muted-foreground uppercase">
+										Day {card.day_interval || 1}
+									</span>
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			<!-- All Cards Grid -->
+			<div class="space-y-8">
 				<div class="flex items-center gap-4">
 					<div class="h-px flex-grow bg-border"></div>
 					<span class="text-[10px] font-black tracking-[0.4em] text-muted-foreground uppercase"
-						>Study Cards</span
+						>All Study Cards</span
 					>
 					<div class="h-px flex-grow bg-border"></div>
 				</div>
@@ -184,6 +275,15 @@
 								onAnswered={(isCorrect, selectedIdx) =>
 									updateCardMastery(card.id, isCorrect, selectedIdx)}
 							/>
+							<div class="mt-2 flex items-center justify-between px-2">
+								<span class="flex items-center gap-1 text-[9px] font-black tracking-widest {isPastDue(card.next_review) ? 'text-red-400' : isDue(card.next_review) ? 'text-yellow-400' : 'text-muted-foreground'} uppercase">
+									<Calendar class="h-3 w-3" />
+									{formatNextReview(card.next_review)}
+								</span>
+								<span class="text-[9px] font-black tracking-widest text-muted-foreground uppercase">
+									{card.status || 'UNANSWERED'}
+								</span>
+							</div>
 						</div>
 					{/each}
 				</div>

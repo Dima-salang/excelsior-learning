@@ -21,6 +21,7 @@
 		explanation?: string;
 		onAnswered?: (isCorrect: boolean, selectedIdx: number) => void;
 		compact?: boolean;
+		showRating?: boolean;
 	}
 
 	let {
@@ -31,7 +32,8 @@
 		options_ans,
 		explanation,
 		onAnswered,
-		compact = false
+		compact = false,
+		showRating = false
 	}: CardProps = $props();
 
 	let selectedIdx = $state<number | null>(null);
@@ -71,7 +73,8 @@
 	class={cn(
 		'group relative mb-8 overflow-hidden rounded-3xl border border-border bg-card/40 p-8 shadow-2xl backdrop-blur-md transition-all duration-500 hover:border-primary/30 hover:bg-muted/60',
 		isRevealed && !isCorrect && 'animate-reject',
-		compact && 'mb-4 rounded-2xl p-5 shadow-lg'
+		compact && 'mb-4 rounded-2xl p-5 shadow-lg',
+		showRating && isRevealed && 'ring-2 ring-primary/50 ring-offset-4 ring-offset-background'
 	)}
 >
 	<!-- Decorative background element -->

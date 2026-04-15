@@ -16,7 +16,10 @@
 		Timer,
 		Target,
 		ChevronLeft,
-		ChevronRight
+		ChevronRight,
+		Shuffle,
+		Calendar,
+		AlertCircle
 	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import Flashcard from '$lib/components/Flashcard.svelte';
@@ -49,8 +52,14 @@
 	let error = $state('');
 	let quizStarted = $state(false);
 	let quizFinished = $state(false);
+	let showSetupScreen = $state(true);
 
-	// Track which cards have been answered locally to allow navigation
+	let randomOrder = $state(true);
+	let ignoreInterval = $state(false);
+	let numFlashcards = $state(10);
+	let pendingAnswer = $state<{ isCorrect: boolean; selectedIdx: number } | null>(null);
+	let pendingRating = $state<number | null>(null);
+
 	let answeredIndices = $state<boolean[]>([]);
 	let isCurrentAnswered = $derived(answeredIndices[currentIndex] || false);
 
@@ -62,16 +71,17 @@
 	async function startQuiz() {
 		try {
 			isLoading = true;
-			// Default to 10 cards for now
-			const response = await apiFetch(`/quiz/start/${deckId}?num_flashcards=10&random_order=true`, {
-				method: 'POST'
-			});
+			const response = await apiFetch(
+				`/quiz/start/${deckId}?num_flashcards=${numFlashcards}&random_order=${randomOrder}&ignore_interval=${ignoreInterval}`,
+				{ method: 'POST' }
+			);
 			quiz = response;
 			if (quiz && quiz.cards.length > 0) {
 				allCards = [...quiz.cards];
 				answeredIndices = new Array(allCards.length).fill(false);
 				currentIndex = 0;
 				quizStarted = true;
+				showSetupScreen = false;
 				startTime = Date.now();
 				startTimer();
 			} else {
@@ -100,33 +110,41 @@
 		return `${mins}:${secs.toString().padStart(2, '0')}`;
 	}
 
-	async function handleAnswer(isCorrect: boolean, selectedIdx: number) {
-		if (!quiz || !currentCard) return;
+	function handleAnswer(isCorrect: boolean, selectedIdx: number) {
+		pendingAnswer = { isCorrect, selectedIdx };
+	}
 
-		try {
-			// Notify backend (using the service logic)
-			const response = await apiFetch('/quiz/submit', {
-				method: 'POST',
-				body: JSON.stringify({
-					card_id: currentCard.id,
-					user_selected_ans: selectedIdx,
-					quiz: quiz
-				})
+	function submitRating(rating: number) {
+		if (!quiz || !currentCard || !pendingAnswer) return;
+
+		pendingRating = rating;
+
+		apiFetch('/quiz/submit', {
+			method: 'POST',
+			body: JSON.stringify({
+				card_id: currentCard.id,
+				user_selected_ans: pendingAnswer.selectedIdx,
+				quiz: quiz,
+				user_rating: rating
+			})
+		})
+			.then((response) => {
+				const { quiz: updatedQuiz, is_correct: wasCorrect } = response;
+				quiz = updatedQuiz;
+
+				if (allCards[currentIndex]) {
+					allCards[currentIndex].status = wasCorrect ? 'MASTERED' : 'NOT_MASTERED';
+				}
+
+				answeredIndices[currentIndex] = true;
+				pendingAnswer = null;
+				pendingRating = null;
+			})
+			.catch((err) => {
+				console.error('Submission failed:', err);
+				pendingAnswer = null;
+				pendingRating = null;
 			});
-
-			const { quiz: updatedQuiz, is_correct: wasCorrect } = response;
-
-			quiz = updatedQuiz;
-
-			// Update local card status
-			if (allCards[currentIndex]) {
-				allCards[currentIndex].status = wasCorrect ? 'MASTERED' : 'NOT_MASTERED';
-			}
-
-			answeredIndices[currentIndex] = true;
-		} catch (err) {
-			console.error('Submission failed:', err);
-		}
 	}
 
 	function nextCard() {
@@ -153,29 +171,118 @@
 					method: 'POST',
 					body: JSON.stringify(quiz)
 				});
-				// Optionally redirect to the permanent results page
-				// goto(`/quiz/view/${response.id}`);
 			} catch (err) {
 				console.error('Failed to save quiz results:', err);
 			}
 		}
 	}
-
-	onMount(() => {
-		// Auto-start for now, or could show an intro screen
-		startQuiz();
-	});
-
-	$inspect(quiz);
 </script>
 
 <svelte:head>
 	<title>Quiz — Excelsior</title>
 </svelte:head>
 
-<div class="min-h-[calc(100vh-64px)] w-full text-foreground selection:bg-primary/30">
+	<div class="min-h-[calc(100vh-64px)] w-full text-foreground selection:bg-primary/30">
 	<div class="relative z-10 container mx-auto max-w-4xl px-6 py-12 md:py-20">
-		{#if isLoading}
+		{#if showSetupScreen && !quizStarted}
+			<div class="space-y-12" in:fade>
+				<header class="space-y-6 text-center">
+					<div class="relative inline-block">
+						<div class="absolute inset-0 scale-150 rounded-full bg-primary/20 blur-3xl"></div>
+						<div
+							class="relative flex h-24 w-24 items-center justify-center rounded-[2rem] border border-primary/20 bg-card shadow-2xl"
+						>
+							<BrainCircuit class="h-12 w-12 text-primary" />
+						</div>
+					</div>
+					<h1
+						class="font-display text-5xl leading-tight font-black tracking-tighter uppercase md:text-7xl"
+					>
+						Configure <span class="text-primary italic">Quiz</span>
+					</h1>
+					<p class="mx-auto max-w-md text-muted-foreground">
+						Customize your study session to match your learning goals.
+					</p>
+				</header>
+
+				<div class="rounded-[2.5rem] border border-border bg-card/50 p-8 backdrop-blur-xl">
+					<div class="space-y-8">
+						<div class="space-y-4">
+							<label class="flex items-center gap-3">
+								<span class="text-[10px] font-black tracking-widest uppercase text-muted-foreground">Number of Cards</span>
+							</label>
+							<div class="flex items-center gap-4">
+								<input
+									type="range"
+									min="5"
+									max="50"
+									step="5"
+									bind:value={numFlashcards}
+									class="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-slate-800 accent-primary"
+								/>
+								<span class="w-12 text-center font-display text-lg font-black text-primary">{numFlashcards}</span>
+							</div>
+						</div>
+
+						<div class="flex items-center justify-between rounded-2xl border border-border bg-muted/30 p-4">
+							<div class="flex items-center gap-3">
+								<Shuffle class="h-5 w-5 text-primary" />
+								<div>
+									<span class="block font-display text-sm font-black uppercase">Randomize Order</span>
+									<span class="text-xs text-muted-foreground">Shuffle cards for varied practice</span>
+								</div>
+							</div>
+							<button
+								onclick={() => randomOrder = !randomOrder}
+								class="relative h-6 w-12 rounded-full transition-colors {randomOrder ? 'bg-primary' : 'bg-slate-700'}"
+							>
+								<span
+									class="absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform {randomOrder ? 'translate-x-7' : 'translate-x-1'}"
+								></span>
+							</button>
+						</div>
+
+						<div class="flex items-center justify-between rounded-2xl border border-border bg-muted/30 p-4">
+							<div class="flex items-center gap-3">
+								<AlertCircle class="h-5 w-5 text-accent" />
+								<div>
+									<span class="block font-display text-sm font-black uppercase">Ignore Interval</span>
+									<span class="text-xs text-muted-foreground">Include all cards regardless of due date</span>
+								</div>
+							</div>
+							<button
+								onclick={() => ignoreInterval = !ignoreInterval}
+								class="relative h-6 w-12 rounded-full transition-colors {ignoreInterval ? 'bg-primary' : 'bg-slate-700'}"
+							>
+								<span
+									class="absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform {ignoreInterval ? 'translate-x-7' : 'translate-x-1'}"
+								></span>
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<div class="flex flex-col justify-center gap-4 sm:flex-row">
+					<Button
+						size="lg"
+						onclick={() => startQuiz()}
+						class="h-16 rounded-2xl bg-primary px-12 font-black tracking-widest uppercase shadow-[0_0_30px_rgba(var(--color-primary),0.3)] transition-all hover:scale-105"
+					>
+						<Sparkles class="mr-3 h-5 w-5" />
+						Start Quiz
+					</Button>
+					<Button
+						variant="outline"
+						size="lg"
+						onclick={() => goto(`/decks/${deckId}`)}
+						class="h-16 rounded-2xl border-border px-10 font-black tracking-widest uppercase hover:bg-card"
+					>
+						<ArrowRight class="mr-3 h-5 w-5" />
+						Back to Deck
+					</Button>
+				</div>
+			</div>
+		{:else if isLoading}
 			<div class="flex flex-col items-center justify-center space-y-8 py-32" in:fade>
 				<div class="relative">
 					<div class="absolute inset-0 animate-pulse rounded-full bg-primary/20 blur-2xl"></div>
@@ -328,10 +435,37 @@
 					<div class="relative z-10 max-w-2xl min-w-0 flex-grow">
 						{#key currentIndex}
 							<div in:fly={{ x: 20, duration: 400 }} out:fade={{ duration: 200 }}>
-								<Flashcard {...currentCard} onAnswered={handleAnswer} />
+								<Flashcard {...currentCard} onAnswered={handleAnswer} showRating={pendingAnswer !== null && pendingRating === null} />
 							</div>
 						{/key}
 					</div>
+
+					{#if pendingAnswer !== null && pendingRating === null}
+						<div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full pt-6" in:scale={{ start: 0.8, duration: 400 }}>
+							<div class="rounded-2xl border border-border bg-card/80 p-6 backdrop-blur-xl">
+								<p class="mb-4 text-center text-xs font-black tracking-widest uppercase text-muted-foreground">
+									How well did you know this?
+								</p>
+								<div class="flex gap-2">
+									{#each [1, 2, 3, 4, 5] as rating}
+										<button
+											onclick={() => submitRating(rating)}
+											disabled={pendingRating !== null}
+											class="flex h-12 w-12 items-center justify-center rounded-xl border font-display text-lg font-black transition-all hover:scale-110 {rating <= 2 ? 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20' : rating === 3 ? 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20' : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}"
+										>
+											{rating}
+										</button>
+									{/each}
+								</div>
+								<div class="mt-2 flex justify-between text-[9px] font-black tracking-widest uppercase text-muted-foreground">
+									<span>Again</span>
+									<span>Hard</span>
+									<span>Good</span>
+									<span>Easy</span>
+								</div>
+							</div>
+						</div>
+					{/if}
 
 					<!-- Next Arrow -->
 					<button

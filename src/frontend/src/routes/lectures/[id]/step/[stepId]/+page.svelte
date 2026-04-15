@@ -48,9 +48,8 @@
 		title: string;
 		order_key: number;
 		content?: string;
-		is_completed: boolean;
-		lecture_section_id: number;
-		cards: FlashcardData[];
+		completed: boolean;
+		cards?: FlashcardData[];
 	}
 
 	interface Section {
@@ -91,9 +90,31 @@
 				apiFetch(`/lectures/${lectureId}`),
 				apiFetch(`/llm/providers?user_id=${auth.user?.id}`)
 			]);
-			step = stepData;
-			lecture = lectureData;
-			providers = providersData;
+			
+			// Fetch cards for this step
+			const cardsData = await apiFetch(`/lectures/steps/${currentStepId}/cards`);
+			step = { ...stepData, cards: Array.isArray(cardsData) ? cardsData : [] };
+			
+			// Fetch lecture with sections and steps
+			if (lectureData) {
+				const sectionsData = await apiFetch(`/lectures/${lectureId}/sections`);
+				const sectionsWithSteps = await Promise.all(
+					(Array.isArray(sectionsData) ? sectionsData : []).map(async (section: Section) => {
+						try {
+							const steps = await apiFetch(`/lectures/${lectureId}/sections/${section.id}/steps`);
+							return { ...section, steps: Array.isArray(steps) ? steps : [] };
+						} catch {
+							return { ...section, steps: [] };
+						}
+					})
+				);
+				lecture = {
+					...lectureData,
+					sections: sectionsWithSteps
+				};
+			}
+			
+			providers = providersData || [];
 
 			// Initialize global setting if not set
 			if (providers.length > 0 && !settings.selectedProviderId) {
@@ -167,7 +188,7 @@
 			const updated = await apiFetch(`/lectures/steps/${stepId}/complete`, {
 				method: 'POST'
 			});
-			step.is_completed = updated.is_completed;
+			step.completed = updated.is_completed;
 			// Refresh lecture progress
 			lecture = await apiFetch(`/lectures/${lectureId}`);
 		} catch (err) {
@@ -524,12 +545,12 @@
 					>
 						<Button
 							onclick={toggleComplete}
-							variant={step.is_completed ? 'outline' : 'default'}
-							class="flex h-16 items-center gap-3 rounded-2xl px-10 text-sm font-black tracking-widest uppercase transition-all {step.is_completed
+							variant={step.completed ? 'outline' : 'default'}
+							class="flex h-16 items-center gap-3 rounded-2xl px-10 text-sm font-black tracking-widest uppercase transition-all {step.completed
 								? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
 								: 'shadow-xl hover:-translate-y-1'}"
 						>
-							{#if step.is_completed}
+							{#if step.completed}
 								<CheckCircle2 class="h-5 w-5" />
 								Step Completed
 							{:else}

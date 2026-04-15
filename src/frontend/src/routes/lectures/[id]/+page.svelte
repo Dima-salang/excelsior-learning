@@ -21,12 +21,13 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 
 	interface Step {
 		id: number;
 		title: string;
 		order_key: number;
-		is_completed: boolean;
+		completed: boolean;
 	}
 
 	interface Section {
@@ -41,11 +42,12 @@
 		title: string;
 		description: string;
 		completion_percentage: number;
-		sections: Section[];
 	}
 
 	let lecture = $state<Lecture | null>(null);
+	let sections = $state<Section[]>([]);
 	let isLoading = $state(true);
+	let isLoadingSections = $state(true);
 	let error = $state('');
 
 	async function fetchLecture(id: string) {
@@ -58,6 +60,29 @@
 		}
 	}
 
+	async function fetchSections(lectureId: string) {
+		try {
+			const sectionData = await apiFetch(`/lectures/${lectureId}/sections`);
+			const sectionList = Array.isArray(sectionData) ? sectionData : [];
+			
+			const sectionsWithSteps = await Promise.all(
+				sectionList.map(async (section: Section) => {
+					try {
+						const steps = await apiFetch(`/lectures/${lectureId}/sections/${section.id}/steps`);
+						return { ...section, steps: Array.isArray(steps) ? steps : [] };
+					} catch {
+						return { ...section, steps: [] };
+					}
+				})
+			);
+			sections = sectionsWithSteps;
+		} catch (err: any) {
+			console.error('Failed to load sections:', err);
+		} finally {
+			isLoadingSections = false;
+		}
+	}
+
 	$effect(() => {
 		if (!auth.token) {
 			goto('/login');
@@ -66,6 +91,7 @@
 		const id = page.params.id;
 		if (id && isLoading) {
 			fetchLecture(id);
+			fetchSections(id);
 		}
 	});
 
@@ -76,7 +102,6 @@
 		}
 		goto(`/lectures/${page.params.id}/step/${step.id}`);
 	}
-	import { Skeleton } from '$lib/components/ui/skeleton';
 </script>
 
 <div class="container mx-auto max-w-5xl space-y-12 p-6 lg:p-12">
@@ -169,60 +194,72 @@
 		</header>
 
 		<section class="space-y-16 pb-24">
-			{#each [...lecture.sections].sort((a, b) => a.order_key - b.order_key) as section, i}
-				<div class="space-y-8" in:fly={{ y: 20, delay: i * 150 }}>
-					<div class="group flex items-center gap-6">
-						<div
-							class="flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-muted font-display font-black text-primary shadow-xl transition-all group-hover:scale-110 group-hover:border-primary/30"
-						>
-							{i + 1}
+			{#if isLoadingSections}
+				{#each Array(3) as _}
+					<div class="space-y-8">
+						<Skeleton class="h-8 w-64" />
+						<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+							<Skeleton class="h-24 rounded-2xl" />
+							<Skeleton class="h-24 rounded-2xl" />
 						</div>
-						<h2
-							class="font-display text-2xl font-black tracking-tight text-foreground uppercase transition-colors group-hover:text-primary"
-						>
-							{section.title}
-						</h2>
-						<div class="h-px flex-grow bg-border transition-all group-hover:bg-primary/20"></div>
 					</div>
-
-					<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-						{#each [...section.steps].sort((a, b) => a.order_key - b.order_key) as step}
-							<button
-								onclick={() => handleStepClick(step)}
-								class="group flex items-center justify-between rounded-2xl border border-border bg-card/40 p-6 text-left shadow-lg ring-1 ring-white/5 transition-all hover:border-primary/30 hover:bg-primary/10"
+				{/each}
+			{:else}
+				{#each [...sections].sort((a, b) => a.order_key - b.order_key) as section, i}
+					<div class="space-y-8" in:fly={{ y: 20, delay: i * 150 }}>
+						<div class="group flex items-center gap-6">
+							<div
+								class="flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-muted font-display font-black text-primary shadow-xl transition-all group-hover:scale-110 group-hover:border-primary/30"
 							>
-								<div class="flex items-center gap-4 overflow-hidden">
-									<div
-										class="rounded-xl p-3 {step.is_completed
-											? 'bg-emerald-500/10 text-emerald-400'
-											: 'bg-muted text-muted-foreground'} transition-transform group-hover:scale-110"
-									>
-										{#if step.is_completed}
-											<CheckCircle2 class="h-5 w-5" />
-										{:else}
-											<Play class="h-5 w-5 fill-current" />
-										{/if}
-									</div>
-									<div class="flex min-w-0 flex-col">
-										<span
-											class="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary"
-											>{step.title}</span
+								{i + 1}
+							</div>
+							<h2
+								class="font-display text-2xl font-black tracking-tight text-foreground uppercase transition-colors group-hover:text-primary"
+							>
+								{section.title}
+							</h2>
+							<div class="h-px flex-grow bg-border transition-all group-hover:bg-primary/20"></div>
+						</div>
+
+						<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+							{#each [...section.steps].sort((a, b) => a.order_key - b.order_key) as step}
+								<button
+									onclick={() => handleStepClick(step)}
+									class="group flex items-center justify-between rounded-2xl border border-border bg-card/40 p-6 text-left shadow-lg ring-1 ring-white/5 transition-all hover:border-primary/30 hover:bg-primary/10"
+								>
+									<div class="flex items-center gap-4 overflow-hidden">
+										<div
+											class="rounded-xl p-3 {step.completed
+												? 'bg-emerald-500/10 text-emerald-400'
+												: 'bg-muted text-muted-foreground'} transition-transform group-hover:scale-110"
 										>
-										<span
-											class="text-[10px] font-black tracking-widest text-muted-foreground uppercase"
-										>
-											{step.is_completed ? 'Completed' : 'Draft Ready'}
-										</span>
+											{#if step.completed}
+												<CheckCircle2 class="h-5 w-5" />
+											{:else}
+												<Play class="h-5 w-5 fill-current" />
+											{/if}
+										</div>
+										<div class="flex min-w-0 flex-col">
+											<span
+												class="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary"
+												>{step.title}</span
+											>
+											<span
+												class="text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+											>
+												{step.completed ? 'Completed' : 'Draft Ready'}
+											</span>
+										</div>
 									</div>
-								</div>
-								<ChevronRight
-									class="h-4 w-4 text-muted-foreground transition-all group-hover:translate-x-1 group-hover:text-primary"
-								/>
-							</button>
-						{/each}
+									<ChevronRight
+										class="h-4 w-4 text-muted-foreground transition-all group-hover:translate-x-1 group-hover:text-primary"
+									/>
+								</button>
+							{/each}
+						</div>
 					</div>
-				</div>
-			{/each}
+				{/each}
+			{/if}
 		</section>
 	{/if}
 </div>
