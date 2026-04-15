@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import JSONResponse
 from fastapi import HTTPException
+from pydantic import ValidationError
 from alembic.config import Config
 from alembic import command
 from api.llm import router as llm_router
@@ -39,6 +40,19 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
+    )
+
+
+@app.exception_handler(ValidationError)
+async def validation_exception_handler(request: Request, exc: ValidationError):
+    logger.error(
+        f"Validation error on {request.url.path}:\n"
+        f"  Errors: {exc.errors()}\n"
+        f"  Traceback: {traceback.format_exc()}"
+    )
+    return JSONResponse(
+        status_code=422,
+        content={"detail": str(exc)},
     )
 
 
@@ -80,11 +94,13 @@ app.include_router(quiz_router)
 
 @app.get("/")
 async def root():
+    logger.info("GET /")
     return {"message": "Welcome to Excelsior Learning API"}
 
 
 @app.get("/dashboard")
 async def dashboard(token: Annotated[str, Depends(oauth2_scheme)]):
+    logger.info("GET /dashboard")
     return {"message": "Welcome to Excelsior Learning API"}
 
 
