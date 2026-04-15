@@ -1,35 +1,45 @@
 import logging
+import logging.handlers
 import sys
 from pathlib import Path
 
-# Create logs directory in the project root to avoid reload loops
 LOGS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "logs"
 LOGS_DIR.mkdir(exist_ok=True)
 
 
 def setup_logging():
-    # Define the log format
     log_format = (
         "%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d - %(message)s"
     )
 
-    # Configure the root logger
+    # Root logger configuration
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         format=log_format,
         handlers=[
-            # Console output
             logging.StreamHandler(sys.stdout),
             logging.handlers.RotatingFileHandler(
                 LOGS_DIR / "app.log", maxBytes=1024 * 1024 * 10, backupCount=5
             ),
+            logging.handlers.RotatingFileHandler(
+                LOGS_DIR / "errors.log", maxBytes=1024 * 1024 * 5, backupCount=3
+            ),
         ],
     )
 
-    # You can further silence noisy third-party loggers here
+    # Silence noisy third-party loggers
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+    logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
+
+    # Ensure our app loggers show errors
+    logging.getLogger("excelsior").setLevel(logging.DEBUG)
+    logging.getLogger("excelsior.llm").setLevel(logging.DEBUG)
 
 
-# Initialize a global logger for this module
+class DetailedErrorFilter(logging.Filter):
+    def filter(self, record):
+        return record.levelno >= logging.ERROR
+
+
 logger = logging.getLogger("excelsior")
