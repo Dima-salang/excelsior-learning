@@ -77,9 +77,10 @@ def test_submit_answer_correct(quiz_service: QuizService, setup_data, session: S
     user, deck, cards, _ = setup_data
     quiz_model = quiz_service.start_quiz(deck.id, num_flashcards=1)
     quiz_card = quiz_model.cards[0]
+    user_rating = 3
 
     # Submit correct answer (idx 0 based on setup_data)
-    is_correct = quiz_service.submit_answer(quiz_card.id, 0, quiz_model)
+    is_correct = quiz_service.submit_answer(quiz_card.id, 0, quiz_model, user_rating)
 
     assert is_correct is True
     assert quiz_model.score == 1
@@ -101,9 +102,10 @@ def test_submit_answer_incorrect(
     user, deck, cards, _ = setup_data
     quiz_model = quiz_service.start_quiz(deck.id, num_flashcards=1)
     quiz_card = quiz_model.cards[0]
+    user_rating = 1
 
     # Submit incorrect answer (expected 0, giving 1)
-    is_correct = quiz_service.submit_answer(quiz_card.id, 1, quiz_model)
+    is_correct = quiz_service.submit_answer(quiz_card.id, 1, quiz_model, user_rating)
 
     assert is_correct is False
     assert quiz_model.score == 0
@@ -122,9 +124,10 @@ def test_get_quiz_persistence(quiz_service: QuizService, setup_data, session: Se
     user, deck, cards, _ = setup_data
     start_model = quiz_service.start_quiz(deck.id, num_flashcards=1)
     quiz_card_id = start_model.cards[0].id
+    user_rating = 3
 
     # Answer and then retrieve
-    quiz_service.submit_answer(quiz_card_id, 0, start_model)
+    quiz_service.submit_answer(quiz_card_id, 0, start_model, user_rating)
 
     # Retrieve from DB using the service
     retrieved_quiz = quiz_service.get_quiz(start_model.id)
@@ -176,3 +179,27 @@ def test_create_quiz_cards(quiz_service: QuizService, setup_data, session: Sessi
 
     # verify that the cards are linked to the quiz
     assert all([card.quiz_id == quiz_model.id for card in quiz_model.cards])
+
+
+def test_update_card_interval(quiz_service: QuizService, setup_data, session: Session):
+    user, deck, cards, quiz_model = setup_data
+    quiz_card = quiz_model.cards[0]
+    original_card = session.get(Card, quiz_card.card_id)
+    user_rating = 5
+
+    # get ease factor
+    ease_factor = original_card.ease_factor
+
+    # compute ease factor
+    ease_factor = ease_factor + (
+        0.1 - (5 - user_rating) * (0.08 + (5 - user_rating) * 0.02)
+    )
+    ease_factor = max(1.3, ease_factor)
+
+    # update the interval status for review
+    quiz_service.update_card_interval(quiz_card.id, user_rating)
+
+    # verify the card's interval status
+    assert original_card.ease_factor == ease_factor
+    assert original_card.repetition_count == 1
+    assert original_card.day_interval == 1
