@@ -27,7 +27,6 @@ class Lecture(LectureBase, table=True):
 
     sections: list["LectureSection"] = Relationship(back_populates="lecture")
 
-    # deck
     deck: "Deck" = Relationship(back_populates="lecture")
 
     created_at: datetime = Field(default_factory=datetime.now)
@@ -41,6 +40,18 @@ class LectureStepPublic(LectureStepBase):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
+class LectureStepListPublic(SQLModel):
+    id: int
+    title: str
+    content: str | None = None
+    order_key: int = 0
+    completed: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
 class LectureSectionPublic(LectureSectionBase):
     id: int
     steps: list[LectureStepPublic] = []
@@ -48,9 +59,29 @@ class LectureSectionPublic(LectureSectionBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class LectureSectionListPublic(SQLModel):
+    id: int
+    title: str
+    completion_percentage: float = 0.0
+    order_key: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+
 class LecturePublic(LectureBase):
     id: int
     sections: list[LectureSectionPublic] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LectureListPublic(SQLModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    completion_percentage: float = 0.0
+    created_at: datetime
+    last_accessed_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

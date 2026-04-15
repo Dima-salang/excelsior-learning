@@ -23,6 +23,8 @@ class LectureSection(LectureSectionBase, table=True):
     steps: list["LectureStep"] = Relationship(back_populates="lecture_section")
 
 
+
+
 class LectureSectionCreate(LectureSectionBase):
     lecture_id: int
 
