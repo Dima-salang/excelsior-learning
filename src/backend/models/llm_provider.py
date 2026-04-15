@@ -71,6 +71,8 @@ class PromptManager:
 
             Topic: {topic}
             Explain the content and generate at least 5 creative flashcards that test the underlying concepts.
+            
+            IMPORTANT: Place the markdown lesson explanation IN THE `content` FIELD ONLY. Do NOT output raw flashcard JSON strings or lists inside the `content` field. Place all generated flashcards strictly inside the `flashcards` JSON array field as required by the schema.
         """
         return GENERATE_CONTENT_PROMPT
 
