@@ -3,7 +3,7 @@ from services.llm_service import LLMService
 from models.quiz import Quiz, QuizDB
 from models.card import Card, CardStatus, QuizCard, QuizCardPublic
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import HTTPException
 
 
@@ -95,8 +95,11 @@ class QuizService:
         return quiz_cards
 
     def submit_answer(
-        self, quiz_card_id: int, user_selected_ans: int, quiz: Quiz
+        self, quiz_card_id: int, user_selected_ans: int, quiz: Quiz, user_rating: int
     ) -> bool:
+        if not user_rating:
+            raise Exception("User must rate the card.")
+
         # find quiz card in the session storage (for logic)
         quiz_card = next((c for c in quiz.cards if c.id == quiz_card_id), None)
         if not quiz_card:
@@ -120,6 +123,9 @@ class QuizService:
         if is_correct:
             quiz.score += 1
 
+        # update the interval status for review
+        self.update_card_interval(db_quiz_card.card_id, user_rating)
+
         # also update the original card's global status
         if db_quiz_card.card_id:
             original_card = self.session.get(Card, db_quiz_card.card_id)
@@ -134,3 +140,48 @@ class QuizService:
         quiz.cards.remove(quiz_card)
 
         return is_correct
+
+    def update_card_interval(self, card_id: int, user_rating: int):
+        # get the card
+        card = self.session.get(Card, card_id)
+
+        # growth of card
+        ease_factor = card.ease_factor
+
+        # streak
+        repetition_count = card.repetition_count
+
+        # card scheduling
+        day_interval = card.day_interval
+
+        # update ease factor
+        ease_factor = ease_factor + (0.1 - (5 - user_rating) * (0.08 + (5 - user_rating) * 0.02))
+        ease_factor = max(1.3, ease_factor)
+
+        if user_rating >= 3:
+            # correct
+            if repetition_count == 0:
+                day_interval = 1
+            elif repetition_count == 1:
+                day_interval = 3
+            else:
+                day_interval = round(day_interval * ease_factor)
+            repetition_count += 1
+        else:
+            # incorrect
+
+            # reset the rep count
+            repetition_count = 0
+            day_interval = 1
+
+        card.ease_factor = ease_factor
+        card.repetition_count = repetition_count
+        card.day_interval = day_interval
+        card.next_review = datetime.now() + timedelta(days=day_interval)
+
+        self.session.add(card)
+        self.session.commit()
+
+
+
+        

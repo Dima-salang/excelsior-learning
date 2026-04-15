@@ -88,5 +88,6 @@ class QuizCardPublic(CardBase):
     card_id: int | None = None
     quiz_id: int | None = None
 
+
 class CardList(BaseModel):
     cards: list[CardBase]

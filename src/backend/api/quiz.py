@@ -63,6 +63,9 @@ class SubmitAnswerRequest(BaseModel):
     user_selected_ans: int
     quiz: Quiz
 
+    # between 0-5
+    user_rating: int
+
 
 @router.post("/submit")
 def submit_answer(
@@ -73,7 +76,7 @@ def submit_answer(
     service = QuizService(session, llm_service)
     try:
         is_correct = service.submit_answer(
-            request.card_id, request.user_selected_ans, request.quiz
+            request.card_id, request.user_selected_ans, request.quiz, request.user_rating
         )
         return {"quiz": request.quiz, "is_correct": is_correct}
     except Exception as e:
