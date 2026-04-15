@@ -8,7 +8,7 @@ from models.llm_provider import (
 from models.lecture import Lecture
 from models.lecture_section import LectureSection
 from models.lecture_step import LectureStep
-from models.deck import Deck, DeckWithCardsFlashcard, DeckPublicWithCards
+from models.deck import Deck, DeckWithCardsFlashcard
 from pydantic import BaseModel
 from schema.lecture_schema_json import LectureSchema, LectureStepSchema
 from sqlmodel import Session
@@ -17,11 +17,12 @@ import os
 from fastapi import HTTPException
 from google import genai
 from datetime import datetime
-from models.card import Card, CardBase
+from models.card import Card, CardList
 from models.llm_provider import PromptManager
 from models.lecture import LectureStepPublic
 import requests
 import litellm
+import logging
 
 # url for openrouter model api
 OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
@@ -37,13 +38,10 @@ class OpenRouterErrorResponse(BaseModel):
     error: OpenRouterErrorDetail
 
 
-import logging
 
 logger = logging.getLogger("excelsior.llm")
 
 
-class CardList(BaseModel):
-    cards: list[CardBase]
 
 
 class LLMService:
