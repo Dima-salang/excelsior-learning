@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade, fly, slide } from 'svelte/transition';
-	import { CheckCircle2, XCircle, HelpCircle, ArrowRight, RotateCcw } from '@lucide/svelte';
+	import { CheckCircle2, XCircle, HelpCircle, ArrowRight } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils';
 	import { marked } from 'marked';
@@ -61,11 +61,6 @@
 		if (onAnswered) {
 			onAnswered(idx === options_ans, idx);
 		}
-	}
-
-	function reset() {
-		selectedIdx = null;
-		isRevealed = false;
 	}
 </script>
 
@@ -175,17 +170,6 @@
 					>
 					{@html renderedExplanation}
 				</div>
-				{#if !isCorrect}
-					<Button
-						variant="ghost"
-						size="sm"
-						onclick={reset}
-						class="mt-4 h-8 gap-2 px-0 text-[10px] font-black tracking-widest text-muted-foreground uppercase hover:bg-muted hover:text-foreground"
-					>
-						<RotateCcw class="h-3 w-3" />
-						Try Again
-					</Button>
-				{/if}
 			</div>
 		{/if}
 	</div>
