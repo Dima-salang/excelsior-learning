@@ -111,9 +111,14 @@
 
 	function handleAnswer(isCorrect: boolean, selectedIdx: number) {
 		pendingAnswer = { isCorrect, selectedIdx };
+		// If incorrect, instantly set rating to 1 and don't auto-advance so the user
+		// can read the explanation. They will click "Next Question" manually.
+		if (!isCorrect) {
+			submitRating(1, false);
+		}
 	}
 
-	function submitRating(rating: number) {
+	function submitRating(rating: number, autoAdvance: boolean = true) {
 		if (!quiz || !currentCard || !pendingAnswer) return;
 
 		pendingRating = rating;
@@ -138,6 +143,13 @@
 				answeredIndices[currentIndex] = true;
 				pendingAnswer = null;
 				pendingRating = null;
+
+				if (autoAdvance) {
+					// Auto-advance after a short pause so the rating registers visually
+					setTimeout(() => {
+						nextCard();
+					}, 350);
+				}
 			})
 			.catch((err) => {
 				console.error('Submission failed:', err);
@@ -529,7 +541,10 @@
 
 					<div class="relative z-10 max-w-2xl min-w-0 flex-grow">
 						{#key currentIndex}
-							<div in:fly={{ x: 20, duration: 400 }} out:fade={{ duration: 200 }}>
+							<div
+								in:fly={{ x: 50, duration: 250, delay: 100 }}
+								out:fly={{ x: -50, duration: 150 }}
+							>
 								<Flashcard
 									{...currentCard}
 									onAnswered={handleAnswer}
@@ -539,47 +554,51 @@
 						{/key}
 					</div>
 
-					{#if pendingAnswer !== null && pendingRating === null}
+					{#if pendingAnswer !== null && pendingAnswer.isCorrect && pendingRating === null}
 						<div
-							class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full pt-6"
-							in:scale={{ start: 0.8, duration: 400 }}
+							class="fixed right-0 bottom-0 left-0 z-50 flex justify-center p-6 sm:bottom-6 sm:p-0"
+							in:fly={{ y: 50, duration: 250, opacity: 0 }}
 						>
-							<div class="rounded-2xl border border-border bg-card/80 p-6 backdrop-blur-xl">
+							<div
+								class="w-full max-w-sm rounded-[2rem] border border-border/50 bg-card/95 p-6 shadow-2xl backdrop-blur-2xl sm:max-w-md"
+							>
 								<p
 									class="mb-4 text-center text-xs font-black tracking-widest text-muted-foreground uppercase"
 								>
 									How well did you know this?
 								</p>
-								<div class="flex gap-2">
+								<div class="grid w-full grid-cols-5 gap-2 sm:gap-3">
 									{#each [1, 2, 3, 4, 5] as rating}
-										<button
-											onclick={() => submitRating(rating)}
-											disabled={pendingRating !== null}
-											class="flex h-12 w-12 items-center justify-center rounded-xl border font-display text-lg font-black transition-all hover:scale-110 {rating <=
-											2
-												? 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20'
-												: rating === 3
-													? 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20'
-													: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}"
-										>
-											{rating}
-										</button>
+										<div class="flex flex-col items-center justify-start gap-3">
+											<button
+												onclick={() => submitRating(rating)}
+												disabled={pendingRating !== null}
+												class="flex h-12 w-full max-w-[3.5rem] items-center justify-center rounded-xl border font-display text-lg font-black transition-all hover:-translate-y-1 hover:shadow-lg active:scale-95 {rating <=
+												2
+													? 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:shadow-red-500/10'
+													: rating === 3
+														? 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 hover:shadow-yellow-500/10'
+														: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:shadow-emerald-500/10'}"
+											>
+												{rating}
+											</button>
+											<span
+												class="text-center text-[7px] font-black tracking-widest text-muted-foreground uppercase sm:text-[9px]"
+											>
+												{#if rating === 1}
+													Again
+												{:else if rating === 2}
+													Hard
+												{:else if rating === 3}
+													Good
+												{:else if rating === 4}
+													Easy
+												{:else}
+													Perfect
+												{/if}
+											</span>
+										</div>
 									{/each}
-								</div>
-								<div
-									class="mt-3 flex justify-between text-[9px] font-black tracking-widest text-muted-foreground uppercase"
-								>
-									<span>Again</span>
-									<span>Hard</span>
-									<span>Good</span>
-									<span>Easy</span>
-								</div>
-								<div
-									class="mt-2 flex justify-between text-[8px] tracking-widest text-muted-foreground/60"
-								>
-									<span>1–2</span>
-									<span class="text-center">3</span>
-									<span class="text-right">4–5</span>
 								</div>
 							</div>
 						</div>

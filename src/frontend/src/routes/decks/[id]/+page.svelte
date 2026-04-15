@@ -182,12 +182,6 @@
 		{:else if deck}
 			<header class="flex flex-col justify-between gap-8 md:flex-row md:items-end" in:fade>
 				<div class="space-y-6">
-					<div
-						class="flex items-center gap-4 text-[10px] font-black tracking-[0.4em] text-primary uppercase"
-					>
-						<Sparkles class="h-4 w-4" />
-						<span>Study Deck v1.0</span>
-					</div>
 					<h1
 						class="font-display text-4xl leading-tight font-black tracking-tighter text-foreground uppercase md:text-6xl"
 					>

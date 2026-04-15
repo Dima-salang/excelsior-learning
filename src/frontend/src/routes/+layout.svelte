@@ -47,9 +47,7 @@
 
 	<main class="relative z-10 flex min-h-screen w-full flex-col">
 		{#if showNavbar}
-			<div class="container mx-auto max-w-7xl">
-				<Navbar />
-			</div>
+			<Navbar />
 		{/if}
 
 		<div class="flex flex-grow flex-col">
