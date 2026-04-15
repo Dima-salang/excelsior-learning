@@ -4,9 +4,12 @@ from models.lecture import (
     Lecture,
     LectureCreate,
     LecturePublic,
+    LectureListPublic,
     LectureUpdate,
     LectureSectionPublic,
+    LectureSectionListPublic,
     LectureStepPublic,
+    LectureStepListPublic,
 )
 from models.lecture_section import (
     LectureSection,
@@ -30,7 +33,7 @@ class LectureService:
         # validate by LecturePublic
         return LecturePublic.model_validate(lecture)
 
-    def get_lecture(self, lecture_id: int) -> LecturePublic:
+    def get_lecture(self, lecture_id: int) -> LectureListPublic:
         lecture = self.session.get(Lecture, lecture_id)
         if not lecture:
             raise HTTPException(status_code=404, detail="Lecture not found")
@@ -39,16 +42,15 @@ class LectureService:
         self.session.add(lecture)
         self.session.commit()
         self.session.refresh(lecture)
-        # validate by LecturePublic
-        return LecturePublic.model_validate(lecture)
+        return LectureListPublic.model_validate(lecture)
 
-    def get_lectures(self, user_id: int) -> list[LecturePublic]:
+    def get_lectures(self, user_id: int) -> list[LectureListPublic]:
         lectures = self.session.exec(
             select(Lecture)
             .where(Lecture.user_id == user_id)
             .order_by(Lecture.last_accessed_at.desc())
         ).all()
-        return [LecturePublic.model_validate(lecture) for lecture in lectures]
+        return [LectureListPublic.model_validate(lecture) for lecture in lectures]
 
     def update_lecture(
         self, lecture_id: int, lecture_update: LectureUpdate
@@ -88,17 +90,6 @@ class LectureService:
         if not lecture_section:
             raise HTTPException(status_code=404, detail="Lecture section not found")
         return lecture_section
-
-    def get_lecture_sections(self, lecture_id: int) -> list[LectureSectionPublic]:
-        lecture_sections = self.session.exec(
-            select(LectureSection)
-            .where(LectureSection.lecture_id == lecture_id)
-            .order_by(LectureSection.order_key.asc())
-        ).all()
-        return [
-            LectureSectionPublic.model_validate(lecture_section)
-            for lecture_section in lecture_sections
-        ]
 
     def update_lecture_section(
         self, lecture_section_id: int, lecture_section_update: LectureSectionUpdate
@@ -169,3 +160,30 @@ class LectureService:
         self.session.delete(lecture_step)
         self.session.commit()
         return lecture_step
+
+    def get_lecture_with_sections(self, lecture_id: int) -> LecturePublic:
+        lecture = self.session.get(Lecture, lecture_id)
+        if not lecture:
+            raise HTTPException(status_code=404, detail="Lecture not found")
+        lecture.last_accessed_at = datetime.now()
+        lecture.updated_at = datetime.now()
+        self.session.add(lecture)
+        self.session.commit()
+        self.session.refresh(lecture)
+        return LecturePublic.model_validate(lecture)
+
+    def get_lecture_sections(self, lecture_id: int) -> list[LectureSectionListPublic]:
+        sections = self.session.exec(
+            select(LectureSection)
+            .where(LectureSection.lecture_id == lecture_id)
+            .order_by(LectureSection.order_key.asc())
+        ).all()
+        return [LectureSectionListPublic.model_validate(s) for s in sections]
+
+    def get_section_steps(self, section_id: int) -> list[LectureStepListPublic]:
+        steps = self.session.exec(
+            select(LectureStep)
+            .where(LectureStep.lecture_section_id == section_id)
+            .order_by(LectureStep.order_key.asc())
+        ).all()
+        return [LectureStepListPublic.model_validate(s) for s in steps]

@@ -19,12 +19,11 @@ from google import genai
 from datetime import datetime
 from models.card import Card, CardList
 from models.llm_provider import PromptManager
-from models.lecture import LectureStepPublic
+from models.lecture import LectureStepPublic, LectureStepListPublic
 import requests
 import litellm
 import logging
 
-# url for openrouter model api
 OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
 
 
@@ -38,10 +37,21 @@ class OpenRouterErrorResponse(BaseModel):
     error: OpenRouterErrorDetail
 
 
-
 logger = logging.getLogger("excelsior.llm")
 
 
+def setup_llm_logging():
+    logger.setLevel(logging.DEBUG)
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s | %(levelname)-8s | excelsior.llm:%(funcName)s:%(lineno)d - %(message)s"
+        )
+    )
+    logger.addHandler(handler)
+
+
+setup_llm_logging()
 
 
 class LLMService:
@@ -359,7 +369,7 @@ class LLMService:
             if hasattr(data, "flashcards") and data.flashcards:
                 self.save_step_cards(step_id, data.flashcards)
 
-            return LectureStepPublic.model_validate(step)
+            return LectureStepListPublic.model_validate(step)
         except Exception as e:
             logger.error(f"Error generating step content: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
