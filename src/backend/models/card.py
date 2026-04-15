@@ -3,6 +3,7 @@ from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 from enum import Enum
 from sqlalchemy import Column, JSON
+from pydantic import BaseModel
 
 
 class CardStatus(str, Enum):
@@ -32,6 +33,12 @@ class CardBase(SQLModel):
     explanation: Optional[str] = Field(default=None)
     is_correct: Optional[bool] = Field(default=None)
     status: Optional[CardStatus] = Field(default=CardStatus.UNANSWERED)
+
+    # sm-2
+    repetition_count: int = Field(default=0)
+    ease_factor: float = Field(default=1.3)
+    day_interval: int = Field(default=1)
+    next_review: datetime = Field(default_factory=datetime.now)
 
 
 class Card(CardBase, table=True):
@@ -80,3 +87,6 @@ class QuizCardPublic(CardBase):
     id: int
     card_id: int | None = None
     quiz_id: int | None = None
+
+class CardList(BaseModel):
+    cards: list[CardBase]
