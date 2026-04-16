@@ -25,6 +25,7 @@ from models.deck import Deck
 from models.card import Card
 from models.llm_provider import UserLLMConfig
 from models.quiz import QuizDB
+from models.chat import Chat, ChatMessage
 
 target_metadata = SQLModel.metadata
 
