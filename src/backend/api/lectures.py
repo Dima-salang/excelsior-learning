@@ -20,21 +20,21 @@ router = APIRouter(prefix="/lectures", tags=["lectures"])
 
 @router.get("/", response_model=List[LectureListPublic])
 def get_lectures(user_id: int, session: Session = Depends(get_session)):
-    print(f"GET /lectures/?user_id={user_id}", flush=True)
+    logger.info(f"GET /lectures/?user_id={user_id}")
     service = LectureService(session)
     return service.get_lectures(user_id)
 
 
 @router.get("/{lecture_id}", response_model=LectureListPublic)
 def get_lecture(lecture_id: int, session: Session = Depends(get_session)):
-    print(f"GET /lectures/{lecture_id}", flush=True)
+    logger.info(f"GET /lectures/{lecture_id}")
     service = LectureService(session)
     return service.get_lecture(lecture_id)
 
 
 @router.get("/{lecture_id}/sections", response_model=List[LectureSectionListPublic])
 def get_lecture_sections(lecture_id: int, session: Session = Depends(get_session)):
-    print(f"GET /lectures/{lecture_id}/sections", flush=True)
+    logger.info(f"GET /lectures/{lecture_id}/sections")
     service = LectureService(session)
     return service.get_lecture_sections(lecture_id)
 
@@ -46,28 +46,28 @@ def get_lecture_sections(lecture_id: int, session: Session = Depends(get_session
 def get_section_steps(
     lecture_id: int, section_id: int, session: Session = Depends(get_session)
 ):
-    print(f"GET /lectures/{lecture_id}/sections/{section_id}/steps", flush=True)
+    logger.info(f"GET /lectures/{lecture_id}/sections/{section_id}/steps")
     service = LectureService(session)
     return service.get_section_steps(section_id)
 
 
 @router.get("/steps/{step_id}", response_model=LectureStepListPublic)
 def get_step_direct(step_id: int, session: Session = Depends(get_session)):
-    print(f"GET /lectures/steps/{step_id}", flush=True)
+    logger.info(f"GET /lectures/steps/{step_id}")
     service = LectureService(session)
     return service.get_lecture_step(step_id)
 
 
 @router.get("/{lecture_id}/steps/{step_id}", response_model=LectureStepListPublic)
 def get_step(lecture_id: int, step_id: int, session: Session = Depends(get_session)):
-    print(f"GET /lectures/{lecture_id}/steps/{step_id}", flush=True)
+    logger.info(f"GET /lectures/{lecture_id}/steps/{step_id}")
     service = LectureService(session)
     return service.get_lecture_step(step_id)
 
 
 @router.get("/steps/{step_id}/cards", response_model=List[CardListPublic])
 def get_step_cards(step_id: int, session: Session = Depends(get_session)):
-    print(f"GET /lectures/steps/{step_id}/cards", flush=True)
+    logger.info(f"GET /lectures/steps/{step_id}/cards")
     try:
         cards = session.exec(select(Card).where(Card.step_id == step_id)).all()
         result = []
@@ -75,7 +75,7 @@ def get_step_cards(step_id: int, session: Session = Depends(get_session)):
             try:
                 result.append(CardListPublic.model_validate(card))
             except Exception as e:
-                print(f"ERROR Card serialization: {e}", flush=True)
+                logger.error(f"Card serialization error: {e}")
                 raise HTTPException(
                     status_code=500, detail=f"Card serialization error: {e}"
                 )
@@ -83,7 +83,7 @@ def get_step_cards(step_id: int, session: Session = Depends(get_session)):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"ERROR fetching cards: {e}", flush=True)
+        logger.error(f"Error fetching cards: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

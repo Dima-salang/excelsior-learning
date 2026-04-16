@@ -40,20 +40,6 @@ class OpenRouterErrorResponse(BaseModel):
 logger = logging.getLogger("excelsior.llm")
 
 
-def setup_llm_logging():
-    logger.setLevel(logging.DEBUG)
-    handler = logging.StreamHandler()
-    handler.setFormatter(
-        logging.Formatter(
-            "%(asctime)s | %(levelname)-8s | excelsior.llm:%(funcName)s:%(lineno)d - %(message)s"
-        )
-    )
-    logger.addHandler(handler)
-
-
-setup_llm_logging()
-
-
 class LLMService:
     prompt_manager: PromptManager
     PROVIDER_NOT_FOUND = "Provider not found"
@@ -517,7 +503,6 @@ class LLMProvider:
                 response = litellm.completion(**litellm_kwargs)
                 content = response["choices"][0]["message"]["content"]
                 logger.info(f"Content: {content}")
-                print(f"Content: {content}")
             except litellm.APIError as e:
                 logger.error(f"{provider_name} completion error: {str(e)}")
                 raise HTTPException(
@@ -685,7 +670,7 @@ class LLMProvider:
         elif type == "deck":
             return DeckWithCardsFlashcard
         else:
-            print(type)
+            logger.warning(f"Invalid generation type requested: {type}")
             raise HTTPException(status_code=400, detail="Invalid generation type")
 
     def resolve_prompt(

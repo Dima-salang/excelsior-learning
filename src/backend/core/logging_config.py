@@ -18,7 +18,7 @@ def setup_logging():
 
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(logging.Formatter(log_format))
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(logging.DEBUG)
     root_logger.addHandler(console_handler)
 
     app_file_handler = logging.handlers.RotatingFileHandler(

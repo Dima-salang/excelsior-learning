@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from enum import Enum
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("excelsior")
 
 
 class ROLE_CHOICES(str, Enum):
@@ -29,7 +29,6 @@ class ChatService:
         if lecture_id is not None:
             lecture = self.session.get(Lecture, lecture_id)
             if not lecture:
-                print(f"Lecture not found: {lecture_id}")
                 logger.error(f"Lecture not found: {lecture_id}")
                 raise HTTPException(status_code=404, detail="Lecture not found")
 
@@ -42,11 +41,9 @@ class ChatService:
     def get_chat_conversation(self, user_id: int, chat_id: int) -> Chat:
         chat = self.session.get(Chat, chat_id)
         if not chat:
-            print(f"Chat not found: {chat_id}")
             logger.error(f"Chat not found: {chat_id}")
             raise HTTPException(status_code=404, detail="Chat not found")
         if chat.user_id != user_id:
-            print(f"User {user_id} is not authorized to access chat {chat_id}")
             logger.error(f"User {user_id} is not authorized to access chat {chat_id}")
             raise HTTPException(
                 status_code=403, detail="You are not authorized to access this chat"
@@ -82,7 +79,6 @@ class ChatService:
 
         # validate if role is valid
         if role not in ROLE_CHOICES:
-            print(f"Invalid role: {role}")
             logger.error(f"Invalid role: {role}")
             raise HTTPException(status_code=400, detail="Invalid role")
 
@@ -161,6 +157,8 @@ class ChatService:
                 yield f"data: [ERROR] {e.detail}\n\n"
             except Exception as e:
                 yield f"data: [ERROR] {str(e)}\n\n"
+
+        logger.info("Event stream generated")
 
         return event_stream()
 
