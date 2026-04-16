@@ -48,7 +48,7 @@
 	// Form State
 	let prompt = $state('');
 	let selectedProviderId = $state<number | null>(null);
-	let selectedDeckId = $state<string>('new'); // 'new' or deck id as string
+	let selectedDeckId = $state<string>('new');
 	let numFlashcards = $state(10);
 	let difficulty = $state<'easy' | 'normal' | 'hard'>('normal');
 	let error = $state('');
@@ -129,56 +129,42 @@
 		<header class="relative space-y-6" in:fade={{ duration: 1000 }}>
 			<div class="space-y-4">
 				<div
-					class="flex items-center gap-3 text-[10px] font-black tracking-[0.4em] text-indigo-400 uppercase"
+					class="flex items-center gap-3 text-[10px] font-black tracking-[0.4em] text-primary uppercase"
 				>
 					<Sparkles class="h-4 w-4" />
 					<span>Flashcard Generator</span>
 				</div>
 				<h1
-					class="font-unbounded text-5xl leading-tight font-black tracking-tighter text-white uppercase md:text-7xl"
+					class="font-unbounded text-5xl leading-tight font-black tracking-tighter uppercase md:text-7xl text-foreground"
 				>
-					Generate <span
-						class="bg-gradient-to-r from-indigo-500 via-cyan-400 to-emerald-400 bg-clip-text text-transparent"
-						>Flashcards</span
-					>
+					Generate <span class="text-primary">Flashcards</span>
 				</h1>
-				<p class="max-w-2xl font-sans text-xl leading-relaxed text-muted-foreground italic">
+				<p class="max-w-2xl font-sans text-xl leading-relaxed text-muted-foreground">
 					Create study flashcards from any topic. Select your AI model, choose difficulty, and
 					generate cards to test your knowledge.
 				</p>
 			</div>
-
-			<!-- Decorative Background Glow -->
-			<div
-				class="absolute -top-24 -left-24 -z-10 h-96 w-96 rounded-full bg-indigo-500/10 blur-[120px]"
-			></div>
 		</header>
 
 		{#if isLoading}
 			<div class="flex flex-col items-center justify-center space-y-8 py-32">
 				<div class="relative h-20 w-20">
-					<div
-						class="absolute inset-0 animate-pulse rounded-full border-4 border-indigo-500/10"
-					></div>
-					<div
-						class="absolute inset-0 animate-spin rounded-full border-t-4 border-indigo-500"
-					></div>
-					<BrainCircuit class="absolute inset-0 m-auto h-8 w-8 animate-pulse text-indigo-400" />
+					<div class="absolute inset-0 animate-pulse rounded-full border-4 border-primary/10"></div>
+					<div class="absolute inset-0 animate-spin rounded-full border-t-4 border-primary"></div>
+					<BrainCircuit class="absolute inset-0 m-auto h-8 w-8 animate-pulse text-primary" />
 				</div>
-				<p class="font-sans tracking-widest text-muted-foreground uppercase italic">
+				<p class="font-sans tracking-widest text-muted-foreground uppercase">
 					Preparing generator...
 				</p>
 			</div>
 		{:else}
 			<div in:fly={{ y: 40, duration: 800 }}>
-				<Card.Root
-					class="overflow-hidden rounded-[3rem] border-white/10 bg-slate-950/40 shadow-2xl ring-1 ring-white/10 backdrop-blur-3xl"
-				>
+				<Card.Root class="overflow-hidden rounded-[3rem] border-border bg-card/40 shadow-2xl backdrop-blur-3xl">
 					<form onsubmit={handleGenerate}>
 						<Card.Content class="space-y-12 p-10 md:p-16">
 							{#if error}
 								<div
-									class="flex items-center gap-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-sm font-bold text-red-400"
+									class="flex items-center gap-4 rounded-2xl border border-destructive/20 bg-destructive/10 p-6 text-sm font-bold text-destructive"
 									transition:fade
 								>
 									<Activity class="h-5 w-5 animate-pulse" />
@@ -188,80 +174,72 @@
 
 							<!-- Topic/Prompt Input -->
 							<div class="space-y-6">
-								<Label
-									class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-slate-500 uppercase"
-								>
-									<Target class="h-4 w-4 text-indigo-400" /> Topic
+								<Label class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-muted-foreground uppercase">
+									<Target class="h-4 w-4 text-primary" /> Topic
 								</Label>
 								<textarea
 									bind:value={prompt}
 									required
 									placeholder="e.g. 'Photosynthesis' or 'World War II timeline'..."
-									class="min-h-[200px] w-full resize-none rounded-[2.5rem] border border-white/5 bg-slate-900/40 p-10 font-sans text-2xl text-white italic transition-all outline-none placeholder:text-slate-700 focus:bg-slate-900/60 focus:ring-2 focus:ring-indigo-500"
+									class="min-h-[200px] w-full resize-none rounded-[2.5rem] border border-border bg-input px-10 py-8 font-sans text-2xl transition-all outline-none placeholder:text-muted-foreground/50 focus:bg-input focus:ring-2 focus:ring-primary"
 								></textarea>
 							</div>
 
 							<div class="grid grid-cols-1 gap-12 lg:grid-cols-2">
 								<!-- Model Selection -->
 								<div class="space-y-6">
-									<Label
-										class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-slate-500 uppercase"
-									>
-										<Zap class="h-4 w-4 text-cyan-400" /> AI Model
+									<Label class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-muted-foreground uppercase">
+										<Zap class="h-4 w-4 text-info" /> AI Model
 									</Label>
 									<div class="relative">
 										<select
 											bind:value={selectedProviderId}
 											required
-											class="h-16 w-full appearance-none rounded-2xl border border-white/5 bg-slate-900/40 px-8 text-lg text-white transition-all outline-none focus:ring-2 focus:ring-indigo-500"
+											class="h-16 w-full appearance-none rounded-2xl border border-border bg-input px-8 text-lg outline-none focus:ring-2 focus:ring-primary text-foreground"
 										>
 											{#each providers as provider}
-												<option value={provider.id} class="bg-slate-950">
+												<option value={provider.id} class="bg-card">
 													{provider.provider_name} — {provider.model_name}
 												</option>
 											{/each}
 										</select>
 										<div class="pointer-events-none absolute top-1/2 right-6 -translate-y-1/2">
-											<ChevronRight class="h-5 w-5 rotate-90 text-slate-500" />
+											<ChevronRight class="h-5 w-5 rotate-90 text-muted-foreground" />
 										</div>
 									</div>
 								</div>
 
 								<!-- Target Deck -->
 								<div class="space-y-6">
-									<Label
-										class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-slate-500 uppercase"
-									>
-										<Layers class="h-4 w-4 text-emerald-400" /> Target Deck
+									<Label class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-muted-foreground uppercase">
+										<Layers class="h-4 w-4 text-success" /> Target Deck
 									</Label>
 									<div class="relative">
 										<select
 											bind:value={selectedDeckId}
-											class="h-16 w-full appearance-none rounded-2xl border border-white/5 bg-slate-900/40 px-8 text-lg text-white transition-all outline-none focus:ring-2 focus:ring-indigo-500"
+											class="h-16 w-full appearance-none rounded-2xl border border-border bg-input px-8 text-lg outline-none focus:ring-2 focus:ring-primary text-foreground"
 										>
-											<option value="new" class="bg-slate-950 font-bold text-indigo-400">
+											<option value="new" class="bg-card font-bold text-primary">
 												+ Create New Deck
 											</option>
-											<optgroup label="Existing Decks" class="bg-slate-950">
+											<optgroup label="Existing Decks" class="bg-card">
 												{#each decks as deck}
-													<option value={deck.id.toString()} class="bg-slate-950">
+													<option value={deck.id.toString()} class="bg-card">
 														{deck.title}
 													</option>
 												{/each}
 											</optgroup>
 										</select>
 										<div class="pointer-events-none absolute top-1/2 right-6 -translate-y-1/2">
-											<ChevronRight class="h-5 w-5 rotate-90 text-slate-500" />
+											<ChevronRight class="h-5 w-5 rotate-90 text-muted-foreground" />
 										</div>
 									</div>
 								</div>
 
 								<!-- Flashcards Count -->
 								<div class="space-y-6">
-									<Label
-										class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-slate-500 uppercase"
-									>
-										<Infinity class="h-4 w-4 text-amber-400" /> Number of Cards
+									<Label class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-muted-foreground uppercase">
+										<Infinity class="h-4 w-4 text-warning" /> Number of Cards
 									</Label>
 									<div class="flex items-center gap-6">
 										<input
@@ -270,11 +248,9 @@
 											max="30"
 											step="5"
 											bind:value={numFlashcards}
-											class="h-2 flex-grow cursor-pointer appearance-none rounded-full bg-white/5 accent-indigo-500"
+											class="h-2 flex-grow cursor-pointer appearance-none rounded-full bg-muted accent-primary"
 										/>
-										<div
-											class="font-unbounded min-w-[80px] rounded-xl border border-white/5 bg-white/5 p-4 text-center text-2xl font-black text-white"
-										>
+										<div class="font-unbounded min-w-[80px] rounded-xl border border-border bg-muted p-4 text-center text-2xl font-black text-foreground">
 											{numFlashcards}
 										</div>
 									</div>
@@ -282,10 +258,8 @@
 
 								<!-- Difficulty -->
 								<div class="space-y-6">
-									<Label
-										class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-slate-500 uppercase"
-									>
-										<Trophy class="h-4 w-4 text-red-400" /> Difficulty
+									<Label class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-muted-foreground uppercase">
+										<Trophy class="h-4 w-4 text-destructive" /> Difficulty
 									</Label>
 									<div class="grid grid-cols-3 gap-3">
 										{#each ['easy', 'normal', 'hard'] as level}
@@ -294,8 +268,8 @@
 												onclick={() => (difficulty = level as any)}
 												class="h-16 rounded-2xl border text-[10px] font-black tracking-widest uppercase transition-all
                                                 {difficulty === level
-													? 'border-indigo-500/50 bg-indigo-500/20 text-white shadow-[0_0_20px_rgba(79,70,229,0.2)]'
-													: 'border-white/5 bg-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300'}"
+													? 'border-primary/50 bg-primary/20 text-foreground shadow-[0_0_20px_rgba(var(--color-primary),0.2)]'
+													: 'border-border bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'}"
 											>
 												{level}
 											</button>
@@ -308,7 +282,7 @@
 								<Button
 									type="submit"
 									disabled={isGenerating || providers.length === 0}
-									class="relative h-20 w-full overflow-hidden rounded-[2rem] bg-indigo-600 text-xl font-black tracking-[0.2em] text-white uppercase shadow-[0_20px_50px_rgba(79,70,229,0.4)] transition-all hover:scale-[1.02] hover:bg-indigo-500 active:scale-[0.98]"
+									class="relative h-20 w-full overflow-hidden rounded-[2rem] text-xl font-black tracking-[0.2em] uppercase transition-all hover:scale-[1.02] active:scale-[0.98]"
 								>
 									{#if isGenerating}
 										<div class="flex items-center gap-4">
@@ -323,10 +297,8 @@
 									{/if}
 								</Button>
 								{#if providers.length === 0}
-									<p class="mt-4 text-center text-xs font-bold text-amber-500/60 uppercase">
-										No Intelligence Provider setup. <a href="/providers" class="underline"
-											>Configure here</a
-										>
+									<p class="mt-4 text-center text-xs font-bold text-warning uppercase">
+										No Intelligence Provider setup. <a href="/providers" class="underline">Configure here</a>
 									</p>
 								{/if}
 							</div>
@@ -350,7 +322,7 @@
 		background: transparent;
 	}
 	textarea::-webkit-scrollbar-thumb {
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--border);
 		border-radius: 10px;
 	}
 </style>

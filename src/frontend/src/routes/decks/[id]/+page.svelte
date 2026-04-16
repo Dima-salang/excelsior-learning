@@ -131,29 +131,26 @@
 			{#if deck}
 				<div class="flex flex-wrap items-center gap-6">
 					<div class="flex items-center gap-2">
-						<CheckCircle2 class="h-4 w-4 text-emerald-400" />
-						<span class="text-[10px] font-black tracking-widest text-emerald-400 uppercase">
+						<CheckCircle2 class="h-4 w-4 text-success" />
+						<span class="text-[10px] font-black tracking-widest text-success uppercase">
 							{masteredCount} / {totalCount} Mastered
 						</span>
 					</div>
 					<div class="h-1.5 w-32 overflow-hidden rounded-full bg-muted">
-						<div
-							class="h-full bg-primary transition-all duration-1000"
-							style="width: {progress}%"
-						></div>
+						<div class="h-full bg-primary transition-all duration-1000" style="width: {progress}%"></div>
 					</div>
 					{#if pastDueCount > 0}
 						<div class="flex items-center gap-2">
-							<AlertCircle class="h-4 w-4 text-red-400" />
-							<span class="text-[10px] font-black tracking-widest text-red-400 uppercase">
+							<AlertCircle class="h-4 w-4 text-destructive" />
+							<span class="text-[10px] font-black tracking-widest text-destructive uppercase">
 								{pastDueCount} Past Due
 							</span>
 						</div>
 					{/if}
 					{#if dueCount > 0}
 						<div class="flex items-center gap-2">
-							<CalendarClock class="h-4 w-4 text-yellow-400" />
-							<span class="text-[10px] font-black tracking-widest text-yellow-400 uppercase">
+							<CalendarClock class="h-4 w-4 text-warning" />
+							<span class="text-[10px] font-black tracking-widest text-warning uppercase">
 								{dueCount} Due
 							</span>
 						</div>
@@ -171,23 +168,19 @@
 			</div>
 		{:else if error}
 			<div class="flex flex-col items-center justify-center space-y-6 py-20 text-center">
-				<div class="rounded-full border border-red-500/20 bg-red-500/10 p-6">
-					<BrainCircuit class="h-12 w-12 text-red-500" />
+				<div class="rounded-full border border-destructive/20 bg-destructive/10 p-6">
+					<BrainCircuit class="h-12 w-12 text-destructive" />
 				</div>
-				<h2 class="font-display text-2xl font-black text-white uppercase italic">{error}</h2>
-				<Button onclick={fetchDeck} variant="outline" class="rounded-xl border-white/10"
-					>Retry Connection</Button
-				>
+				<h2 class="font-display text-2xl font-black uppercase italic text-foreground">{error}</h2>
+				<Button onclick={fetchDeck} variant="outline" class="rounded-xl border-border">Retry Connection</Button>
 			</div>
 		{:else if deck}
 			<header class="flex flex-col justify-between gap-8 md:flex-row md:items-end" in:fade>
 				<div class="space-y-6">
-					<h1
-						class="font-display text-4xl leading-tight font-black tracking-tighter text-foreground uppercase md:text-6xl"
-					>
+					<h1 class="font-display text-4xl leading-tight font-black tracking-tighter text-foreground uppercase md:text-6xl">
 						{deck.title}
 					</h1>
-					<p class="max-w-2xl font-sans text-xl leading-relaxed text-muted-foreground italic">
+					<p class="max-w-2xl font-sans text-xl leading-relaxed text-muted-foreground">
 						{deck.description || 'Combining concepts into a unified study guide.'}
 					</p>
 				</div>
@@ -203,7 +196,7 @@
 					<Button
 						size="lg"
 						onclick={() => goto(`/quiz/${id}`)}
-						class="h-16 rounded-2xl bg-primary px-12 font-black tracking-widest uppercase shadow-[0_0_30_rgba(79,70,229,0.3)] transition-all hover:-translate-y-1"
+						class="h-16 rounded-2xl bg-primary px-12 font-black tracking-widest uppercase shadow-lg transition-all hover:-translate-y-1"
 					>
 						Start Quiz
 					</Button>
@@ -214,12 +207,12 @@
 			{#if dueCount > 0}
 				<div class="space-y-8">
 					<div class="flex items-center gap-4">
-						<div class="h-px flex-grow bg-yellow-500/30"></div>
-						<span class="flex items-center gap-2 text-[10px] font-black tracking-[0.4em] text-yellow-400 uppercase">
+						<div class="h-px flex-grow bg-warning/30"></div>
+						<span class="flex items-center gap-2 text-[10px] font-black tracking-[0.4em] text-warning uppercase">
 							<AlertCircle class="h-4 w-4" />
 							Due for Review
 						</span>
-						<div class="h-px flex-grow bg-yellow-500/30"></div>
+						<div class="h-px flex-grow bg-warning/30"></div>
 					</div>
 
 					<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -228,11 +221,10 @@
 								<Flashcard
 									{...card}
 									compact={true}
-									onAnswered={(isCorrect, selectedIdx) =>
-										updateCardMastery(card.id, isCorrect, selectedIdx)}
+									onAnswered={(isCorrect, selectedIdx) => updateCardMastery(card.id, isCorrect, selectedIdx)}
 								/>
 								<div class="mt-2 flex items-center justify-between px-2">
-									<span class="flex items-center gap-1 text-[9px] font-black tracking-widest {isPastDue(card.next_review) ? 'text-red-400' : 'text-yellow-400'} uppercase">
+									<span class="flex items-center gap-1 text-[9px] font-black tracking-widest {isPastDue(card.next_review) ? 'text-destructive' : 'text-warning'} uppercase">
 										{#if isPastDue(card.next_review)}
 											<AlertCircle class="h-3 w-3" />
 										{:else}
@@ -254,9 +246,7 @@
 			<div class="space-y-8">
 				<div class="flex items-center gap-4">
 					<div class="h-px flex-grow bg-border"></div>
-					<span class="text-[10px] font-black tracking-[0.4em] text-muted-foreground uppercase"
-						>All Study Cards</span
-					>
+					<span class="text-[10px] font-black tracking-[0.4em] text-muted-foreground uppercase">All Study Cards</span>
 					<div class="h-px flex-grow bg-border"></div>
 				</div>
 
@@ -266,11 +256,10 @@
 							<Flashcard
 								{...card}
 								compact={true}
-								onAnswered={(isCorrect, selectedIdx) =>
-									updateCardMastery(card.id, isCorrect, selectedIdx)}
+								onAnswered={(isCorrect, selectedIdx) => updateCardMastery(card.id, isCorrect, selectedIdx)}
 							/>
 							<div class="mt-2 flex items-center justify-between px-2">
-								<span class="flex items-center gap-1 text-[9px] font-black tracking-widest {isPastDue(card.next_review) ? 'text-red-400' : isDue(card.next_review) ? 'text-yellow-400' : 'text-muted-foreground'} uppercase">
+								<span class="flex items-center gap-1 text-[9px] font-black tracking-widest {isPastDue(card.next_review) ? 'text-destructive' : isDue(card.next_review) ? 'text-warning' : 'text-muted-foreground'} uppercase">
 									<Calendar class="h-3 w-3" />
 									{formatNextReview(card.next_review)}
 								</span>

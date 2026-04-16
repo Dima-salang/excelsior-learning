@@ -115,7 +115,7 @@
 						<Skeleton class="h-6 w-3/4" />
 					</div>
 				</div>
-				<div class="flex flex-wrap gap-4 border-y border-white/5 py-8 pt-4">
+				<div class="flex flex-wrap gap-4 border-y border-border py-8 pt-4">
 					<Skeleton class="h-14 w-32 rounded-xl" />
 					<Skeleton class="h-14 w-32 rounded-xl" />
 					<Skeleton class="h-14 w-32 rounded-xl" />
@@ -137,60 +137,40 @@
 			</div>
 		</div>
 	{:else if error}
-		<div
-			class="mx-auto max-w-2xl space-y-6 rounded-[2rem] border border-red-500/10 bg-red-500/5 p-12 text-center"
-		>
-			<XCircle class="mx-auto h-16 w-16 text-red-500/50" />
-			<h2 class="text-2xl font-bold text-white uppercase">Something went wrong</h2>
-			<p class="font-serif text-slate-400 italic">{error}</p>
-			<Button
-				onclick={() => goto('/')}
-				variant="outline"
-				class="border-red-500/30 text-red-400 hover:bg-red-500/10">Return Home</Button
-			>
+		<div class="mx-auto max-w-2xl space-y-6 rounded-[2rem] border border-destructive/10 bg-destructive/5 p-12 text-center">
+			<XCircle class="mx-auto h-16 w-16 text-destructive/50" />
+			<h2 class="text-2xl font-bold uppercase">Something went wrong</h2>
+			<p class="text-muted-foreground">{error}</p>
+			<Button onclick={() => goto('/')} variant="outline" class="border-destructive/30 text-destructive hover:bg-destructive/10">
+				Return Home
+			</Button>
 		</div>
 	{:else if lecture}
 		<header class="relative space-y-8 pt-4" in:fade={{ duration: 1000 }}>
 			<div class="flex flex-col justify-between gap-8 md:flex-row md:items-end">
 				<div class="max-w-3xl space-y-4">
-					<div
-						class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-indigo-400 uppercase"
-					>
+					<div class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-primary uppercase">
 						<Layers class="h-4 w-4" />
 						<span>Course Content</span>
 					</div>
-					<h1
-						class="font-unbounded text-4xl leading-tight font-black tracking-tighter text-white uppercase md:text-6xl"
-					>
+					<h1 class="font-unbounded text-4xl leading-tight font-black tracking-tighter uppercase md:text-6xl text-foreground">
 						{lecture.title}
 					</h1>
-					<p class="font-sans text-lg leading-relaxed text-slate-400 opacity-80">
+					<p class="font-sans text-lg leading-relaxed text-muted-foreground opacity-80">
 						{lecture.description || 'Step through this AI-generated curriculum at your own pace.'}
 					</p>
 				</div>
 
-				<div
-					class="min-w-[200px] rounded-[2rem] border border-primary/20 bg-primary/10 p-6 text-center shadow-2xl backdrop-blur-3xl"
-				>
-					<span class="mb-1 block text-[10px] font-black tracking-widest text-primary uppercase"
-						>Completion</span
-					>
+				<div class="min-w-[200px] rounded-[2rem] border border-primary/20 bg-primary/10 p-6 text-center shadow-2xl backdrop-blur-3xl">
+					<span class="mb-1 block text-[10px] font-black tracking-widest text-primary uppercase">Completion</span>
 					<div class="font-display text-5xl font-black text-foreground">
 						{Math.round(lecture.completion_percentage)}%
 					</div>
-					<div class="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/5">
-						<div
-							class="h-full bg-indigo-500 transition-all duration-1000"
-							style="width: {lecture.completion_percentage}%"
-						></div>
+					<div class="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+						<div class="h-full bg-primary transition-all duration-1000" style="width: {lecture.completion_percentage}%"></div>
 					</div>
 				</div>
 			</div>
-
-			<!-- Decor -->
-			<div
-				class="absolute -top-12 -right-12 -z-10 h-64 w-64 rounded-full bg-indigo-500/5 blur-[100px]"
-			></div>
 		</header>
 
 		<section class="space-y-16 pb-24">
@@ -208,14 +188,10 @@
 				{#each [...sections].sort((a, b) => a.order_key - b.order_key) as section, i}
 					<div class="space-y-8" in:fly={{ y: 20, delay: i * 150 }}>
 						<div class="group flex items-center gap-6">
-							<div
-								class="flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-muted font-display font-black text-primary shadow-xl transition-all group-hover:scale-110 group-hover:border-primary/30"
-							>
+							<div class="flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-muted font-display font-black text-primary shadow-xl transition-all group-hover:scale-110 group-hover:border-primary/30">
 								{i + 1}
 							</div>
-							<h2
-								class="font-display text-2xl font-black tracking-tight text-foreground uppercase transition-colors group-hover:text-primary"
-							>
+							<h2 class="font-display text-2xl font-black tracking-tight text-foreground uppercase transition-colors group-hover:text-primary">
 								{section.title}
 							</h2>
 							<div class="h-px flex-grow bg-border transition-all group-hover:bg-primary/20"></div>
@@ -225,14 +201,10 @@
 							{#each [...section.steps].sort((a, b) => a.order_key - b.order_key) as step}
 								<button
 									onclick={() => handleStepClick(step)}
-									class="group flex items-center justify-between rounded-2xl border border-border bg-card/40 p-6 text-left shadow-lg ring-1 ring-white/5 transition-all hover:border-primary/30 hover:bg-primary/10"
+									class="group flex items-center justify-between rounded-2xl border border-border bg-card/40 p-6 text-left shadow-lg transition-all hover:border-primary/30 hover:bg-primary/10"
 								>
 									<div class="flex items-center gap-4 overflow-hidden">
-										<div
-											class="rounded-xl p-3 {step.completed
-												? 'bg-emerald-500/10 text-emerald-400'
-												: 'bg-muted text-muted-foreground'} transition-transform group-hover:scale-110"
-										>
+										<div class="rounded-xl p-3 {step.completed ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'} transition-transform group-hover:scale-110">
 											{#if step.completed}
 												<CheckCircle2 class="h-5 w-5" />
 											{:else}
@@ -240,20 +212,13 @@
 											{/if}
 										</div>
 										<div class="flex min-w-0 flex-col">
-											<span
-												class="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary"
-												>{step.title}</span
-											>
-											<span
-												class="text-[10px] font-black tracking-widest text-muted-foreground uppercase"
-											>
+											<span class="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">{step.title}</span>
+											<span class="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
 												{step.completed ? 'Completed' : 'Draft Ready'}
 											</span>
 										</div>
 									</div>
-									<ChevronRight
-										class="h-4 w-4 text-muted-foreground transition-all group-hover:translate-x-1 group-hover:text-primary"
-									/>
+									<ChevronRight class="h-4 w-4 text-muted-foreground transition-all group-hover:translate-x-1 group-hover:text-primary" />
 								</button>
 							{/each}
 						</div>

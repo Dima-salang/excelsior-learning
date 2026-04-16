@@ -3,6 +3,7 @@
 	import { apiFetch } from '$lib/api';
 	import { fade, fly, scale } from 'svelte/transition';
 	import { Button } from '$lib/components/ui/button';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import {
 		Clock,
 		Trophy,
@@ -11,10 +12,8 @@
 		History,
 		BrainCircuit,
 		Loader2,
-		Search,
-		Filter,
 		ChevronDown
-	} from '@lucide/svelte';
+	} from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 
 	interface QuizHistory {
@@ -25,13 +24,6 @@
 		time_spent: number;
 		score: number;
 		created_at: string;
-	}
-
-	interface PaginatedResponse<T> {
-		items: T[];
-		total: number;
-		page: number;
-		size: number;
 	}
 
 	let quizzes = $state<QuizHistory[]>([]);
@@ -100,209 +92,118 @@
 	<title>Quiz History — Excelsior</title>
 </svelte:head>
 
-<div class="relative min-h-[calc(100vh-64px)] w-full">
-	<div class="relative z-10 container mx-auto max-w-6xl px-6 py-12 md:py-20">
-		<header class="mb-16 space-y-4" in:fly={{ y: -20, duration: 800 }}>
-			<div
-				class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-black tracking-widest text-primary uppercase"
-			>
-				<History class="h-3.5 w-3.5" />
-				{#if totalQuizzes > 0}
-					{quizzes.length}{totalQuizzes > quizzes.length ? `/${totalQuizzes}` : ''} Records
-				{:else}
-					Past Results
-				{/if}
+<div class="container mx-auto max-w-5xl px-6 py-12">
+	<header class="mb-10 space-y-2" in:fly={{ y: -20, duration: 400 }}>
+		<div class="flex items-center gap-3">
+			<div class="rounded-lg bg-primary/10 p-2">
+				<History class="h-5 w-5 text-primary" />
 			</div>
-			<div class="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-				<div class="space-y-2">
-					<h1
-						class="font-display text-4xl leading-none font-black tracking-tighter uppercase md:text-6xl"
-					>
-						Quiz <span class="text-primary italic">History</span>
-					</h1>
-					<p class="max-w-xl font-sans text-lg text-muted-foreground">
-						Review your past performance and study records.
-					</p>
-				</div>
+			<span class="text-sm font-medium text-muted-foreground">
+				{totalQuizzes > 0
+					? `${quizzes.length}${totalQuizzes > quizzes.length ? `/${totalQuizzes}` : ''} Records`
+					: 'Quiz History'}
+			</span>
+		</div>
+		<h1 class="text-3xl font-bold tracking-tight md:text-4xl">
+			Quiz <span class="text-primary">History</span>
+		</h1>
+		<p class="text-muted-foreground">Review your past performance and study records.</p>
+	</header>
 
-				<div class="flex items-center gap-3">
-					<div class="group relative">
-						<div
-							class="absolute inset-0 rounded-full bg-primary/5 blur-xl transition-all group-hover:bg-primary/10"
-						></div>
-						<div
-							class="relative flex w-full items-center rounded-2xl border border-border bg-card/50 px-4 py-2 backdrop-blur-xl md:w-64"
-						>
-							<Search class="mr-2 h-4 w-4 text-muted-foreground" />
-							<input
-								type="text"
-								placeholder="Search records..."
-								class="w-full border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
-							/>
-						</div>
-					</div>
-					<Button
-						variant="outline"
-						class="rounded-2xl border-border px-4 py-6 transition-all hover:bg-primary/5"
-					>
-						<Filter class="h-4 w-4" />
-					</Button>
-				</div>
+	{#if isLoading}
+		<div class="flex flex-col items-center justify-center space-y-6 py-20">
+			<Loader2 class="h-10 w-10 animate-spin text-primary" />
+			<p class="text-sm text-muted-foreground">Loading quizzes...</p>
+		</div>
+	{:else if error}
+		<div
+			class="flex flex-col items-center justify-center space-y-4 rounded-xl border border-destructive/20 bg-destructive/10 py-12 text-center"
+		>
+			<p class="font-medium text-destructive">{error}</p>
+			<Button onclick={fetchQuizzes} variant="outline" size="sm">Retry</Button>
+		</div>
+	{:else if quizzes.length === 0}
+		<div
+			class="flex flex-col items-center justify-center space-y-6 rounded-xl border border-dashed border-border bg-muted/30 py-20 text-center"
+			in:fade
+		>
+			<div class="rounded-full bg-muted p-4">
+				<BrainCircuit class="h-10 w-10 text-muted-foreground" />
 			</div>
-		</header>
-
-		{#if isLoading}
-			<div class="flex flex-col items-center justify-center space-y-8 py-32" in:fade>
-				<div class="relative">
-					<div class="absolute inset-0 animate-pulse rounded-full bg-primary/20 blur-2xl"></div>
-					<Loader2 class="relative z-10 h-16 w-16 animate-spin text-primary" />
-				</div>
-				<p class="font-sans text-sm tracking-widest text-muted-foreground uppercase italic">
-					Loading quizzes...
+			<div class="space-y-2">
+				<h2 class="text-xl font-semibold">No Data Found</h2>
+				<p class="text-sm text-muted-foreground">
+					You haven't completed any quizzes yet. Start a quiz from your decks to begin building your
+					record.
 				</p>
 			</div>
-		{:else if error}
-			<div class="flex flex-col items-center justify-center space-y-8 py-20 text-center" in:fade>
-				<div class="rounded-[2.5rem] border border-destructive/10 bg-destructive/5 p-8">
-					<p class="font-display font-black text-destructive uppercase">{error}</p>
-				</div>
-				<Button onclick={fetchQuizzes} variant="outline" class="rounded-2xl border-border px-8">
-					Retry Connection
-				</Button>
-			</div>
-		{:else if quizzes.length === 0}
-			<div class="flex flex-col items-center justify-center space-y-8 py-32 text-center" in:fade>
-				<div
-					class="flex h-24 w-24 items-center justify-center rounded-full border border-border/50 bg-muted/20"
+			<Button onclick={() => goto('/dashboard')}>Go to Dashboard</Button>
+		</div>
+	{:else}
+		<div class="space-y-4">
+			{#each quizzes as quiz, i (quiz.id)}
+				<button
+					in:fly={{ y: 10, delay: i * 30 }}
+					class="group flex w-full cursor-pointer flex-col gap-4 rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-md md:flex-row md:items-center md:p-6"
+					onclick={() => goto(`/quiz/view/${quiz.id}`)}
 				>
-					<BrainCircuit class="h-12 w-12 text-muted-foreground" />
-				</div>
-				<div class="space-y-2">
-					<h3 class="font-display text-2xl font-black uppercase">No Data Found</h3>
-					<p class="mx-auto max-w-md text-muted-foreground">
-						You haven't completed any quizzes yet. Start a quiz from your decks to begin building
-						your record.
-					</p>
-				</div>
-				<Button
-					onclick={() => goto('/dashboard')}
-					class="h-14 rounded-2xl px-8 font-black tracking-widest uppercase"
-				>
-					Go to Dashboard
-				</Button>
-			</div>
-		{:else}
-			<div class="grid grid-cols-1 gap-6">
-				{#each quizzes as quiz, i (quiz.id)}
-					<div in:fly={{ y: 20, delay: i * 50, duration: 600 }} class="group relative">
-						<!-- Hover Effect Backdrop -->
-						<div
-							class="absolute -inset-1 rounded-[2rem] bg-gradient-to-r from-primary/20 to-accent/20 opacity-0 blur transition duration-500 group-hover:opacity-100"
-						></div>
-
-						<button
-							class="relative flex w-full cursor-pointer flex-col justify-between gap-6 rounded-[2rem] border border-border bg-card/40 p-6 text-left backdrop-blur-xl transition-all hover:border-primary/50 focus:ring-2 focus:ring-primary/50 focus:outline-none md:flex-row md:items-center md:p-8"
-							onclick={() => goto(`/quiz/view/${quiz.id}`)}
-						>
-							<div class="flex items-center gap-6">
-								<div
-									class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 transition-transform duration-500 group-hover:scale-110"
-								>
-									<Trophy class="h-8 w-8 text-primary" />
-								</div>
-
-								<div class="space-y-1">
-									<h3
-										class="font-display text-xl font-black uppercase transition-colors group-hover:text-primary md:text-2xl"
-									>
-										{quiz.deck_title}
-									</h3>
-									<div class="flex items-center gap-4 text-sm font-medium text-muted-foreground">
-										<span class="flex items-center gap-1.5">
-											<Clock class="h-3.5 w-3.5" />
-											{formatDate(quiz.created_at)}
-										</span>
-										<span class="h-1 w-1 rounded-full bg-border"></span>
-										<span
-											class="flex items-center gap-1.5 text-[10px] font-black tracking-wider text-primary/70 uppercase"
-										>
-											{quiz.deck_title}
-										</span>
-									</div>
-								</div>
+					<div class="flex items-center gap-4">
+						<div class="rounded-lg bg-primary/10 p-3">
+							<Trophy class="h-6 w-6 text-primary" />
+						</div>
+						<div class="space-y-1">
+							<h3 class="font-semibold transition-colors group-hover:text-primary">
+								{quiz.deck_title}
+							</h3>
+							<div class="flex items-center gap-3 text-xs text-muted-foreground">
+								<span class="flex items-center gap-1">
+									<Clock class="h-3 w-3" />
+									{formatDate(quiz.created_at)}
+								</span>
 							</div>
-
-							<div class="flex items-center gap-4 md:gap-12">
-								<div class="flex flex-col items-center md:items-end">
-									<span
-										class="pb-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase"
-										>Accuracy</span
-									>
-									<span
-										class="font-display text-2xl font-black {quiz.score > 7
-											? 'text-emerald-400'
-											: 'text-primary'}"
-									>
-										{Math.round(quiz.score * 10)}%
-									</span>
-								</div>
-
-								<div
-									class="flex flex-col items-center border-l border-border pl-4 md:items-end md:pl-12"
-								>
-									<span
-										class="pb-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase"
-										>Time Spent</span
-									>
-									<div
-										class="flex items-center gap-2 font-display text-xl font-black text-foreground"
-									>
-										<Timer class="h-4 w-4 text-accent" />
-										{formatTime(quiz.time_spent)}
-									</div>
-								</div>
-
-								<div class="ml-4 hidden flex-shrink-0 md:block">
-									<div
-										class="flex h-10 w-10 items-center justify-center rounded-full bg-border/50 transition-all group-hover:bg-primary group-hover:text-primary-foreground"
-									>
-										<ChevronRight class="h-6 w-6" />
-									</div>
-								</div>
-							</div>
-						</button>
+						</div>
 					</div>
-				{/each}
+
+					<div class="flex items-center gap-6">
+						<div class="text-center">
+							<span class="block text-xs text-muted-foreground uppercase">Accuracy</span>
+							<span
+								class="text-xl font-bold {quiz.score > 7
+									? 'text-green-600 dark:text-green-400'
+									: 'text-primary'}"
+							>
+								{Math.round(quiz.score * 10)}%
+							</span>
+						</div>
+
+						<div class="border-l border-border pl-6">
+							<span class="block text-xs text-muted-foreground uppercase">Time Spent</span>
+							<div class="flex items-center gap-2 font-semibold">
+								<Timer class="h-4 w-4 text-muted-foreground" />
+								{formatTime(quiz.time_spent)}
+							</div>
+						</div>
+
+						<ChevronRight
+							class="hidden h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1 md:block"
+						/>
+					</div>
+				</button>
+			{/each}
+		</div>
+
+		{#if hasMoreQuizzes}
+			<div class="flex justify-center pt-6">
+				<Button onclick={loadMoreQuizzes} disabled={isLoadingMore} variant="outline" class="gap-2">
+					{#if isLoadingMore}
+						<Loader2 class="h-4 w-4 animate-spin" />
+						Loading...
+					{:else}
+						<ChevronDown class="h-4 w-4" />
+						Load More
+					{/if}
+				</Button>
 			</div>
-
-			{#if hasMoreQuizzes && !isLoading}
-				<div class="mt-12 flex justify-center">
-					<Button
-						onclick={loadMoreQuizzes}
-						disabled={isLoadingMore}
-						variant="outline"
-						class="group flex h-14 items-center gap-3 rounded-2xl border-border px-10 font-black tracking-widest uppercase transition-all hover:bg-primary/5 disabled:opacity-50"
-					>
-						{#if isLoadingMore}
-							<Loader2 class="h-5 w-5 animate-spin" />
-							Loading...
-						{:else}
-							<ChevronDown class="h-5 w-5 transition-transform group-hover:translate-y-1" />
-							Load More
-						{/if}
-					</Button>
-				</div>
-			{/if}
 		{/if}
-	</div>
+	{/if}
 </div>
-
-<style>
-	:global(.font-display) {
-		font-family: var(--font-display, 'Unbounded', sans-serif);
-	}
-
-	:global(.font-sans) {
-		font-family: var(--font-sans, 'Inter', sans-serif);
-	}
-</style>

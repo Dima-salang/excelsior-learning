@@ -1,7 +1,6 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { apiFetch } from '$lib/api';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -14,11 +13,9 @@
 		Calendar,
 		Clock,
 		Target,
-		Zap,
 		BookOpen,
-		LayoutDashboard,
 		ArrowRight
-	} from '@lucide/svelte';
+	} from 'lucide-svelte';
 	import { fade, fly, scale } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -44,7 +41,6 @@
 	let isGenerating = $state(false);
 	let showGenerator = $state(false);
 
-	// Generator Form
 	let prompt = $state('');
 	let selectedProviderId = $state<number | null>(null);
 	let generationError = $state('');
@@ -68,7 +64,7 @@
 				apiFetch(`/lectures/?user_id=${user.id}`),
 				apiFetch(`/llm/providers?user_id=${user.id}`)
 			]);
-			lectures = lecturesData;
+			lectures = lecturesData.items || [];
 			providers = providersData;
 			if (providers.length > 0) {
 				selectedProviderId = providers[0].id;
@@ -97,11 +93,9 @@
 					user_id: user.id
 				})
 			});
-
-			// Redirect to the newly created lecture
 			goto(`/lectures/${newLecture.id}`);
 		} catch (err: any) {
-			generationError = err.message || 'Generation failed. The neural matrix is unstable.';
+			generationError = err.message || 'Generation failed. Please try again.';
 		} finally {
 			isGenerating = false;
 		}
@@ -116,158 +110,88 @@
 	}
 </script>
 
-<div class="container mx-auto max-w-7xl space-y-16 p-6 lg:p-12">
-	<!-- Navbar Logic (Simplified for now) -->
-	<nav class="flex items-center justify-between py-4" in:fade>
-		<div class="flex items-center gap-8">
-			<a href="/dashboard" class="flex items-center gap-3">
-				<div class="rounded-xl bg-indigo-600 p-2">
-					<BrainCircuit class="h-6 w-6 text-white" />
+<div class="container mx-auto max-w-7xl space-y-12 p-6 lg:p-12">
+	<header class="space-y-6" in:fade={{ duration: 400 }}>
+		<div class="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+			<div class="space-y-3">
+				<div class="flex items-center gap-2">
+					<div class="rounded-lg bg-primary/10 p-2">
+						<BrainCircuit class="h-5 w-5 text-primary" />
+					</div>
+					<span class="text-sm font-medium text-muted-foreground">Dashboard</span>
 				</div>
-				<span class="font-syne text-2xl font-black tracking-tighter text-white">EXCELSIOR</span>
-			</a>
-			<div
-				class="hidden items-center gap-6 text-sm font-bold tracking-widest text-slate-500 uppercase md:flex"
-			>
-				<a href="/dashboard" class="text-indigo-400">Dashboard</a>
-				<a href="/providers" class="transition-colors hover:text-white">Providers</a>
-				<a href="/library" class="transition-colors hover:text-white">Library</a>
+				<h1 class="text-3xl font-bold tracking-tight md:text-4xl">
+					Learning <span class="text-primary">Center</span>
+				</h1>
+				<p class="text-muted-foreground">
+					Welcome back! Continue your courses or create a new one.
+				</p>
 			</div>
-		</div>
-		<div class="flex items-center gap-4">
-			<div class="flex flex-col items-end">
-				<span class="text-xs font-black text-white">{auth.user?.username || 'Scholar'}</span>
-				<span class="text-[10px] text-slate-500 lowercase">{auth.user?.email || 'unverified'}</span>
-			</div>
-			<div class="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 p-[1px]">
-				<div class="flex h-full w-full items-center justify-center rounded-full bg-slate-950">
-					<span class="text-xs font-bold text-white uppercase"
-						>{auth.user?.username?.[0] || 'S'}</span
-					>
-				</div>
-			</div>
-		</div>
-	</nav>
 
-	<!-- Header -->
-	<header
-		class="relative flex flex-col items-end justify-between gap-8 pt-8 md:flex-row"
-		in:fade={{ duration: 1200 }}
-	>
-		<div class="max-w-2xl space-y-4">
-			<div
-				class="ml-1 flex items-center gap-3 text-[10px] font-bold tracking-[0.3em] text-cyan-400 uppercase"
+			<Button
+				onclick={() => (showGenerator = !showGenerator)}
+				variant={showGenerator ? 'outline' : 'default'}
 			>
-				<LayoutDashboard class="h-4 w-4" />
-				<span>Your Dashboard</span>
-			</div>
-			<h1
-				class="font-syne text-6xl leading-none font-black tracking-tighter text-white select-none md:text-8xl"
-			>
-				Learning <span
-					class="bg-gradient-to-br from-indigo-500 via-cyan-400 to-emerald-400 bg-clip-text text-transparent"
-					>Center</span
-				>
-			</h1>
-			<p class="font-serif text-xl leading-relaxed text-slate-500 italic">
-				Welcome back! Continue your courses or create a new one to start learning.
-			</p>
+				{#if showGenerator}
+					<ChevronRight class="mr-2 h-4 w-4 rotate-90" />
+					Cancel
+				{:else}
+					<Plus class="mr-2 h-4 w-4" />
+					Generate Lecture
+				{/if}
+			</Button>
 		</div>
-
-		<Button
-			onclick={() => (showGenerator = !showGenerator)}
-			class="group flex h-16 items-center gap-3 rounded-3xl bg-indigo-600 px-10 font-black tracking-widest text-white uppercase shadow-[0_20px_40px_rgba(79,70,229,0.3)] transition-all hover:-translate-y-2 hover:bg-indigo-500 active:scale-95"
-		>
-			{#if showGenerator}
-				<ChevronRight class="group-rotate-90 h-5 w-5 transition-transform" />
-				Cancel
-			{:else}
-				<Plus class="h-5 w-5" />
-				Generate Lecture
-			{/if}
-		</Button>
-
-		<!-- Decorative Background Accent -->
-		<div
-			class="absolute -top-24 -left-24 -z-10 h-96 w-96 rounded-full bg-indigo-500/10 blur-[120px]"
-		></div>
 	</header>
 
 	{#if showGenerator}
-		<section in:fly={{ y: 40, duration: 800 }} class="relative mx-auto w-full max-w-4xl">
-			<div class="absolute inset-0 -z-10 rounded-full bg-indigo-500/5 blur-[120px]"></div>
-
-			<Card.Root
-				class="overflow-hidden rounded-[3rem] border-white/10 bg-slate-950/80 shadow-[0_0_80px_rgba(0,0,0,0.5)] ring-1 ring-white/15 backdrop-blur-3xl"
-			>
-				<Card.Header class="border-b border-white/5 p-12 pb-6">
-					<div class="mb-2 flex items-center gap-4">
-						<div class="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 p-3">
-							<Sparkles class="h-6 w-6 text-indigo-400" />
+		<section in:fly={{ y: 20, duration: 400 }}>
+			<Card.Root class="overflow-hidden rounded-xl border-border">
+				<Card.Header class="border-b border-border bg-muted/50">
+					<div class="flex items-center gap-4">
+						<div class="rounded-lg bg-primary/10 p-2">
+							<Sparkles class="h-5 w-5 text-primary" />
 						</div>
 						<div>
-							<Card.Title class="font-syne text-3xl font-black text-white"
-								>Create New Lecture</Card.Title
-							>
-							<Card.Description class="font-serif text-lg text-slate-400 italic">
-								Describe what topic you want to learn about.
-							</Card.Description>
+							<Card.Title>Create New Lecture</Card.Title>
+							<Card.Description>Describe what topic you want to learn about.</Card.Description>
 						</div>
 					</div>
 				</Card.Header>
 
-				<Card.Content class="space-y-10 p-12">
+				<Card.Content class="space-y-6 p-6">
 					{#if generationError}
 						<div
-							class="flex items-center gap-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-sm font-bold text-red-400"
-							transition:fade
+							class="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive"
 						>
-							<div class="h-2 w-2 animate-pulse rounded-full bg-red-500"></div>
 							{generationError}
 						</div>
 					{/if}
 
 					{#if providers.length === 0}
-						<div
-							class="space-y-4 rounded-[2rem] border border-amber-500/20 bg-amber-500/5 p-8 text-amber-400/80"
-						>
-							<p class="font-serif text-lg italic">
-								No AI models configured. Add a model first to start creating lectures.
-							</p>
-							<Button
-								variant="outline"
-								onclick={() => goto('/providers')}
-								class="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-							>
+						<div class="space-y-4 rounded-lg border border-amber-500/20 bg-amber-500/10 p-6 text-amber-600 dark:text-amber-400">
+							<p class="font-medium">No AI models configured.</p>
+							<Button onclick={() => goto('/providers')} variant="outline" size="sm">
 								Add AI Model
 							</Button>
 						</div>
 					{:else}
-						<form onsubmit={handleGenerate} class="space-y-10">
-							<div class="space-y-4">
-								<Label
-									class="ml-1 flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase"
-								>
-									<Target class="h-3 w-3" /> Learning Topic
-								</Label>
+						<form onsubmit={handleGenerate} class="space-y-6">
+							<div class="space-y-2">
+								<Label class="text-sm font-medium">Learning Topic</Label>
 								<textarea
 									bind:value={prompt}
-									placeholder="Describe the lecture topic in detail (e.g. 'Introduction to Quantum Mechanics')..."
+									placeholder="Describe the lecture topic..."
 									required
-									class="min-h-[160px] w-full resize-none rounded-3xl border border-white/5 bg-slate-900/50 p-8 font-serif text-xl text-white italic transition-all outline-none placeholder:text-slate-600 focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500"
+									class="min-h-[120px] w-full resize-none rounded-lg border border-input bg-background p-4 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
 								></textarea>
 							</div>
 
-							<div class="grid grid-cols-1 items-end gap-10 md:grid-cols-2">
-								<div class="space-y-4">
-									<Label
-										class="ml-1 flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase"
-									>
-										<Zap class="h-3 w-3" /> AI Model
-									</Label>
+							<div class="flex items-end gap-4">
+								<div class="flex-1 space-y-2">
+									<Label class="text-sm font-medium">AI Model</Label>
 									<select
 										bind:value={selectedProviderId}
-										class="h-16 w-full appearance-none rounded-2xl border border-white/5 bg-slate-900/50 px-6 text-lg text-white transition-all outline-none focus:ring-2 focus:ring-indigo-500"
+										class="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
 									>
 										{#each providers as provider}
 											<option value={provider.id}
@@ -277,17 +201,13 @@
 									</select>
 								</div>
 
-								<Button
-									type="submit"
-									disabled={isGenerating || !prompt}
-									class="flex h-16 items-center justify-center gap-3 rounded-2xl bg-white text-lg font-black text-slate-950 shadow-[0_0_40px_rgba(255,255,255,0.15)] transition-all hover:bg-slate-200"
-								>
+								<Button type="submit" disabled={isGenerating || !prompt} class="gap-2">
 									{#if isGenerating}
-										<Loader2 class="h-6 w-6 animate-spin" />
+										<Loader2 class="h-4 w-4 animate-spin" />
 										Creating...
 									{:else}
-										<Sparkles class="h-5 w-5" />
-										Generate Lecture
+										<Sparkles class="h-4 w-4" />
+										Generate
 									{/if}
 								</Button>
 							</div>
@@ -298,189 +218,103 @@
 		</section>
 	{/if}
 
-	<!-- Lectures Section -->
-	<section class="space-y-12">
-		<div class="relative flex items-center justify-between border-b border-white/5 pb-8">
-			<div class="flex items-center gap-4">
-				<div
-					class="h-12 w-1.5 overflow-hidden rounded-full bg-gradient-to-b from-indigo-500 to-transparent"
-				>
-					<div class="h-full w-full animate-pulse bg-cyan-400"></div>
-				</div>
-				<div>
-					<h2 class="font-syne text-3xl font-black tracking-tight text-white uppercase">
-						Your Courses
-					</h2>
-					<p class="font-serif text-base text-slate-500 italic">
-						Continue learning where you left off.
-					</p>
-				</div>
+	<section class="space-y-6">
+		<div class="flex items-center justify-between">
+			<div class="flex items-center gap-3">
+				<div class="h-8 w-1 rounded-full bg-primary"></div>
+				<h2 class="text-xl font-semibold">Your Courses</h2>
 			</div>
-			<div
-				class="rounded-full border border-white/10 bg-white/5 px-6 py-2 text-[10px] font-black tracking-[0.3em] text-indigo-400 uppercase backdrop-blur-md"
-			>
+			<span class="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
 				{lectures.length} Course{lectures.length === 1 ? '' : 's'}
-			</div>
+			</span>
 		</div>
 
 		{#if isLoading}
-			<div class="flex flex-col items-center justify-center space-y-8 py-40">
-				<div class="relative h-24 w-24">
-					<div
-						class="absolute inset-0 scale-150 animate-pulse rounded-full border-[3px] border-indigo-500/10"
-					></div>
-					<div
-						class="absolute inset-0 animate-[spin_1.5s_linear_infinite] rounded-full border-t-[3px] border-indigo-500"
-					></div>
-					<BrainCircuit class="absolute inset-0 m-auto h-8 w-8 animate-pulse text-indigo-400" />
-				</div>
-				<div class="space-y-2 text-center">
-					<p class="font-syne text-xl font-black tracking-widest text-white uppercase">
-						Loading Courses
-					</p>
-					<p class="font-serif text-slate-500 italic">Retrieving your learning data...</p>
-				</div>
+			<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+				{#each Array(6) as _}
+					<div class="h-72 rounded-xl border border-border bg-muted/50 p-6"></div>
+				{/each}
 			</div>
 		{:else if lectures.length === 0}
 			<div
-				in:scale={{ duration: 1000, opacity: 0, start: 0.9 }}
-				class="group flex flex-col items-center justify-center space-y-10 rounded-[4rem] border-2 border-dashed border-white/5 bg-slate-900/20 py-40 backdrop-blur-sm"
+				class="flex flex-col items-center justify-center space-y-4 rounded-xl border border-dashed border-border bg-muted/30 py-16 text-center"
+				in:scale
 			>
-				<div class="relative">
-					<div
-						class="absolute inset-0 rounded-full bg-indigo-500/20 blur-[60px] transition-all group-hover:blur-[80px]"
-					></div>
-					<div
-						class="relative rounded-full border border-white/10 bg-slate-950 p-10 shadow-2xl transition-transform duration-700 group-hover:scale-110"
-					>
-						<BookOpen
-							class="h-16 w-16 text-slate-700 transition-colors group-hover:text-indigo-400"
-						/>
-					</div>
+				<div class="rounded-full bg-muted p-4">
+					<BookOpen class="h-8 w-8 text-muted-foreground" />
 				</div>
-				<div class="max-w-sm space-y-4 px-6 text-center">
-					<h3 class="font-syne text-3xl font-black tracking-tight text-white uppercase">
-						No Courses Yet
-					</h3>
-					<p class="font-serif text-lg leading-relaxed text-slate-500 italic">
-						Start by creating your first course with AI.
-					</p>
+				<div class="space-y-1">
+					<h3 class="font-semibold">No Courses Yet</h3>
+					<p class="text-sm text-muted-foreground">Create your first course to get started.</p>
 				</div>
-				<Button
-					variant="outline"
-					onclick={() => (showGenerator = true)}
-					class="h-14 rounded-2xl border-indigo-500/50 px-10 font-black tracking-widest text-indigo-400 uppercase transition-all hover:scale-105 hover:bg-indigo-500/10 active:scale-95"
-				>
+				<Button onclick={() => (showGenerator = true)} variant="outline" size="sm">
 					Create Your First Course
 				</Button>
 			</div>
 		{:else}
-			<div class="grid grid-cols-1 gap-10 md:grid-cols-2 xl:grid-cols-3">
+			<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
 				{#each lectures as lecture, i (lecture.id)}
-					<div in:fly={{ y: 30, delay: i * 150, duration: 1000 }} class="group h-full">
-						<Card.Root
+					<div in:fly={{ y: 20, delay: i * 50 }}>
+						<button
 							onclick={() => goto(`/lectures/${lecture.id}`)}
-							class="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[3rem] border-white/5 bg-slate-950/40 shadow-2xl ring-1 ring-white/10 backdrop-blur-md transition-all duration-700 hover:bg-slate-950/70 hover:ring-indigo-500/40"
+							class="w-full text-left"
 						>
-							<!-- Floating Glow -->
-							<div
-								class="absolute top-0 right-0 -z-10 h-48 w-48 rounded-full bg-indigo-500/5 blur-[80px] transition-all duration-1000 group-hover:bg-indigo-500/15"
-							></div>
-							<div
-								class="absolute -bottom-10 -left-10 -z-10 h-32 w-32 rounded-full bg-cyan-500/5 blur-[60px] transition-all duration-1000 group-hover:bg-cyan-500/15"
-							></div>
-
-							<Card.Header class="flex-grow-0 p-10 pb-6">
-								<div class="mb-8 flex items-start justify-between">
-									<div
-										class="rounded-[1.5rem] border border-white/10 bg-gradient-to-br from-indigo-500/10 to-cyan-500/10 p-5 shadow-xl transition-all duration-700 group-hover:scale-110 group-hover:rotate-6"
-									>
-										<BookOpen class="h-8 w-8 text-indigo-400" />
+						<Card.Root
+							class="transition-all hover:border-primary/30 hover:shadow-md cursor-pointer"
+						>
+							<Card.Header class="p-6 pb-4">
+								<div class="mb-4 flex items-start justify-between">
+									<div class="rounded-lg bg-primary/10 p-3">
+										<BookOpen class="h-5 w-5 text-primary" />
 									</div>
-									<div class="flex flex-col items-end gap-1">
-										<span class="text-[10px] font-black tracking-widest text-slate-500 uppercase"
-											>Progress</span
-										>
-										<span class="font-syne text-2xl font-black text-white"
+									<div class="text-right">
+										<span class="block text-xs text-muted-foreground">Progress</span>
+										<span class="text-lg font-semibold text-primary"
 											>{Math.round(lecture.completion_percentage)}%</span
 										>
 									</div>
 								</div>
-
-								<div class="space-y-4">
-									<Card.Title
-										class="font-syne text-3xl leading-tight font-black text-white transition-all group-hover:bg-gradient-to-r group-hover:from-indigo-400 group-hover:to-cyan-400 group-hover:bg-clip-text group-hover:text-transparent"
-									>
-										{lecture.title}
-									</Card.Title>
-									<p class="line-clamp-2 font-serif text-lg leading-relaxed text-slate-400 italic">
-										{lecture.description || 'No description provided for this path of study.'}
-									</p>
-								</div>
+								<Card.Title class="text-lg font-semibold leading-tight"
+									>{lecture.title}</Card.Title
+								>
+								<Card.Description class="mt-2 line-clamp-2 text-muted-foreground">
+									{lecture.description || 'No description provided.'}
+								</Card.Description>
 							</Card.Header>
 
-							<Card.Content class="flex-grow p-10 pt-0">
-								<div class="space-y-8">
-									<!-- Progress Bar -->
-									<div class="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
-										<div
-											class="h-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-emerald-400 transition-all duration-1000 ease-out"
-											style="width: {lecture.completion_percentage}%"
-										></div>
-									</div>
+							<Card.Content class="space-y-4 p-6 pt-0">
+								<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+									<div
+										class="h-full bg-primary transition-all"
+										style="width: {lecture.completion_percentage}%"
+									></div>
+								</div>
 
-									<div class="grid grid-cols-2 gap-4">
-										<div class="space-y-1 rounded-2xl border border-white/5 bg-white/5 p-4">
-											<div
-												class="flex items-center gap-2 text-[10px] font-black tracking-widest text-slate-500 uppercase"
-											>
-												<Calendar class="h-3 w-3" /> Created
-											</div>
-											<div class="text-xs font-bold text-slate-300">
-												{formatDate(lecture.created_at)}
-											</div>
-										</div>
-										<div class="space-y-1 rounded-2xl border border-white/5 bg-white/5 p-4">
-											<div
-												class="flex items-center gap-2 text-[10px] font-black tracking-widest text-slate-500 uppercase"
-											>
-												<Clock class="h-3 w-3" /> Last accessed
-											</div>
-											<div class="text-xs font-bold text-slate-300">
-												{formatDate(lecture.last_accessed_at)}
-											</div>
-										</div>
+								<div class="grid grid-cols-2 gap-3">
+									<div class="rounded-lg border border-border bg-muted/50 p-3">
+										<span class="block text-[10px] uppercase text-muted-foreground">Created</span>
+										<span class="text-xs font-medium">{formatDate(lecture.created_at)}</span>
+									</div>
+									<div class="rounded-lg border border-border bg-muted/50 p-3">
+										<span class="block text-[10px] uppercase text-muted-foreground">Last accessed</span>
+										<span class="text-xs font-medium">{formatDate(lecture.last_accessed_at)}</span>
 									</div>
 								</div>
 							</Card.Content>
 
-							<Card.Footer class="border-t border-white/5 bg-white/[0.02] p-8">
-								<div class="group/btn flex w-full items-center justify-between">
-									<span class="text-[10px] font-black tracking-[0.3em] text-indigo-400 uppercase"
-										>Continue Learning</span
-									>
-									<div
-										class="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-all group-hover/btn:bg-white group-hover/btn:text-slate-950"
-									>
-										<ArrowRight
-											class="h-5 w-5 transition-transform group-hover/btn:translate-x-1"
-										/>
-									</div>
-								</div>
+							<Card.Footer class="flex items-center justify-between border-t border-border bg-muted/30 p-4">
+								<span class="text-xs font-medium uppercase tracking-wide text-primary"
+									>Continue Learning</span
+								>
+								<ArrowRight
+									class="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1"
+								/>
 							</Card.Footer>
 						</Card.Root>
+						</button>
 					</div>
 				{/each}
 			</div>
 		{/if}
 	</section>
 </div>
-
-<style>
-	:global(.container) {
-		max-width: 1400px;
-	}
-	.font-syne {
-		font-family: 'Syne', sans-serif;
-	}
-</style>

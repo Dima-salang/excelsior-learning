@@ -278,7 +278,7 @@
 											<div
 												class="flex items-center justify-between rounded-2xl border p-4 transition-all
                                                 {idx === card.options_ans
-													? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-500'
+													? 'border-success/30 bg-success/5 text-success'
 													: idx === card.user_selected_ans && !card.is_correct
 														? 'border-destructive/30 bg-destructive/5 text-destructive'
 														: 'border-border bg-muted/30 text-muted-foreground'}"

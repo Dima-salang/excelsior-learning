@@ -4,15 +4,8 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { fade, fly, scale } from 'svelte/transition';
 	import { Button } from '$lib/components/ui/button';
-	import {
-		Layers,
-		Plus,
-		BrainCircuit,
-		Calendar,
-		ChevronRight,
-		Loader2,
-		ChevronDown
-	} from '@lucide/svelte';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { Layers, Plus, Calendar, ChevronRight, Loader2, ChevronDown } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 
 	interface Deck {
@@ -85,155 +78,120 @@
 	<title>Decks — Excelsior</title>
 </svelte:head>
 
-<div class="min-h-screen bg-transparent px-6 pt-32 pb-20">
-	<div class="mx-auto max-w-7xl space-y-16">
-		<header class="flex flex-col justify-between gap-8 md:flex-row md:items-end" in:fade>
-			<div class="space-y-4">
-				<div
-					class="flex items-center gap-3 text-[10px] font-black tracking-[0.4em] text-indigo-400 uppercase"
-				>
-					<Layers class="h-4 w-4" />
-					<span
-						>{totalDecks > 0
-							? `${decks.length}${totalDecks > decks.length ? `/${totalDecks}` : ''} Decks`
-							: 'Study Decks'}</span
-					>
-				</div>
-				<h1
-					class="font-unbounded text-5xl leading-none font-black tracking-tighter text-foreground uppercase md:text-7xl"
-				>
-					Study<span class="text-primary">Decks</span>
-				</h1>
-				<p class="max-w-xl font-sans text-lg text-muted-foreground italic">
-					Manage your collection of AI-generated study decks and flashcards.
-				</p>
-			</div>
+<div class="container mx-auto max-w-7xl space-y-8 p-6 py-12 lg:p-12">
+	<header class="flex flex-col justify-between gap-6 md:flex-row md:items-end" in:fade>
+		<div class="space-y-2">
+			<p class="text-xs font-medium tracking-wide text-primary uppercase">
+				{totalDecks > 0
+					? `${decks.length}${totalDecks > decks.length ? `/${totalDecks}` : ''} Decks`
+					: 'Study Decks'}
+			</p>
+			<h1 class="font-display text-4xl font-bold tracking-tight md:text-5xl">
+				Study <span class="text-primary">Decks</span>
+			</h1>
+			<p class="text-muted-foreground">
+				Manage your collection of AI-generated study decks and flashcards.
+			</p>
+		</div>
 
-			<Button
-				onclick={() => goto('/dashboard')}
-				class="h-14 rounded-2xl bg-primary px-8 font-black tracking-widest uppercase shadow-[0_0_30px_rgba(79,70,229,0.4)] transition-all hover:-translate-y-1"
-			>
-				<Plus class="mr-2 h-5 w-5" />
-				Generate New Lecture
-			</Button>
-		</header>
+		<Button onclick={() => goto('/dashboard')} class="gap-2">
+			<Plus class="h-4 w-4" />
+			Generate New Lecture
+		</Button>
+	</header>
 
-		{#if isLoading}
-			<div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-				{#each Array(6) as _}
-					<div class="h-64 animate-pulse rounded-3xl border border-border bg-muted"></div>
-				{/each}
-			</div>
-		{:else if error}
-			<div class="flex flex-col items-center justify-center space-y-6 py-20 text-center">
-				<div class="rounded-full border border-red-500/20 bg-red-500/10 p-6">
-					<BrainCircuit class="h-12 w-12 text-red-500" />
-				</div>
-				<h2 class="font-unbounded text-2xl font-black text-white uppercase italic">{error}</h2>
-				<Button onclick={fetchDecks} variant="outline" class="rounded-xl border-white/10"
-					>Retry Connection</Button
-				>
-			</div>
-		{:else if decks.length === 0}
-			<div
-				class="flex flex-col items-center justify-center space-y-10 rounded-[4rem] border border-dashed border-border bg-muted/60 py-32 text-center"
-				in:scale
-			>
-				<div class="relative">
-					<div class="absolute inset-0 animate-ping rounded-full bg-primary/20"></div>
-					<div class="relative rounded-full border border-primary/20 bg-primary/10 p-8">
-						<Layers class="h-16 w-16 text-primary" />
+	{#if isLoading}
+		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+			{#each Array(6) as _}
+				<div class="h-64 rounded-xl border border-border bg-muted/50 p-6">
+					<div class="flex h-full flex-col justify-between">
+						<div class="space-y-4">
+							<Skeleton class="h-12 w-12 rounded-lg" />
+							<div class="space-y-2">
+								<Skeleton class="h-6 w-3/4" />
+								<Skeleton class="h-4 w-full" />
+								<Skeleton class="h-4 w-2/3" />
+							</div>
+						</div>
+						<Skeleton class="h-4 w-20" />
 					</div>
 				</div>
-				<div class="space-y-4">
-					<h2 class="font-unbounded text-3xl font-black tracking-tighter text-foreground uppercase">
-						No Decks Found
-					</h2>
-					<p class="mx-auto max-w-md font-sans text-xl text-muted-foreground italic">
-						Start by generating a lecture to create your first study deck.
-					</p>
-				</div>
-				<Button
-					onclick={() => goto('/dashboard')}
-					class="h-16 rounded-2xl bg-indigo-600 px-10 font-black tracking-widest uppercase shadow-2xl"
-				>
-					Create New Deck
-				</Button>
+			{/each}
+		</div>
+	{:else if error}
+		<div
+			class="flex flex-col items-center justify-center space-y-6 rounded-xl border border-destructive/20 bg-destructive/10 py-20 text-center"
+		>
+			<p class="font-medium text-destructive">{error}</p>
+			<Button onclick={fetchDecks} variant="outline" size="sm">Retry</Button>
+		</div>
+	{:else if decks.length === 0}
+		<div
+			class="flex flex-col items-center justify-center space-y-6 rounded-2xl border border-dashed border-border bg-muted/30 py-20 text-center"
+			in:scale
+		>
+			<div class="rounded-full bg-primary/10 p-4">
+				<Layers class="h-10 w-10 text-primary" />
 			</div>
-		{:else}
-			<div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-				{#each decks as deck, i}
-					<button
-						in:fly={{ y: 20, delay: i * 50 }}
-						class="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[2.5rem] border border-border bg-card/40 p-8 text-left backdrop-blur-xl transition-all duration-500 hover:border-primary/30 hover:bg-muted/60 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-						onclick={() => goto(`/decks/${deck.id}`)}
-					>
-						<!-- Decorative Glow -->
-						<div
-							class="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary/10 opacity-0 blur-[80px] transition-opacity duration-700 group-hover:opacity-100"
-						></div>
-
-						<div class="relative z-10 flex h-full w-full flex-col space-y-6">
+			<div class="space-y-2">
+				<h2 class="text-xl font-semibold">No Decks Found</h2>
+				<p class="text-sm text-muted-foreground">
+					Start by generating a lecture to create your first study deck.
+				</p>
+			</div>
+			<Button onclick={() => goto('/dashboard')}>Create New Deck</Button>
+		</div>
+	{:else}
+		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+			{#each decks as deck, i}
+				<button
+					in:fly={{ y: 20, delay: i * 50 }}
+					class="group flex h-full cursor-pointer flex-col rounded-xl border border-border bg-card p-6 text-left transition-all hover:border-primary/30 hover:shadow-md"
+					onclick={() => goto(`/decks/${deck.id}`)}
+				>
+					<div class="flex h-full flex-col justify-between">
+						<div class="space-y-4">
 							<div class="flex items-center justify-between">
-								<div class="rounded-2xl border border-primary/20 bg-primary/10 p-3">
-									<Layers class="h-6 w-6 text-primary" />
+								<div class="rounded-lg bg-primary/10 p-2">
+									<Layers class="h-5 w-5 text-primary" />
 								</div>
-								<div
-									class="flex items-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase"
-								>
+								<span class="flex items-center gap-1 text-xs text-muted-foreground">
 									<Calendar class="h-3 w-3" />
 									{formatDate(deck.created_at)}
-								</div>
+								</span>
 							</div>
 
-							<div class="flex-grow space-y-2">
-								<h3
-									class="font-unbounded text-2xl font-black tracking-tighter text-white uppercase transition-colors group-hover:text-primary"
-								>
+							<div class="space-y-2">
+								<h3 class="text-lg font-semibold transition-colors group-hover:text-primary">
 									{deck.title}
 								</h3>
-								<p class="line-clamp-3 font-sans leading-relaxed text-muted-foreground italic">
+								<p class="line-clamp-3 text-sm text-muted-foreground">
 									{deck.description || 'No description provided.'}
 								</p>
 							</div>
-
-							<div class="flex w-full items-center justify-between border-t border-border pt-6">
-								<div
-									class="flex items-center gap-1 text-[10px] font-black tracking-widest text-primary uppercase transition-transform group-hover:translate-x-1"
-								>
-									View
-									<ChevronRight class="h-4 w-4" />
-								</div>
-							</div>
 						</div>
-					</button>
-				{/each}
+
+						<div class="mt-4 flex items-center gap-1 text-xs font-medium text-primary">
+							<span>View</span>
+							<ChevronRight class="h-4 w-4 transition-transform group-hover:translate-x-1" />
+						</div>
+					</div>
+				</button>
+			{/each}
+		</div>
+
+		{#if hasMoreDecks && !isLoading}
+			<div class="flex justify-center pt-4">
+				<Button onclick={loadMoreDecks} disabled={isLoadingMore} variant="outline" class="gap-2">
+					{#if isLoadingMore}
+						<Loader2 class="h-4 w-4 animate-spin" />
+						Loading...
+					{:else}
+						<ChevronDown class="h-4 w-4" />
+						Load More
+					{/if}
+				</Button>
 			</div>
-
-			{#if hasMoreDecks && !isLoading}
-				<div class="mt-12 flex justify-center">
-					<Button
-						onclick={loadMoreDecks}
-						disabled={isLoadingMore}
-						variant="outline"
-						class="group flex h-14 items-center gap-3 rounded-2xl border-border px-10 font-black tracking-widest uppercase transition-all hover:bg-primary/5 disabled:opacity-50"
-					>
-						{#if isLoadingMore}
-							<Loader2 class="h-5 w-5 animate-spin" />
-							Loading...
-						{:else}
-							<ChevronDown class="h-5 w-5 transition-transform group-hover:translate-y-1" />
-							Load More Decks
-						{/if}
-					</Button>
-				</div>
-			{/if}
 		{/if}
-	</div>
+	{/if}
 </div>
-
-<style>
-	.font-unbounded {
-		font-family: var(--font-display);
-	}
-</style>
