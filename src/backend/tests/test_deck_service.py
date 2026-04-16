@@ -27,12 +27,47 @@ def test_get_decks(session: Session):
     service = DeckService(session)
 
     # Execute
-    decks = service.get_decks(user_id=user.id)
+    decks, total = service.get_decks(user_id=user.id, limit=10, offset=0)
 
     # Assert
+    assert total == 2
     assert len(decks) == 2
     assert decks[0].title == "Deck 2"
     assert decks[1].title == "Deck 1"
+
+def test_get_decks_returns_paginated_response(session: Session):
+    # Setup
+    user = User(username="testuser", password="password")
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    deck1 = Deck(title="Deck 1", user_id=user.id)
+    deck2 = Deck(title="Deck 2", user_id=user.id)
+    deck3 = Deck(title="Deck 3", user_id=user.id)
+    session.add(deck1)
+    session.add(deck2)
+    session.add(deck3)
+    session.commit()
+
+    service = DeckService(session)
+
+    # Execute
+    decks, total = service.get_decks(user_id=user.id, limit=2, offset=0)
+
+    # Assert
+    assert total == 3
+    assert len(decks) == 2
+    assert decks[0].title == "Deck 3"
+    assert decks[1].title == "Deck 2"
+
+    # Execute
+    decks, total = service.get_decks(user_id=user.id, limit=2, offset=2)
+
+    # Assert
+    assert total == 3
+    assert len(decks) == 1
+    assert decks[0].title == "Deck 1"
 
 
 def test_get_deck(session: Session):

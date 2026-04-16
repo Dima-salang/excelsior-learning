@@ -158,11 +158,44 @@ def test_list_quizzes(quiz_service: QuizService, setup_data, session: Session):
     q3.user_id = other_user.id
     quiz_service.save_quiz(q3)
 
-    user_quizzes = quiz_service.list_quizzes(user.id)
+    user_quizzes, total = quiz_service.list_quizzes(user.id)
     assert len(user_quizzes) == 2
+    assert total == 2
     # Verify ordering (newest first)
     assert user_quizzes[0].id == q2.id
     assert user_quizzes[1].id == q1.id
+
+def test_list_quizzes_pagination(quiz_service: QuizService, setup_data, session: Session):
+    user, deck, cards, _ = setup_data
+
+    # Create two quizzes for this user
+    q1 = quiz_service.start_quiz(deck.id, 1)
+    q1.user_id = user.id
+    quiz_service.save_quiz(q1)
+
+    q2 = quiz_service.start_quiz(deck.id, 1)
+    q2.user_id = user.id
+    quiz_service.save_quiz(q2)
+
+    # Create one for another user
+    other_user = User(username="other", password="p")
+    session.add(other_user)
+    session.commit()
+    q3 = quiz_service.start_quiz(deck.id, 1)
+    q3.user_id = other_user.id
+    quiz_service.save_quiz(q3)
+
+    user_quizzes, total = quiz_service.list_quizzes(user.id, limit=1, offset=0)
+    assert len(user_quizzes) == 1
+    assert total == 2
+    # Verify ordering (newest first)
+    assert user_quizzes[0].id == q2.id
+
+    user_quizzes, total = quiz_service.list_quizzes(user.id, limit=1, offset=1)
+    assert len(user_quizzes) == 1
+    assert total == 2
+    # Verify ordering (newest first)
+    assert user_quizzes[0].id == q1.id
 
 
 def test_create_quiz_cards(quiz_service: QuizService, setup_data, session: Session):

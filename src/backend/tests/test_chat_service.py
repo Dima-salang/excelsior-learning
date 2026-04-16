@@ -148,7 +148,7 @@ def test_update_chat_conversation(chat_service, session: Session, setup_data):
 
 
 def test_update_chat_conversation_invalid_chatid(
-    chat_service, session: Session, setup_data  
+    chat_service, session: Session, setup_data
 ):
     user = setup_data
     with pytest.raises(HTTPException) as excinfo:
@@ -163,7 +163,7 @@ def test_update_chat_conversation_invalid_userid(
 ):
     user = setup_data
 
-    #set up
+    # set up
     chat = Chat(user_id=user.id, title="Test Chat")
     session.add(chat)
     session.commit()
@@ -211,6 +211,7 @@ def test_delete_chat_conversation_invalid_userid(
         chat_service.delete_chat_conversation(999, user.id)
     assert excinfo.value.status_code == 404
 
+
 def test_add_chat_message(chat_service, session: Session, setup_data):
     user = setup_data
 
@@ -221,7 +222,9 @@ def test_add_chat_message(chat_service, session: Session, setup_data):
     session.refresh(chat)
 
     # add chat message
-    chat_message = ChatMessage(chat_id=chat.id, role="user", content="Test Chat Message")
+    chat_message = ChatMessage(
+        chat_id=chat.id, role="user", content="Test Chat Message"
+    )
     session.add(chat_message)
     session.commit()
     session.refresh(chat_message)
@@ -232,17 +235,17 @@ def test_add_chat_message(chat_service, session: Session, setup_data):
     assert chat_message.content == "Test Chat Message"
     assert chat_message.created_at is not None
 
-def test_add_chat_message_invalid_chatid(
-    chat_service, session: Session, setup_data
-):
+
+def test_add_chat_message_invalid_chatid(chat_service, session: Session, setup_data):
     user = setup_data
     with pytest.raises(HTTPException) as excinfo:
-        chat_service.add_chat_message(user_id=user.id, chat_id=999, role="user", content="Test Chat Message")
+        chat_service.add_chat_message(
+            user_id=user.id, chat_id=999, role="user", content="Test Chat Message"
+        )
     assert excinfo.value.status_code == 404
 
-def test_add_chat_message_invalid_role(
-    chat_service, session: Session, setup_data
-):
+
+def test_add_chat_message_invalid_role(chat_service, session: Session, setup_data):
     user = setup_data
 
     # add chat conversation
@@ -252,8 +255,14 @@ def test_add_chat_message_invalid_role(
     session.refresh(chat)
 
     with pytest.raises(HTTPException) as excinfo:
-        chat_service.add_chat_message(user_id=user.id, chat_id=chat.id, role="invalid", content="Test Chat Message")
+        chat_service.add_chat_message(
+            user_id=user.id,
+            chat_id=chat.id,
+            role="invalid",
+            content="Test Chat Message",
+        )
     assert excinfo.value.status_code == 400
+
 
 def test_get_chat_messages(chat_service, session: Session, setup_data):
     user = setup_data
@@ -265,8 +274,12 @@ def test_get_chat_messages(chat_service, session: Session, setup_data):
     session.refresh(chat)
 
     # add chat messages
-    chat_message1 = ChatMessage(chat_id=chat.id, role="user", content="Test Chat Message 1")
-    chat_message2 = ChatMessage(chat_id=chat.id, role="assistant", content="Test Chat Message 2")
+    chat_message1 = ChatMessage(
+        chat_id=chat.id, role="user", content="Test Chat Message 1"
+    )
+    chat_message2 = ChatMessage(
+        chat_id=chat.id, role="assistant", content="Test Chat Message 2"
+    )
     session.add(chat_message1)
     session.add(chat_message2)
     session.commit()
@@ -287,17 +300,15 @@ def test_get_chat_messages(chat_service, session: Session, setup_data):
     assert chat_messages[1].content == "Test Chat Message 2"
     assert chat_messages[1].created_at is not None
 
-def test_get_chat_messages_invalid_chatid(
-    chat_service, session: Session, setup_data
-):
+
+def test_get_chat_messages_invalid_chatid(chat_service, session: Session, setup_data):
     user = setup_data
     with pytest.raises(HTTPException) as excinfo:
         chat_service.get_chat_messages(user_id=user.id, chat_id=999)
     assert excinfo.value.status_code == 404
 
-def test_get_chat_messages_invalid_userid(
-    chat_service, session: Session, setup_data
-):
+
+def test_get_chat_messages_invalid_userid(chat_service, session: Session, setup_data):
     user = setup_data
     with pytest.raises(HTTPException) as excinfo:
         chat_service.get_chat_messages(user_id=999, chat_id=user.id)
@@ -305,8 +316,12 @@ def test_get_chat_messages_invalid_userid(
 
 
 @patch("services.llm_service.LLMService.generate_chat_message")
-def test_generate_chat_message(mock_generate_chat_message, chat_service, session: Session, setup_data):
+def test_generate_chat_message(
+    mock_generate_chat_message, chat_service, session: Session, setup_data
+):
     user = setup_data
+
+    mock_generate_chat_message.return_value = "This is a test response"
 
     # add chat conversation
     chat = Chat(user_id=user.id, title="Test Chat")
@@ -315,9 +330,11 @@ def test_generate_chat_message(mock_generate_chat_message, chat_service, session
     session.refresh(chat)
 
     # generate chat message
-    chat_message = chat_service.generate_chat_message(user.id, chat.id, "Test Chat Message", 1)
+    chat_message = chat_service.generate_chat_message(
+        user.id, chat.id, "Test Chat Message", 1
+    )
     assert chat_message.id is not None
     assert chat_message.chat_id == chat.id
     assert chat_message.role == "assistant"
-    assert chat_message.content == "Test Chat Message"
+    assert chat_message.content == "This is a test response"
     assert chat_message.created_at is not None
