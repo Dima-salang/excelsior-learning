@@ -1,6 +1,7 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
 from datetime import datetime
+from pydantic import BaseModel
 
 
 class ChatBase(SQLModel):
@@ -24,3 +25,13 @@ class ChatMessageBase(SQLModel):
 class ChatMessage(ChatMessageBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     
+
+
+# new chat generation schema
+class NewChatGeneration(BaseModel):
+    title: str = Field(default="New Chat")
+
+
+# chat message generation schema
+class ChatMessageGeneration(BaseModel):
+    content: str = Field(description="Content of the chat message")
