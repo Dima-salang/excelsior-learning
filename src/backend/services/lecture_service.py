@@ -68,9 +68,18 @@ class LectureService:
         lectures = self.session.exec(statement).all()
 
         result = [LectureListPublic.model_validate(lecture) for lecture in lectures]
-        total = self.session.exec(
-            select(func.count(Lecture.id)).where(Lecture.user_id == user_id)
-        ).first()
+
+        count_statement = (
+            select(func.count()).select_from(Lecture).where(Lecture.user_id == user_id)
+        )
+        if filter and isinstance(filter, dict):
+            title = filter.get("title")
+            if title:
+                count_statement = count_statement.where(
+                    Lecture.title.ilike(f"%{title}%")
+                )
+        total = self.session.exec(count_statement).first()
+
         return result, total
 
     def update_lecture(

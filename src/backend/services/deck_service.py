@@ -18,23 +18,14 @@ class DeckService:
         offset: int = 0,
         filter: Optional[dict] = None,
     ) -> tuple[list[DeckPublic], int]:
-        # Join Deck with Lecture to filter by user
-        statement = (
-            select(Deck)
-            .join(Lecture, Lecture.id == Deck.lecture_id)
-            .where(Lecture.user_id == user_id)
-        )
+        statement = select(Deck).where(Deck.user_id == user_id)
 
         if filter and isinstance(filter, dict):
             title = filter.get("title")
             sort = filter.get("sort")
 
             if title:
-                # Search in both deck title and lecture title
-                statement = statement.where(
-                    (Deck.title.ilike(f"%{title}%"))
-                    | (Lecture.title.ilike(f"%{title}%"))
-                )
+                statement = statement.where(Deck.title.ilike(f"%{title}%"))
 
             if sort == "ascending":
                 statement = statement.order_by(Deck.created_at.asc())
@@ -43,8 +34,9 @@ class DeckService:
         else:
             statement = statement.order_by(Deck.created_at.desc())
 
-        # Get total count before pagination
-        count_statement = select(func.count()).select_from(statement.subquery())
+        count_statement = (
+            select(func.count()).select_from(Deck).where(Deck.user_id == user_id)
+        )
         total = self.session.exec(count_statement).first() or 0
 
         # Apply pagination
