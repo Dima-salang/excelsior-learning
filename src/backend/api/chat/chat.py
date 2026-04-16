@@ -1,8 +1,22 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 from db.session import get_session
 from services.chat_service import ChatService
 from services.llm_service import LLMService
+from pydantic import BaseModel
+
+class ChatMessageRequest(BaseModel):
+    user_id: int
+    role: str
+    content: str
+
+
+class GenerateChatMessageRequest(BaseModel):
+    user_id: int
+    user_prompt: str
+    provider_id: int
+    chat_history: list[dict[str, str]] | None = None
 
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -54,3 +68,47 @@ async def delete_chat_conversation(
     chat_service: ChatService = Depends(get_chat_service),
 ):
     return chat_service.delete_chat_conversation(chat_id)
+
+
+@router.post("/conversation/{chat_id}/messages")
+async def add_chat_message(
+    chat_id: int,
+    request: ChatMessageRequest,
+    chat_service: ChatService = Depends(get_chat_service),
+):
+    return chat_service.add_chat_message(
+        request.user_id, chat_id, request.role, request.content
+    )
+
+
+@router.get("/conversation/{chat_id}/messages")
+async def get_chat_messages(
+    chat_id: int,
+    user_id: int,
+    chat_service: ChatService = Depends(get_chat_service),
+):
+    return chat_service.get_chat_messages(user_id, chat_id)
+
+
+@router.post("/conversation/{chat_id}/generate")
+async def generate_chat_message(
+    chat_id: int,
+    request: GenerateChatMessageRequest,
+    chat_service: ChatService = Depends(get_chat_service),
+):
+    event_stream = chat_service.generate_chat_message_stream(
+        request.user_id,
+        chat_id,
+        request.user_prompt,
+        request.provider_id,
+        request.chat_history,
+    )
+    return StreamingResponse(
+        event_stream,
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )

@@ -7,10 +7,12 @@ from models.deck import Deck
 from models.card import Card
 from models.llm_provider import UserLLMConfig
 from models.quiz import Quiz, QuizDB
+from models.chat import Chat, ChatMessage
 
 sqlite_file_name = "db.sqlite"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 engine = create_engine(sqlite_url, echo=True)
+
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
