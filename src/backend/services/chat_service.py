@@ -6,6 +6,9 @@ from models.lecture import Lecture
 from datetime import datetime
 from fastapi import HTTPException
 from enum import Enum
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ROLE_CHOICES(str, Enum):
@@ -26,6 +29,8 @@ class ChatService:
         if lecture_id is not None:
             lecture = self.session.get(Lecture, lecture_id)
             if not lecture:
+                print(f"Lecture not found: {lecture_id}")
+                logger.error(f"Lecture not found: {lecture_id}")
                 raise HTTPException(status_code=404, detail="Lecture not found")
 
         chat = Chat(user_id=user_id, lecture_id=lecture_id, title=title)
@@ -37,8 +42,12 @@ class ChatService:
     def get_chat_conversation(self, user_id: int, chat_id: int) -> Chat:
         chat = self.session.get(Chat, chat_id)
         if not chat:
+            print(f"Chat not found: {chat_id}")
+            logger.error(f"Chat not found: {chat_id}")
             raise HTTPException(status_code=404, detail="Chat not found")
         if chat.user_id != user_id:
+            print(f"User {user_id} is not authorized to access chat {chat_id}")
+            logger.error(f"User {user_id} is not authorized to access chat {chat_id}")
             raise HTTPException(
                 status_code=403, detail="You are not authorized to access this chat"
             )
@@ -73,6 +82,8 @@ class ChatService:
 
         # validate if role is valid
         if role not in ROLE_CHOICES:
+            print(f"Invalid role: {role}")
+            logger.error(f"Invalid role: {role}")
             raise HTTPException(status_code=400, detail="Invalid role")
 
         chat_message = ChatMessage(chat_id=chat.id, role=role, content=content)
@@ -92,18 +103,66 @@ class ChatService:
         # validate if chat exists
         chat = self.get_chat_conversation(user_id, chat_id)
 
-        # get chat history
-        chat_history = self.get_chat_messages(user_id, chat.id)
+        if chat_history is None:
+            chat_history_objs = self.get_chat_messages(user_id, chat.id)
+            chat_history_dicts = [
+                {"role": msg.role, "content": msg.content} for msg in chat_history_objs
+            ]
+        else:
+            chat_history_dicts = chat_history
 
         # generate chat message
         chat_message = self.llm_service.generate_chat_message(
-            user_prompt, provider_id, chat_history
+            user_prompt, provider_id, chat_history_dicts
         )
 
         # add assistant chat message to database
         self.add_chat_message(user_id, chat.id, ROLE_CHOICES.ASSISTANT, chat_message)
 
         return chat_message
+
+    def generate_chat_message_stream(
+        self,
+        user_id: int,
+        chat_id: int,
+        user_prompt: str,
+        provider_id: int,
+        chat_history: list[dict[str, str]] | None = None,
+    ):
+        chat = self.get_chat_conversation(user_id, chat_id)
+
+        if chat_history is None:
+            chat_history_objs = self.get_chat_messages(user_id, chat.id)
+            chat_history_dicts = [
+                {"role": msg.role, "content": msg.content} for msg in chat_history_objs
+            ]
+        else:
+            chat_history_dicts = chat_history
+
+        generator = self.llm_service.generate_chat_message_stream(
+            user_prompt, provider_id, chat_history_dicts
+        )
+
+        def event_stream():
+            full_message = ""
+            try:
+                for chunk in generator:
+                    full_message += chunk
+                    # Send chunk directly as raw text or simple SSE
+                    # standard format data: chunk\n\n
+                    yield f"data: {chunk}\n\n"
+
+                # Save after completion
+                self.add_chat_message(
+                    user_id, chat.id, ROLE_CHOICES.ASSISTANT, full_message
+                )
+                yield "data: [DONE]\n\n"
+            except HTTPException as e:
+                yield f"data: [ERROR] {e.detail}\n\n"
+            except Exception as e:
+                yield f"data: [ERROR] {str(e)}\n\n"
+
+        return event_stream()
 
     def get_chat_messages(self, user_id: int, chat_id: int) -> list[ChatMessage]:
         # validate if chat exists

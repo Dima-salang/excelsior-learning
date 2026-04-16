@@ -415,20 +415,46 @@ class LLMService:
 
     # CHAT
 
-    def generate_chat_message(self, user_prompt: str, provider_id: int, chat_history: list[dict[str, str]] | None = None) -> str:
+    def generate_chat_message(
+        self,
+        user_prompt: str,
+        provider_id: int,
+        chat_history: list[dict[str, str]] | None = None,
+    ) -> str:
         provider = self.session.get(UserLLMConfig, provider_id)
         if not provider:
             raise HTTPException(status_code=404, detail=self.PROVIDER_NOT_FOUND)
 
-        # decrypt the api key
         api_key = self.decrypt_api_key(provider.api_key)
 
-        # create llm provider
         llm_provider = LLMProvider(
             provider, api_key, prompt_manager=self.prompt_manager
-        ) # generate chat message
-        chat_message = llm_provider.generate_stream(user_prompt, type="chat", chat_history=chat_history)
-        return chat_message
+        )
+
+        generator = llm_provider.generate_stream(
+            user_prompt, type="chat", chat_history=chat_history
+        )
+        full_message = "".join(list(generator))
+        return full_message
+
+    def generate_chat_message_stream(
+        self,
+        user_prompt: str,
+        provider_id: int,
+        chat_history: list[dict[str, str]] | None = None,
+    ):
+        provider = self.session.get(UserLLMConfig, provider_id)
+        if not provider:
+            raise HTTPException(status_code=404, detail=self.PROVIDER_NOT_FOUND)
+
+        api_key = self.decrypt_api_key(provider.api_key)
+
+        llm_provider = LLMProvider(
+            provider, api_key, prompt_manager=self.prompt_manager
+        )
+        return llm_provider.generate_stream(
+            user_prompt, type="chat", chat_history=chat_history
+        )
 
 
 class LLMProvider:
