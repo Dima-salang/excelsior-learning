@@ -23,7 +23,7 @@
 		AlertTriangle
 	} from '@lucide/svelte';
 	import { settings } from '$lib/stores/settings.svelte';
-	import { fade, fly, slide } from 'svelte/transition';
+	import { fade, fly, slide, scale } from 'svelte/transition';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { marked } from 'marked';
@@ -31,6 +31,8 @@
 	import 'katex/dist/katex.min.css';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Flashcard from '$lib/components/Flashcard.svelte';
+	import ChatSession from '$lib/components/ChatSession.svelte';
+	import { MessageCircle } from '@lucide/svelte';
 
 	interface FlashcardData {
 		id: number;
@@ -78,6 +80,8 @@
 	let isGenerating = $state(false);
 	let error = $state('');
 	let isSidebarOpen = $state(false);
+	let isChatSidebarOpen = $state(false);
+	let lectureChatId = $state<number | null>(null);
 
 	let stepId = $derived(page.params.stepId);
 	let lectureId = $derived(page.params.id);
@@ -90,11 +94,11 @@
 				apiFetch(`/lectures/${lectureId}`),
 				apiFetch(`/llm/providers?user_id=${auth.user?.id}`)
 			]);
-			
+
 			// Fetch cards for this step
 			const cardsData = await apiFetch(`/lectures/steps/${currentStepId}/cards`);
 			step = { ...stepData, cards: Array.isArray(cardsData) ? cardsData : [] };
-			
+
 			// Fetch lecture with sections and steps
 			if (lectureData) {
 				const sectionsData = await apiFetch(`/lectures/${lectureId}/sections`);
@@ -113,7 +117,7 @@
 					sections: sectionsWithSteps
 				};
 			}
-			
+
 			providers = providersData || [];
 
 			// Initialize global setting if not set
@@ -207,7 +211,7 @@
 			});
 
 			// Update local state
-			if (step) {
+			if (step && step.cards) {
 				const card = step.cards.find((c) => c.id === cardId);
 				if (card) {
 					card.is_correct = isCorrect;
@@ -333,7 +337,7 @@
 										<div
 											class="h-1.5 w-1.5 rounded-full {s.id === Number(stepId)
 												? 'animate-pulse bg-primary'
-												: s.is_completed
+												: s.completed
 													? 'bg-emerald-500'
 													: 'bg-muted'}"
 										></div>
@@ -593,6 +597,64 @@
 			</div>
 		{/if}
 	</main>
+
+	<!-- AI Chat Sidebar Toggle Button (floating action button) -->
+	{#if !isChatSidebarOpen}
+		<button
+			onclick={() => (isChatSidebarOpen = true)}
+			class="fixed right-6 bottom-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 shadow-[0_0_30px_rgba(79,70,229,0.5)] transition-all hover:-translate-y-1 hover:bg-indigo-500 hover:shadow-[0_0_40px_rgba(79,70,229,0.7)] md:right-10 md:bottom-10"
+			in:scale={{ duration: 400 }}
+		>
+			<MessageCircle class="h-6 w-6 text-white" />
+		</button>
+	{/if}
+
+	<!-- AI Chat Right Sidebar -->
+	<aside
+		class="fixed inset-y-0 right-0 z-50 flex w-80 transform flex-col border-l border-border bg-card shadow-2xl transition-transform duration-500 lg:w-96 {isChatSidebarOpen
+			? 'translate-x-0'
+			: 'translate-x-full'}"
+	>
+		<!-- Sidebar Header with close button -->
+		<div
+			class="flex items-center justify-between border-b border-border bg-card/60 p-4 backdrop-blur-2xl"
+		>
+			<div class="flex items-center gap-3">
+				<div class="rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-2">
+					<BrainCircuit class="h-4 w-4 text-indigo-400" />
+				</div>
+				<span class="font-display text-xs font-black tracking-widest text-white uppercase"
+					>AI Assistant</span
+				>
+			</div>
+			<button
+				onclick={() => (isChatSidebarOpen = false)}
+				class="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white"
+			>
+				<X class="h-5 w-5" />
+			</button>
+		</div>
+
+		<!-- The ChatSession Component -->
+		{#if step && providers.length > 0}
+			<ChatSession
+				bind:chatId={lectureChatId}
+				lectureId={Number(lectureId)}
+				lectureContext={step.content}
+				{providers}
+			/>
+		{:else if providers.length === 0}
+			<div
+				class="flex flex-1 items-center justify-center p-6 text-center text-sm font-bold text-slate-500"
+			>
+				No AI models configured. Please add one in AI settings to chat.
+			</div>
+		{:else}
+			<div class="flex flex-1 items-center justify-center">
+				<Loader2 class="h-6 w-6 animate-spin text-slate-500" />
+			</div>
+		{/if}
+	</aside>
 </div>
 
 <style>
