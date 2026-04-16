@@ -1,4 +1,4 @@
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 from services.llm_service import LLMService
 from models.quiz import Quiz, QuizDB
 from models.card import Card, CardStatus, QuizCard, QuizCardPublic
@@ -34,18 +34,27 @@ class QuizService:
         return quiz_model
 
     # list the quizzes
-    def list_quizzes(self, user_id: int) -> list[Quiz]:
+    def list_quizzes(
+        self, user_id: int, limit: int = 10, offset: int = 0
+    ) -> tuple[list[Quiz], int]:
         quizzes = self.session.exec(
             select(QuizDB)
             .where(QuizDB.user_id == user_id)
             .order_by(QuizDB.created_at.desc())
+            .limit(limit)
+            .offset(offset)
         ).all()
+
+
         result = []
         for q in quizzes:
             quiz_model = Quiz.model_validate(q)
             quiz_model.deck_title = q.deck.title if q.deck else "Unknown Deck"
             result.append(quiz_model)
-        return result
+        
+        # total
+        total = self.session.exec(select(func.count(QuizDB.id)).where(QuizDB.user_id == user_id)).first()
+        return result, total
 
     def start_quiz(
         self,

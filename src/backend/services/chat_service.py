@@ -113,9 +113,9 @@ class ChatService:
         )
 
         # add assistant chat message to database
-        self.add_chat_message(user_id, chat.id, ROLE_CHOICES.ASSISTANT, chat_message)
-
-        return chat_message
+        return self.add_chat_message(
+            user_id, chat.id, ROLE_CHOICES.ASSISTANT, chat_message
+        )
 
     def generate_chat_message_stream(
         self,

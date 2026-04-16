@@ -1,4 +1,4 @@
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 from datetime import datetime
 from models.lecture import (
     Lecture,
@@ -44,13 +44,18 @@ class LectureService:
         self.session.refresh(lecture)
         return LectureListPublic.model_validate(lecture)
 
-    def get_lectures(self, user_id: int) -> list[LectureListPublic]:
+    def get_lectures(self, user_id: int, limit: int = 10, offset: int = 0) -> tuple[list[LectureListPublic], int]:
         lectures = self.session.exec(
             select(Lecture)
             .where(Lecture.user_id == user_id)
             .order_by(Lecture.last_accessed_at.desc())
+            .limit(limit)
+            .offset(offset)
         ).all()
-        return [LectureListPublic.model_validate(lecture) for lecture in lectures]
+
+        result = [LectureListPublic.model_validate(lecture) for lecture in lectures]
+        total = self.session.exec(select(func.count(Lecture.id)).where(Lecture.user_id == user_id)).first()
+        return result, total
 
     def update_lecture(
         self, lecture_id: int, lecture_update: LectureUpdate
