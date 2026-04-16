@@ -22,6 +22,7 @@ from api.auth.auth import router as auth_router
 from api.lectures import router as lectures_router
 from api.decks import router as decks_router
 from api.quiz import router as quiz_router
+from api.chat.chat import router as chat_router
 from typing import Annotated
 from db.engine import engine
 from core.logging_config import setup_logging
@@ -90,6 +91,7 @@ app.include_router(auth_router)
 app.include_router(lectures_router)
 app.include_router(decks_router)
 app.include_router(quiz_router)
+app.include_router(chat_router)
 
 
 @app.get("/")
