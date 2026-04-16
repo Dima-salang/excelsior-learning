@@ -72,35 +72,21 @@
 		showRating && isRevealed && 'ring-2 ring-primary/50 ring-offset-4 ring-offset-background'
 	)}
 >
-	<!-- Decorative background element -->
-	<div
-		class={cn(
-			'absolute -top-10 -right-10 h-40 w-40 rounded-full bg-indigo-600/10 blur-[80px] transition-all duration-700 group-hover:bg-indigo-600/20',
-			compact && 'h-24 w-24 blur-[60px]'
-		)}
-	></div>
-
-	<div class={cn('relative z-10 space-y-6', compact && 'space-y-4')}>
+	<div class="relative z-10 space-y-6" class:space-y-4={compact}>
 		<div class="flex items-center justify-between">
-			<span
-				class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-indigo-400 uppercase"
-			>
+			<span class="flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-primary uppercase">
 				<HelpCircle class="h-3 w-3" />
 				Knowledge Check
 			</span>
 			{#if isRevealed}
 				<div in:fade class="flex items-center gap-2">
 					{#if isCorrect}
-						<span
-							class="flex items-center gap-1.5 text-[10px] font-black tracking-widest text-emerald-400 uppercase"
-						>
+						<span class="flex items-center gap-1.5 text-[10px] font-black tracking-widest text-success uppercase">
 							<CheckCircle2 class="h-3.5 w-3.5" />
 							Mastered
 						</span>
 					{:else}
-						<span
-							class="flex items-center gap-1.5 text-[10px] font-black tracking-widest text-red-400 uppercase"
-						>
+						<span class="flex items-center gap-1.5 text-[10px] font-black tracking-widest text-destructive uppercase">
 							<XCircle class="h-3.5 w-3.5" />
 							Incorrect
 						</span>
@@ -110,15 +96,14 @@
 		</div>
 
 		<div
-			class={cn(
-				'markdown-content text-xl leading-relaxed font-bold text-white md:text-2xl',
-				compact && 'text-base md:text-lg'
-			)}
+			class="markdown-content text-xl leading-relaxed font-bold md:text-2xl"
+			class:text-base={compact}
+			class:md:text-lg={compact}
 		>
 			{@html renderedFront}
 		</div>
 
-		<div class={cn('space-y-3', compact && 'space-y-2')} style="perspective: 1000px;">
+		<div class="space-y-3" class:space-y-2={compact} style="perspective: 1000px;">
 			{#if displayOptions && displayOptions.length > 0}
 				{#each displayOptions as option, idx}
 					<button
@@ -129,21 +114,21 @@
 							compact && 'rounded-lg p-3 text-xs',
 							selectedIdx === idx
 								? idx === options_ans
-									? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
-									: 'border-red-500/50 bg-red-500/10 text-red-400 shadow-[0_0_20px_rgba(239,68,68,0.1)]'
+									? 'border-success/50 bg-success/10 text-success shadow-[0_0_20px_rgba(var(--color-success),0.1)]'
+									: 'border-destructive/50 bg-destructive/10 text-destructive shadow-[0_0_20px_rgba(var(--color-destructive),0.1)]'
 								: isRevealed && idx === options_ans
-									? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400/70'
+									? 'border-success/20 bg-success/5 text-success/70'
 									: 'border-border bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
 						)}
 					>
-						<div class="markdown-content prose-sm prose-invert">
+						<div class="markdown-content prose-sm">
 							{@html renderedOptions[idx]}
 						</div>
 						{#if isRevealed}
 							{#if idx === options_ans}
-								<CheckCircle2 class="h-4 w-4 text-emerald-500" />
+								<CheckCircle2 class="h-4 w-4 text-success" />
 							{:else if selectedIdx === idx}
-								<XCircle class="h-4 w-4 text-red-500" />
+								<XCircle class="h-4 w-4 text-destructive" />
 							{/if}
 						{:else}
 							<ArrowRight
@@ -159,13 +144,13 @@
 			<div
 				in:slide={{ duration: 400 }}
 				class={cn(
-					'mt-6 rounded-2xl border border-indigo-500/10 bg-indigo-500/5 p-4',
+					'mt-6 rounded-2xl border border-primary/10 bg-primary/5 p-4',
 					compact && 'mt-4 rounded-xl'
 				)}
 			>
-				<div class="markdown-content font-serif text-xs leading-relaxed text-indigo-300 italic">
+				<div class="markdown-content font-sans text-xs leading-relaxed text-muted-foreground italic">
 					<strong
-						class="mr-2 text-[9px] font-black tracking-widest text-indigo-400 uppercase not-italic"
+						class="mr-2 text-[9px] font-black tracking-widest text-primary uppercase not-italic"
 						>Insight:</strong
 					>
 					{@html renderedExplanation}
@@ -206,6 +191,7 @@
 	}
 	:global(.markdown-content p) {
 		margin-bottom: 0.5rem;
+		color: var(--foreground);
 	}
 	:global(.markdown-content p:last-child) {
 		margin-bottom: 0;
@@ -213,8 +199,8 @@
 	:global(.markdown-content code) {
 		padding: 0.125rem 0.375rem;
 		border-radius: 0.25rem;
-		background-color: rgba(255, 255, 255, 0.1);
-		color: #a5b4fc;
+		background-color: var(--prose-code-bg);
+		color: var(--prose-code);
 		font-family:
 			ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
 			monospace;
@@ -223,11 +209,15 @@
 	:global(.markdown-content pre) {
 		padding: 1rem;
 		border-radius: 0.75rem;
-		background-color: rgba(2, 6, 23, 0.5);
-		border: 1px solid rgba(255, 255, 255, 0.05);
+		background-color: var(--prose-pre-bg);
+		border: 1px solid var(--border);
 		margin-top: 1rem;
 		margin-bottom: 1rem;
 		overflow-x: auto;
+	}
+	:global(.markdown-content pre code) {
+		background-color: transparent;
+		padding: 0;
 	}
 	:global(.markdown-content ul),
 	:global(.markdown-content ol) {
@@ -241,6 +231,9 @@
 	}
 	:global(.markdown-content strong) {
 		font-weight: 900;
-		color: white;
+		color: var(--foreground);
+	}
+	:global(.markdown-content li) {
+		color: var(--foreground);
 	}
 </style>

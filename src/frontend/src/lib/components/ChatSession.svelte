@@ -89,7 +89,6 @@
 
 		let currentChatId = chatId;
 
-		// 1. Create chat if it doesn't exist
 		if (!currentChatId) {
 			try {
 				const title =
@@ -113,7 +112,6 @@
 
 		if (!currentChatId) return;
 
-		// Add user message locally
 		const userMessage: ChatMessage = { role: 'user', content: currentPrompt };
 		messages = [...messages, userMessage];
 
@@ -122,7 +120,6 @@
 		await scrollToBottom();
 
 		try {
-			// Add user message to DB
 			await apiFetch(`/chat/conversation/${currentChatId}/messages`, {
 				method: 'POST',
 				body: JSON.stringify({
@@ -132,18 +129,15 @@
 				})
 			});
 
-			// Prepare chat history (excluding current user prompt)
 			const chat_history = messages.slice(0, -1).map((m) => ({
 				role: m.role,
 				content: m.content
 			}));
 
-			// Pass lectureContext as system prompt in chat history if provided
 			if (lectureContext && chat_history.length === 0) {
 				chat_history.unshift({ role: 'system', content: `Context:\n${lectureContext}` });
 			}
 
-			// Generate assistant message via Streaming
 			const response = await fetch(`${API_BASE_URL}/chat/conversation/${currentChatId}/generate`, {
 				method: 'POST',
 				headers: {
@@ -189,7 +183,7 @@
 							}
 						}
 					}
-					messages = [...messages]; // trigger reactivity
+					messages = [...messages];
 					await scrollToBottom();
 				}
 			}
@@ -231,17 +225,13 @@
 
 <div class="flex flex-1 flex-col overflow-hidden bg-transparent">
 	<!-- Header -->
-	<header
-		class="relative z-10 flex items-center justify-between border-b border-border bg-card/60 px-4 py-3 backdrop-blur-2xl md:px-6"
-	>
+	<header class="relative z-10 flex items-center justify-between border-b border-border bg-card/60 px-4 py-3 backdrop-blur-2xl md:px-6">
 		<div class="flex items-center gap-3">
-			<div class="rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-2">
-				<MessageCircle class="h-4 w-4 text-indigo-400" />
+			<div class="rounded-xl border border-primary/20 bg-primary/10 p-2">
+				<MessageCircle class="h-4 w-4 text-primary" />
 			</div>
 			<div>
-				<h2 class="font-display text-lg font-black tracking-tighter text-white uppercase">
-					Tutor Chat
-				</h2>
+				<h2 class="font-display text-lg font-black tracking-tighter uppercase text-foreground">Tutor Chat</h2>
 			</div>
 		</div>
 		<div class="flex items-center gap-2">
@@ -249,7 +239,7 @@
 				<Button
 					variant="ghost"
 					onclick={clearChat}
-					class="h-8 rounded-lg px-2 text-[10px] font-black tracking-widest text-slate-500 uppercase hover:bg-red-500/10 hover:text-red-400"
+					class="h-8 rounded-lg px-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase hover:bg-destructive/10 hover:text-destructive"
 				>
 					<Trash2 class="h-3.5 w-3.5" />
 				</Button>
@@ -258,56 +248,37 @@
 	</header>
 
 	<!-- Chat Area -->
-	<div
-		bind:this={chatContainer}
-		class="custom-scrollbar relative flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6 md:px-6"
-	>
+	<div bind:this={chatContainer} class="custom-scrollbar relative flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6 md:px-6">
 		{#if isLoadingHistory}
 			<div class="flex flex-1 items-center justify-center">
-				<Loader2 class="h-6 w-6 animate-spin text-indigo-400" />
+				<Loader2 class="h-6 w-6 animate-spin text-primary" />
 			</div>
 		{:else if messages.length === 0}
-			<div
-				class="flex flex-1 flex-col items-center justify-center space-y-6"
-				in:scale={{ duration: 400, start: 0.95 }}
-			>
+			<div class="flex flex-1 flex-col items-center justify-center space-y-6" in:scale={{ duration: 400, start: 0.95 }}>
 				<div class="relative">
-					<div
-						class="absolute inset-0 animate-pulse rounded-full bg-indigo-500/10 blur-[40px]"
-					></div>
-					<div class="relative rounded-3xl border border-white/5 bg-card/60 p-8 backdrop-blur-xl">
-						<BrainCircuit class="h-12 w-12 text-indigo-400/60" />
+					<div class="absolute inset-0 animate-pulse rounded-full bg-primary/10 blur-[40px]"></div>
+					<div class="relative rounded-3xl border border-border bg-card/60 p-8 backdrop-blur-xl">
+						<BrainCircuit class="h-12 w-12 text-primary/60" />
 					</div>
 				</div>
-				<p
-					class="max-w-[250px] text-center font-serif text-sm leading-relaxed text-slate-500 italic"
-				>
+				<p class="max-w-[250px] text-center font-sans text-sm leading-relaxed text-muted-foreground">
 					Start a new conversation. Ask any question about your studies!
 				</p>
 			</div>
 		{:else}
 			{#each messages as message, i (i)}
-				<div
-					class="flex gap-3 {message.role === 'user' ? 'justify-end' : 'justify-start'}"
-					in:fly={{ y: 10, duration: 300 }}
-				>
+				<div class="flex gap-3 {message.role === 'user' ? 'justify-end' : 'justify-start'}" in:fly={{ y: 10, duration: 300 }}>
 					{#if message.role === 'assistant'}
 						<div class="mt-1 shrink-0">
-							<div
-								class="flex h-7 w-7 items-center justify-center rounded-xl bg-indigo-500/10 ring-1 ring-indigo-500/20"
-							>
-								<BrainCircuit class="h-4 w-4 text-indigo-400" />
+							<div class="flex h-7 w-7 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
+								<BrainCircuit class="h-4 w-4 text-primary" />
 							</div>
 						</div>
 					{/if}
 
-					<div
-						class="max-w-[85%] {message.role === 'user'
-							? 'rounded-[1.5rem] rounded-br-md border border-indigo-500/20 bg-indigo-500/10 px-5 py-3'
-							: 'max-w-2xl min-w-0 flex-1'}"
-					>
+					<div class="max-w-[85%] {message.role === 'user' ? 'rounded-[1.5rem] rounded-br-md border border-primary/20 bg-primary/10 px-5 py-3' : 'max-w-2xl min-w-0 flex-1'}">
 						{#if message.role === 'user'}
-							<p class="text-sm leading-relaxed whitespace-pre-wrap text-white/90">
+							<p class="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
 								{message.content}
 							</p>
 						{:else}
@@ -319,10 +290,8 @@
 
 					{#if message.role === 'user'}
 						<div class="mt-1 shrink-0">
-							<div
-								class="flex h-7 w-7 items-center justify-center rounded-xl bg-white/5 ring-1 ring-white/10"
-							>
-								<User class="h-4 w-4 text-slate-400" />
+							<div class="flex h-7 w-7 items-center justify-center rounded-xl bg-muted ring-1 ring-border">
+								<User class="h-4 w-4 text-muted-foreground" />
 							</div>
 						</div>
 					{/if}
@@ -331,23 +300,15 @@
 			{#if isGenerating}
 				<div class="flex justify-start gap-3" in:fly={{ y: 10, duration: 300 }}>
 					<div class="mt-1 shrink-0">
-						<div
-							class="flex h-7 w-7 items-center justify-center rounded-xl bg-indigo-500/10 ring-1 ring-indigo-500/20"
-						>
-							<BrainCircuit class="h-4 w-4 text-indigo-400" />
+						<div class="flex h-7 w-7 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
+							<BrainCircuit class="h-4 w-4 text-primary" />
 						</div>
 					</div>
 					<div class="max-w-2xl min-w-0 flex-1 px-4 py-2">
 						<div class="flex gap-1">
-							<span class="typing-dot h-1.5 w-1.5 rounded-full bg-indigo-400"></span>
-							<span
-								class="typing-dot h-1.5 w-1.5 rounded-full bg-indigo-400"
-								style="animation-delay: 0.15s"
-							></span>
-							<span
-								class="typing-dot h-1.5 w-1.5 rounded-full bg-indigo-400"
-								style="animation-delay: 0.3s"
-							></span>
+							<span class="typing-dot h-1.5 w-1.5 rounded-full bg-primary"></span>
+							<span class="typing-dot h-1.5 w-1.5 rounded-full bg-primary" style="animation-delay: 0.15s"></span>
+							<span class="typing-dot h-1.5 w-1.5 rounded-full bg-primary" style="animation-delay: 0.3s"></span>
 						</div>
 					</div>
 				</div>
@@ -365,7 +326,7 @@
 					disabled={isGenerating || providers.length === 0}
 					placeholder={providers.length === 0 ? 'No models available' : 'Message...'}
 					rows="1"
-					class="custom-scrollbar w-full resize-none rounded-2xl border border-border bg-secondary/80 px-4 py-3 text-sm text-white shadow-inner transition-all outline-none placeholder:text-slate-600 focus:border-indigo-500/30 focus:ring-1 focus:ring-indigo-500/20 disabled:opacity-50"
+					class="custom-scrollbar w-full resize-none rounded-2xl border border-border bg-secondary/80 px-4 py-3 text-sm shadow-inner transition-all outline-none placeholder:text-muted-foreground/50 focus:border-primary/30 focus:ring-1 focus:ring-primary/20 disabled:opacity-50 text-foreground"
 					style="max-height: 120px; min-height: 44px;"
 					oninput={(e) => {
 						const target = e.currentTarget;
@@ -377,13 +338,13 @@
 			<Button
 				type="submit"
 				disabled={isGenerating || !prompt.trim() || providers.length === 0}
-				class="h-[44px] w-[44px] shrink-0 rounded-xl bg-indigo-600 shadow-md shadow-indigo-500/20 transition-all hover:-translate-y-0.5 hover:bg-indigo-500 disabled:opacity-50 disabled:hover:translate-y-0"
+				class="h-[44px] w-[44px] shrink-0 rounded-xl shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
 			>
 				<Send class="h-4 w-4" />
 			</Button>
 		</form>
 		{#if error}
-			<p class="mt-2 text-center text-[10px] font-bold text-red-400">{error}</p>
+			<p class="mt-2 text-center text-[10px] font-bold text-destructive">{error}</p>
 		{/if}
 	</div>
 </div>
@@ -393,16 +354,15 @@
 		font-family: var(--font-display);
 	}
 
-	/* Same prose styles from Chat Page */
 	:global(.prose-chat p) {
 		font-size: 0.9375rem;
 		line-height: 1.6;
 		margin-bottom: 0.75em;
-		color: #cbd5e1;
+		color: var(--prose-body);
 	}
 	:global(.prose-chat pre) {
-		background: #0f172a;
-		border: 1px solid rgba(255, 255, 255, 0.05);
+		background: var(--prose-pre-bg);
+		border: 1px solid var(--border);
 		padding: 1rem;
 		border-radius: 0.75rem;
 		margin: 1rem 0;
@@ -410,16 +370,16 @@
 		font-size: 0.85rem;
 	}
 	:global(.prose-chat code) {
-		color: #818cf8;
+		color: var(--prose-code);
 		font-size: 0.85em;
-		background: rgba(129, 140, 248, 0.1);
+		background: var(--prose-code-bg);
 		padding: 0.15rem 0.35rem;
 		border-radius: 0.35rem;
 	}
 	:global(.prose-chat pre code) {
 		background: transparent;
 		padding: 0;
-		color: #e2e8f0;
+		color: var(--foreground);
 	}
 
 	:global(.prose-chat table) {
@@ -429,14 +389,14 @@
 	}
 	:global(.prose-chat th),
 	:global(.prose-chat td) {
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		border: 1px solid var(--border);
 		padding: 0.75rem 1rem;
 		text-align: left;
 	}
 	:global(.prose-chat th) {
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--muted);
 		font-weight: 600;
-		color: white;
+		color: var(--foreground);
 	}
 	:global(.prose-chat ul),
 	:global(.prose-chat ol) {
@@ -476,10 +436,10 @@
 		background: transparent;
 	}
 	.custom-scrollbar::-webkit-scrollbar-thumb {
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--border);
 		border-radius: 10px;
 	}
 	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--muted);
 	}
 </style>
