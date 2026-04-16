@@ -35,6 +35,33 @@ def test_get_decks(session: Session):
     assert decks[0].title == "Deck 2"
     assert decks[1].title == "Deck 1"
 
+
+def test_get_decks_with_filter(session: Session):
+    # Setup
+    user = User(username="testuser", password="password")
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    deck1 = Deck(title="Deck 1", user_id=user.id)
+    deck2 = Deck(title="Deck 2", user_id=user.id)
+    session.add(deck1)
+    session.add(deck2)
+    session.commit()
+
+    service = DeckService(session)
+
+    # Execute
+    decks, total = service.get_decks(
+        user_id=user.id, limit=10, offset=0, filter={"title": "Deck 1"}
+    )
+
+    # Assert
+    assert total == 2
+    assert len(decks) == 1
+    assert decks[0].title == "Deck 1"
+
+
 def test_get_decks_returns_paginated_response(session: Session):
     # Setup
     user = User(username="testuser", password="password")

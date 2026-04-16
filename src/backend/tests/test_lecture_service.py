@@ -69,14 +69,36 @@ def test_get_lecture(lecture_service: LectureService, setup_data, session: Sessi
 
 def test_get_lectures(lecture_service: LectureService, setup_data, session: Session):
     user, lecture, sections, steps = setup_data
-    retrieved_lectures, total = lecture_service.get_lectures(user.id, limit=10, offset=0)
+    retrieved_lectures, total = lecture_service.get_lectures(
+        user.id, limit=10, offset=0
+    )
     assert total == 1
     assert len(retrieved_lectures) == 1
     # assert lecture is LecturePublic
     assert LecturePublic.model_validate(retrieved_lectures[0])
     assert retrieved_lectures[0].title == lecture.title
 
-def test_get_lectures_pagination(lecture_service: LectureService, setup_data, session: Session):
+
+def test_get_lectures_filter(
+    lecture_service: LectureService, setup_data, session: Session
+):
+    user, lecture, sections, steps = setup_data
+    # create another lecture
+    lecture2 = Lecture(title="Another Test Lecture", user_id=user.id)
+    session.add(lecture2)
+    session.commit()
+    retrieved_lectures, total = lecture_service.get_lectures(
+        user.id, limit=10, offset=0, filter={"title": "Test"}
+    )
+    assert total == 2
+    assert len(retrieved_lectures) == 2
+    titles = {lec.title for lec in retrieved_lectures}
+    assert titles == {lecture.title, lecture2.title}
+
+
+def test_get_lectures_pagination(
+    lecture_service: LectureService, setup_data, session: Session
+):
     user, lecture, sections, steps = setup_data
     retrieved_lectures, total = lecture_service.get_lectures(user.id, limit=1, offset=0)
     assert total == 1
@@ -117,5 +139,3 @@ def test_update_lecture(lecture_service: LectureService, setup_data, session: Se
     # test update lecture that does not exist
     with pytest.raises(HTTPException):
         lecture_service.update_lecture(lecture_id=999, lecture_update=lecture_update)
-
-
