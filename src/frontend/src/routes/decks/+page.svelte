@@ -11,7 +11,7 @@
 		Calendar,
 		ChevronRight,
 		Loader2,
-		Sparkles
+		ChevronDown
 	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 
@@ -24,16 +24,43 @@
 
 	let decks = $state<Deck[]>([]);
 	let isLoading = $state(true);
+	let isLoadingMore = $state(false);
 	let error = $state('');
+	let currentPage = $state(1);
+	let totalDecks = $state(0);
+	const pageSize = 12;
+	let hasMoreDecks = $derived(currentPage * pageSize < totalDecks);
 
 	async function fetchDecks() {
 		if (!auth.user) return;
 		try {
-			decks = await apiFetch(`/decks?user_id=${auth.user.id}`);
+			const response = await apiFetch(`/decks?user_id=${auth.user.id}&limit=${pageSize}&offset=0`);
+			decks = response.items || [];
+			totalDecks = response.total || 0;
+			currentPage = 1;
 		} catch (err: any) {
 			error = err.message || 'System error while retrieving decks.';
 		} finally {
 			isLoading = false;
+		}
+	}
+
+	async function loadMoreDecks() {
+		if (!auth.user || isLoadingMore || !hasMoreDecks) return;
+
+		isLoadingMore = true;
+		try {
+			const nextPage = currentPage + 1;
+			const offset = (nextPage - 1) * pageSize;
+			const response = await apiFetch(
+				`/decks?user_id=${auth.user.id}&limit=${pageSize}&offset=${offset}`
+			);
+			decks = [...decks, ...(response.items || [])];
+			currentPage = nextPage;
+		} catch (err: any) {
+			error = err.message || 'Failed to load more decks.';
+		} finally {
+			isLoadingMore = false;
 		}
 	}
 
@@ -66,7 +93,11 @@
 					class="flex items-center gap-3 text-[10px] font-black tracking-[0.4em] text-indigo-400 uppercase"
 				>
 					<Layers class="h-4 w-4" />
-					<span>Study Decks</span>
+					<span
+						>{totalDecks > 0
+							? `${decks.length}${totalDecks > decks.length ? `/${totalDecks}` : ''} Decks`
+							: 'Study Decks'}</span
+					>
 				</div>
 				<h1
 					class="font-unbounded text-5xl leading-none font-black tracking-tighter text-foreground uppercase md:text-7xl"
@@ -178,6 +209,25 @@
 					</button>
 				{/each}
 			</div>
+
+			{#if hasMoreDecks && !isLoading}
+				<div class="mt-12 flex justify-center">
+					<Button
+						onclick={loadMoreDecks}
+						disabled={isLoadingMore}
+						variant="outline"
+						class="group flex h-14 items-center gap-3 rounded-2xl border-border px-10 font-black tracking-widest uppercase transition-all hover:bg-primary/5 disabled:opacity-50"
+					>
+						{#if isLoadingMore}
+							<Loader2 class="h-5 w-5 animate-spin" />
+							Loading...
+						{:else}
+							<ChevronDown class="h-5 w-5 transition-transform group-hover:translate-y-1" />
+							Load More Decks
+						{/if}
+					</Button>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>

@@ -12,7 +12,8 @@
 		BrainCircuit,
 		Loader2,
 		Search,
-		Filter
+		Filter,
+		ChevronDown
 	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 
@@ -26,19 +27,50 @@
 		created_at: string;
 	}
 
+	interface PaginatedResponse<T> {
+		items: T[];
+		total: number;
+		page: number;
+		size: number;
+	}
+
 	let quizzes = $state<QuizHistory[]>([]);
 	let isLoading = $state(true);
+	let isLoadingMore = $state(false);
 	let error = $state('');
+	let currentPage = $state(1);
+	let totalQuizzes = $state(0);
+	const pageSize = 10;
+	let hasMoreQuizzes = $derived(currentPage * pageSize < totalQuizzes);
 
 	async function fetchQuizzes() {
 		try {
 			isLoading = true;
-			const response = await apiFetch('/quiz/');
-			quizzes = response;
+			const response = await apiFetch(`/quiz/?limit=${pageSize}&offset=0`);
+			quizzes = response.items || [];
+			totalQuizzes = response.total || 0;
+			currentPage = 1;
 		} catch (err: any) {
 			error = err.message || 'Failed to load quiz history.';
 		} finally {
 			isLoading = false;
+		}
+	}
+
+	async function loadMoreQuizzes() {
+		if (isLoadingMore || !hasMoreQuizzes) return;
+
+		isLoadingMore = true;
+		try {
+			const nextPage = currentPage + 1;
+			const offset = (nextPage - 1) * pageSize;
+			const response = await apiFetch(`/quiz/?limit=${pageSize}&offset=${offset}`);
+			quizzes = [...quizzes, ...(response.items || [])];
+			currentPage = nextPage;
+		} catch (err: any) {
+			error = err.message || 'Failed to load more quizzes.';
+		} finally {
+			isLoadingMore = false;
 		}
 	}
 
@@ -75,7 +107,11 @@
 				class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-black tracking-widest text-primary uppercase"
 			>
 				<History class="h-3.5 w-3.5" />
-				Past Results
+				{#if totalQuizzes > 0}
+					{quizzes.length}{totalQuizzes > quizzes.length ? `/${totalQuizzes}` : ''} Records
+				{:else}
+					Past Results
+				{/if}
 			</div>
 			<div class="flex flex-col justify-between gap-6 md:flex-row md:items-end">
 				<div class="space-y-2">
@@ -238,6 +274,25 @@
 					</div>
 				{/each}
 			</div>
+
+			{#if hasMoreQuizzes && !isLoading}
+				<div class="mt-12 flex justify-center">
+					<Button
+						onclick={loadMoreQuizzes}
+						disabled={isLoadingMore}
+						variant="outline"
+						class="group flex h-14 items-center gap-3 rounded-2xl border-border px-10 font-black tracking-widest uppercase transition-all hover:bg-primary/5 disabled:opacity-50"
+					>
+						{#if isLoadingMore}
+							<Loader2 class="h-5 w-5 animate-spin" />
+							Loading...
+						{:else}
+							<ChevronDown class="h-5 w-5 transition-transform group-hover:translate-y-1" />
+							Load More
+						{/if}
+					</Button>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>

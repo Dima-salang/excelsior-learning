@@ -45,8 +45,13 @@
 	let decks = $state<any[]>([]);
 	let providers = $state<Provider[]>([]);
 	let isLoading = $state(true);
+	let isLoadingMore = $state(false);
 	let isGenerating = $state(false);
 	let showGenerator = $state(false);
+	let currentPage = $state(1);
+	let totalLectures = $state(0);
+	const pageSize = 12;
+	let hasMoreLectures = $derived(currentPage * pageSize < totalLectures);
 
 	// Generator Form
 	let prompt = $state('');
@@ -67,15 +72,16 @@
 		if (!user?.id) return;
 
 		try {
-			// Using more robust endpoint paths
 			const [lecturesData, providersData, decksData] = await Promise.all([
-				apiFetch(`/lectures/?user_id=${user.id}`),
+				apiFetch(`/lectures/?user_id=${user.id}&limit=${pageSize}&offset=0`),
 				apiFetch(`/llm/providers?user_id=${user.id}`),
-				apiFetch(`/decks?user_id=${user.id}`)
+				apiFetch(`/decks?user_id=${user.id}&limit=${pageSize}&offset=0`)
 			]);
-			lectures = lecturesData || [];
+			lectures = lecturesData.items || [];
+			totalLectures = lecturesData.total || 0;
+			currentPage = 1;
 			providers = providersData || [];
-			decks = decksData || [];
+			decks = decksData.items || [];
 			if (providers.length > 0 && !settings.selectedProviderId) {
 				settings.setProvider(providers[0].id);
 			}
@@ -83,6 +89,26 @@
 			console.error('Failed to fetch dashboard data:', err);
 		} finally {
 			isLoading = false;
+		}
+	}
+
+	async function loadMoreLectures() {
+		const user = auth.user;
+		if (!user?.id || isLoadingMore || !hasMoreLectures) return;
+
+		isLoadingMore = true;
+		try {
+			const nextPage = currentPage + 1;
+			const offset = (nextPage - 1) * pageSize;
+			const lecturesData = await apiFetch(
+				`/lectures/?user_id=${user.id}&limit=${pageSize}&offset=${offset}`
+			);
+			lectures = [...lectures, ...(lecturesData.items || [])];
+			currentPage = nextPage;
+		} catch (err) {
+			console.error('Failed to load more lectures:', err);
+		} finally {
+			isLoadingMore = false;
 		}
 	}
 
@@ -119,6 +145,14 @@
 		});
 	}
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { ChevronDown, Loader2 as LoadingIcon } from 'lucide-svelte';
+
+	interface PaginatedResponse<T> {
+		items: T[];
+		total: number;
+		page: number;
+		size: number;
+	}
 </script>
 
 <div class="container mx-auto max-w-7xl space-y-12 p-6 lg:p-12">
@@ -292,7 +326,10 @@
 			<span
 				class="rounded-full bg-white/5 px-4 py-2 text-[10px] font-black tracking-widest text-slate-500 uppercase"
 			>
-				{lectures.length} Course{lectures.length === 1 ? '' : 's'}
+				{lectures.length}{totalLectures > lectures.length ? `/${totalLectures}` : ''} Course{lectures.length ===
+				1
+					? ''
+					: 's'}
 			</span>
 		</div>
 
@@ -431,6 +468,25 @@
 					</div>
 				{/each}
 			</div>
+
+			{#if hasMoreLectures && !isLoading}
+				<div class="mt-12 flex justify-center">
+					<Button
+						onclick={loadMoreLectures}
+						disabled={isLoadingMore}
+						variant="outline"
+						class="group flex h-14 items-center gap-3 rounded-2xl border-border px-10 font-black tracking-widest uppercase transition-all hover:bg-primary/5 disabled:opacity-50"
+					>
+						{#if isLoadingMore}
+							<LoadingIcon class="h-5 w-5 animate-spin" />
+							Loading...
+						{:else}
+							<ChevronDown class="h-5 w-5 transition-transform group-hover:translate-y-1" />
+							Load More Courses
+						{/if}
+					</Button>
+				</div>
+			{/if}
 		{/if}
 	</section>
 </div>
