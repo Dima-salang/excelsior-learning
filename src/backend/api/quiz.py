@@ -8,6 +8,7 @@ from models.user import User
 from api.auth.auth import get_current_user
 from pydantic import BaseModel
 from typing import Annotated
+from schema.paginated_response import PaginatedResponse
 
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
@@ -17,14 +18,17 @@ def get_llm_service():
     return LLMService(get_session())
 
 
-@router.get("/", response_model=list[Quiz])
+@router.get("/", response_model=PaginatedResponse[Quiz])
 def list_quizzes(
     current_user: Annotated[User, Depends(get_current_user)],
     session: Session = Depends(get_session),
     llm_service: LLMService = Depends(get_llm_service),
+    limit: int = 10,
+    offset: int = 0,
 ):
     service = QuizService(session, llm_service)
-    return service.list_quizzes(current_user.id)
+    quizzes, total = service.list_quizzes(current_user.id, limit, offset)
+    return PaginatedResponse.from_sqlmodel(quizzes, total, limit, offset)
 
 
 @router.get("/{quiz_id}", response_model=Quiz)

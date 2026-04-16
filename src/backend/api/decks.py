@@ -4,17 +4,24 @@ from typing import List
 from db.session import get_session
 from models.deck import DeckPublic, DeckPublicWithCards
 from services.deck_service import DeckService
+from schema.paginated_response import PaginatedResponse
 
 router = APIRouter(prefix="/decks", tags=["decks"])
 
 
-@router.get("/", response_model=List[DeckPublic])
-def get_decks(user_id: int, session: Session = Depends(get_session)):
+@router.get("/", response_model=PaginatedResponse[DeckPublic])
+def get_decks(
+    user_id: int, 
+    session: Session = Depends(get_session),
+    limit: int = 10,
+    offset: int = 0,
+):
     """
     Get all decks for a specific user.
     """
     service = DeckService(session)
-    return service.get_decks(user_id)
+    decks, total = service.get_decks(user_id, limit, offset)
+    return PaginatedResponse.from_sqlmodel(decks, total, limit, offset)
 
 
 @router.get("/{deck_id}", response_model=DeckPublicWithCards)

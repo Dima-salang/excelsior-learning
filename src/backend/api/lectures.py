@@ -13,16 +13,23 @@ from models.lecture import (
     LectureStepListPublic,
 )
 from models.card import CardPublic, CardUpdate, Card, CardListPublic
+from schema.paginated_response import PaginatedResponse
 
 logger = logging.getLogger("excelsior")
 router = APIRouter(prefix="/lectures", tags=["lectures"])
 
 
-@router.get("/", response_model=List[LectureListPublic])
-def get_lectures(user_id: int, session: Session = Depends(get_session)):
+@router.get("/", response_model=PaginatedResponse[LectureListPublic])
+def get_lectures(
+    user_id: int, 
+    session: Session = Depends(get_session),
+    limit: int = 10,
+    offset: int = 0,
+):
     logger.info(f"GET /lectures/?user_id={user_id}")
     service = LectureService(session)
-    return service.get_lectures(user_id)
+    lectures, total = service.get_lectures(user_id, limit, offset)
+    return PaginatedResponse.from_sqlmodel(lectures, total, limit, offset)
 
 
 @router.get("/{lecture_id}", response_model=LectureListPublic)
