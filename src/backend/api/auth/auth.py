@@ -145,21 +145,3 @@ async def me(current_user: Annotated[User, Depends(get_current_user)]):
     Get the current user.
     """
     return current_user
-
-
-@router.post("/logout")
-async def logout(token: Annotated[str, Depends(oauth2_scheme)], session: Session = Depends(get_session)):
-    """
-    Logout a user.
-    """
-    # get the current user
-    current_user = get_current_user(token, session)
-    if not current_user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    # clear the token
-    
-    return {"message": "Logout successful"}
