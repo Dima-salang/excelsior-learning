@@ -5,7 +5,8 @@
 	import { fade, fly, scale } from 'svelte/transition';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { Layers, Plus, Calendar, ChevronRight, Loader2, ChevronDown } from 'lucide-svelte';
+	import FilterBar from '$lib/components/FilterBar.svelte';
+	import { Layers, Plus, Calendar, ChevronRight, Loader2, BookOpen } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 
 	interface Deck {
@@ -22,39 +23,77 @@
 	let currentPage = $state(1);
 	let totalDecks = $state(0);
 	const pageSize = 12;
+
+	// Filter state
+	let searchQuery = $state('');
+	let sortBy = $state('descending');
+	let searchTimeout: number;
+
 	let hasMoreDecks = $derived(currentPage * pageSize < totalDecks);
 
-	async function fetchDecks() {
+	async function fetchDecks(append = false) {
 		if (!auth.user) return;
+
+		const params = new URLSearchParams({
+			user_id: auth.user.id.toString(),
+			limit: pageSize.toString(),
+			offset: append ? ((currentPage) * pageSize).toString() : '0'
+		});
+
+		// Add search filter
+		if (searchQuery.trim()) {
+			params.set('search', searchQuery.trim());
+		}
+
+		// Add sort
+		if (sortBy === 'ascending') {
+			params.set('sort', 'ascending');
+		}
+
 		try {
-			const response = await apiFetch(`/decks?user_id=${auth.user.id}&limit=${pageSize}&offset=0`);
-			decks = response.items || [];
-			totalDecks = response.total || 0;
-			currentPage = 1;
+			if (!append) {
+				isLoading = true;
+				currentPage = 1;
+			}
+			const response = await apiFetch(`/decks?${params.toString()}`);
+
+			if (append) {
+				decks = [...decks, ...(response.items || [])];
+				currentPage++;
+			} else {
+				decks = response.items || [];
+				totalDecks = response.total || 0;
+			}
 		} catch (err: any) {
-			error = err.message || 'System error while retrieving decks.';
+			error = err.message || 'Failed to retrieve decks.';
 		} finally {
 			isLoading = false;
+			isLoadingMore = false;
 		}
 	}
 
-	async function loadMoreDecks() {
-		if (!auth.user || isLoadingMore || !hasMoreDecks) return;
+	function handleSearchChange(value: string) {
+		clearTimeout(searchTimeout);
+		searchTimeout = window.setTimeout(() => {
+			fetchDecks();
+		}, 300);
+	}
 
+	function handleSortChange(value: string) {
+		sortBy = value;
+		fetchDecks();
+	}
+
+	function handleClearFilters() {
+		searchQuery = '';
+		sortBy = 'descending';
+		fetchDecks();
+	}
+
+	async function loadMoreDecks() {
+		if (isLoadingMore || !hasMoreDecks) return;
 		isLoadingMore = true;
-		try {
-			const nextPage = currentPage + 1;
-			const offset = (nextPage - 1) * pageSize;
-			const response = await apiFetch(
-				`/decks?user_id=${auth.user.id}&limit=${pageSize}&offset=${offset}`
-			);
-			decks = [...decks, ...(response.items || [])];
-			currentPage = nextPage;
-		} catch (err: any) {
-			error = err.message || 'Failed to load more decks.';
-		} finally {
-			isLoadingMore = false;
-		}
+		await fetchDecks(true);
 	}
 
 	onMount(() => {
@@ -82,23 +121,39 @@
 	<header class="flex flex-col justify-between gap-6 md:flex-row md:items-end" in:fade>
 		<div class="space-y-2">
 			<p class="text-xs font-medium tracking-wide text-primary uppercase">
-				{totalDecks > 0
-					? `${decks.length}${totalDecks > decks.length ? `/${totalDecks}` : ''} Decks`
-					: 'Study Decks'}
+				{#if totalDecks > 0}
+					{decks.length}{totalDecks > decks.length ? `/${totalDecks}` : ''} Decks
+				{:else}
+					Study Decks
+				{/if}
 			</p>
 			<h1 class="font-display text-4xl font-bold tracking-tight md:text-5xl">
-				Study <span class="text-primary">Decks</span>
+				Your <span class="text-primary">Decks</span>
 			</h1>
 			<p class="text-muted-foreground">
-				Manage your collection of AI-generated study decks and flashcards.
+				Flashcard decks generated from your courses.
 			</p>
 		</div>
 
-		<Button onclick={() => goto('/dashboard')} class="gap-2">
-			<Plus class="h-4 w-4" />
-			Generate New Lecture
+		<Button onclick={() => goto('/lectures')} class="gap-2">
+			<BookOpen class="h-4 w-4" />
+			View Courses
 		</Button>
 	</header>
+
+	<!-- Filter Bar -->
+	<FilterBar
+		bind:searchValue={searchQuery}
+		searchPlaceholder="Search decks..."
+		onSearchChange={handleSearchChange}
+		sortOptions={[
+			{ value: 'descending', label: 'Newest First' },
+			{ value: 'ascending', label: 'Oldest First' }
+		]}
+		bind:sortValue={sortBy}
+		onSortChange={handleSortChange}
+		onClear={handleClearFilters}
+	/>
 
 	{#if isLoading}
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -119,11 +174,9 @@
 			{/each}
 		</div>
 	{:else if error}
-		<div
-			class="flex flex-col items-center justify-center space-y-6 rounded-xl border border-destructive/20 bg-destructive/10 py-20 text-center"
-		>
+		<div class="flex flex-col items-center justify-center space-y-6 rounded-xl border border-destructive/20 bg-destructive/10 py-20 text-center">
 			<p class="font-medium text-destructive">{error}</p>
-			<Button onclick={fetchDecks} variant="outline" size="sm">Retry</Button>
+			<Button onclick={() => fetchDecks()} variant="outline" size="sm">Retry</Button>
 		</div>
 	{:else if decks.length === 0}
 		<div
@@ -134,18 +187,26 @@
 				<Layers class="h-10 w-10 text-primary" />
 			</div>
 			<div class="space-y-2">
-				<h2 class="text-xl font-semibold">No Decks Found</h2>
-				<p class="text-sm text-muted-foreground">
-					Start by generating a lecture to create your first study deck.
-				</p>
+				{#if searchQuery || sortBy !== 'descending'}
+					<h2 class="text-xl font-semibold">No decks match your filters</h2>
+					<p class="text-sm text-muted-foreground">
+						Try adjusting your search or filter criteria.
+					</p>
+					<Button onclick={handleClearFilters} variant="outline" size="sm">Clear Filters</Button>
+				{:else}
+					<h2 class="text-xl font-semibold">No Decks Found</h2>
+					<p class="text-sm text-muted-foreground">
+						Decks are created when you generate a course.
+					</p>
+					<Button onclick={() => goto('/lectures')}>Generate a Course</Button>
+				{/if}
 			</div>
-			<Button onclick={() => goto('/dashboard')}>Create New Deck</Button>
 		</div>
 	{:else}
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-			{#each decks as deck, i}
+			{#each decks as deck, i (deck.id)}
 				<button
-					in:fly={{ y: 20, delay: i * 50 }}
+					in:fly={{ y: 20, delay: Math.min(i * 50, 300) }}
 					class="group flex h-full cursor-pointer flex-col rounded-xl border border-border bg-card p-6 text-left transition-all hover:border-primary/30 hover:shadow-md"
 					onclick={() => goto(`/decks/${deck.id}`)}
 				>
@@ -162,7 +223,7 @@
 							</div>
 
 							<div class="space-y-2">
-								<h3 class="text-lg font-semibold transition-colors group-hover:text-primary">
+								<h3 class="text-lg font-semibold transition-colors group-hover:text-primary line-clamp-1">
 									{deck.title}
 								</h3>
 								<p class="line-clamp-3 text-sm text-muted-foreground">
@@ -172,7 +233,7 @@
 						</div>
 
 						<div class="mt-4 flex items-center gap-1 text-xs font-medium text-primary">
-							<span>View</span>
+							<span>Study</span>
 							<ChevronRight class="h-4 w-4 transition-transform group-hover:translate-x-1" />
 						</div>
 					</div>
@@ -187,7 +248,7 @@
 						<Loader2 class="h-4 w-4 animate-spin" />
 						Loading...
 					{:else}
-						<ChevronDown class="h-4 w-4" />
+						<ChevronRight class="h-4 w-4" />
 						Load More
 					{/if}
 				</Button>

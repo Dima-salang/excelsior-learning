@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { BrainCircuit, ChevronDown, LogOut, User, Settings, Sparkles } from 'lucide-svelte';
+	import { BrainCircuit, ChevronDown, LogOut, User, Settings, Sparkles, BookOpen, Layers, MessageCircle } from 'lucide-svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { page } from '$app/state';
 	import { fade, fly, scale } from 'svelte/transition';
@@ -10,7 +10,9 @@
 	let showLogoutMessage = $state(false);
 
 	const isActive = (path: string) => {
-		if (path === '/') return page.url.pathname === '/';
+		if (path === '/dashboard') {
+			return page.url.pathname === '/dashboard' || page.url.pathname === '/';
+		}
 		return page.url.pathname.startsWith(path);
 	};
 
@@ -51,7 +53,7 @@
 	in:fade={{ duration: 300 }}
 >
 	<div class="flex items-center gap-10">
-		<a href="/" class="flex items-center gap-2">
+		<a href="/dashboard" class="flex items-center gap-2">
 			<div class="flex flex-col">
 				<span class="font-display text-lg font-bold tracking-tight">EXCELSIOR</span>
 				<span class="text-[9px] font-medium tracking-widest text-primary uppercase">Academy</span>
@@ -59,38 +61,20 @@
 		</a>
 		<div class="hidden items-center gap-1 text-sm md:flex">
 			<a
-				href="/"
-				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/')
+				href="/dashboard"
+				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/dashboard')
 					? 'font-medium text-foreground'
 					: 'text-muted-foreground'}"
 			>
 				Dashboard
 			</a>
 			<a
-				href="/providers"
-				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive(
-					'/providers'
-				)
+				href="/lectures"
+				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/lectures')
 					? 'font-medium text-foreground'
 					: 'text-muted-foreground'}"
 			>
-				AI Models
-			</a>
-			<a
-				href="/generate"
-				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/generate')
-					? 'font-medium text-foreground'
-					: 'text-muted-foreground'}"
-			>
-				Generate
-			</a>
-			<a
-				href="/chat"
-				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/chat')
-					? 'font-medium text-foreground'
-					: 'text-muted-foreground'}"
-			>
-				Chat
+				Courses
 			</a>
 			<a
 				href="/decks"
@@ -99,6 +83,30 @@
 					: 'text-muted-foreground'}"
 			>
 				Decks
+			</a>
+			<a
+				href="/quiz"
+				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/quiz')
+					? 'font-medium text-foreground'
+					: 'text-muted-foreground'}"
+			>
+				Quiz
+			</a>
+			<a
+				href="/chat"
+				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/chat')
+					? 'font-medium text-foreground'
+					: 'text-muted-foreground'}"
+			>
+				AI Tutor
+			</a>
+			<a
+				href="/generate"
+				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/generate')
+					? 'font-medium text-foreground'
+					: 'text-muted-foreground'}"
+			>
+				Generate
 			</a>
 		</div>
 	</div>
@@ -156,6 +164,15 @@
 					>
 						<Settings class="h-4 w-4" />
 						Settings
+					</a>
+
+					<a
+						href="/providers"
+						onclick={closeDropdown}
+						class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground md:hidden"
+						role="menuitem"
+					>
+						AI Models
 					</a>
 
 					<div class="my-1 h-px bg-border"></div>
