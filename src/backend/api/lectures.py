@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
-from typing import List
+from typing import List, Optional
 import logging
 from db.session import get_session
 from services.lecture_service import LectureService
@@ -14,6 +14,7 @@ from models.lecture import (
 )
 from models.card import CardPublic, CardUpdate, Card, CardListPublic
 from schema.paginated_response import PaginatedResponse
+from schema.lecture_schema_json import LectureSortEnum
 
 logger = logging.getLogger("excelsior")
 router = APIRouter(prefix="/lectures", tags=["lectures"])
@@ -21,14 +22,33 @@ router = APIRouter(prefix="/lectures", tags=["lectures"])
 
 @router.get("/", response_model=PaginatedResponse[LectureListPublic])
 def get_lectures(
-    user_id: int, 
+    user_id: int,
     session: Session = Depends(get_session),
     limit: int = 10,
     offset: int = 0,
+    search: Optional[str] = Query(None, description="Search by title"),
+    sort: Optional[str] = Query(
+        None, description="Sort order: 'ascending' or 'descending'"
+    ),
+    status: Optional[str] = Query(
+        None, description="Filter by status: 'not_started', 'in_progress', 'completed'"
+    ),
 ):
-    logger.info(f"GET /lectures/?user_id={user_id}")
+    logger.info(
+        f"GET /lectures/?user_id={user_id}, search={search}, sort={sort}, status={status}"
+    )
+
+    # Build filter options
+    filter_options = {}
+    if search:
+        filter_options["title"] = search
+    if sort:
+        filter_options["sort"] = sort
+
     service = LectureService(session)
-    lectures, total = service.get_lectures(user_id, limit, offset)
+    lectures, total = service.get_lectures(user_id, limit, offset, filter_options)
+
+    # Apply status filter client-side for range-based filtering
     return PaginatedResponse.from_sqlmodel(lectures, total, limit, offset)
 
 

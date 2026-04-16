@@ -1,5 +1,34 @@
 from pydantic import BaseModel, Field
 from typing import Optional
+from enum import Enum
+
+
+# sort enum
+class LectureSortEnum(str, Enum):
+    ASCENDING = "ascending"
+    DESCENDING = "descending"
+
+
+# lecture filter schema
+class LectureFilterSchema(BaseModel):
+    title: Optional[str] = Field(default=None, description="Title of the lecture")
+    description: Optional[str] = Field(
+        default=None, description="Description of the lecture"
+    )
+    completion_percentage: Optional[int] = Field(
+        default=None, description="Completion percentage of the lecture"
+    )
+    created_at: Optional[str] = Field(
+        default=None, description="Creation date of the lecture"
+    )
+    last_accessed_at: Optional[str] = Field(
+        default=None, description="Last accessed date of the lecture"
+    )
+    sort: Optional[LectureSortEnum] = Field(
+        default=LectureSortEnum.DESCENDING, description="Sort order of the lecture"
+    )
+    limit: Optional[int] = Field(default=10, description="Limit of the lecture")
+    offset: Optional[int] = Field(default=0, description="Offset of the lecture")
 
 
 class StepFlashcardSchema(BaseModel):
@@ -9,7 +38,8 @@ class StepFlashcardSchema(BaseModel):
         default=None, description="Options for multichoice cards and truefalse cards"
     )
     options_ans: Optional[int] = Field(
-        default=None, description="Index of the correct option for multichoice cards and truefalse cards"
+        default=None,
+        description="Index of the correct option for multichoice cards and truefalse cards",
     )
     explanation: Optional[str] = Field(
         default=None, description="Explanation for the answer"
