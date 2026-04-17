@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from typing import List, Optional
 import logging
+from datetime import datetime
 from db.session import get_session
 from services.lecture_service import LectureService
 from services.llm_service import LLMService
@@ -11,6 +12,7 @@ from models.lecture import (
     LectureStepPublic,
     LectureSectionListPublic,
     LectureStepListPublic,
+    LectureUpdate,
 )
 from models.card import CardPublic, CardUpdate, Card, CardListPublic
 from schema.paginated_response import PaginatedResponse
@@ -52,11 +54,30 @@ def get_lectures(
     return PaginatedResponse.from_sqlmodel(lectures, total, limit, offset)
 
 
-@router.get("/{lecture_id}", response_model=LectureListPublic)
+@router.get("/{lecture_id}", response_model=LecturePublic)
 def get_lecture(lecture_id: int, session: Session = Depends(get_session)):
     logger.info(f"GET /lectures/{lecture_id}")
     service = LectureService(session)
-    return service.get_lecture(lecture_id)
+    return service.get_lecture_with_sections(lecture_id)
+
+
+@router.patch("/{lecture_id}", response_model=LecturePublic)
+def update_lecture(
+    lecture_id: int,
+    lecture_update: LectureUpdate,
+    session: Session = Depends(get_session),
+):
+    logger.info(f"PATCH /lectures/{lecture_id}")
+    service = LectureService(session)
+    return service.update_lecture(lecture_id, lecture_update)
+
+
+@router.delete("/{lecture_id}")
+def delete_lecture(lecture_id: int, session: Session = Depends(get_session)):
+    logger.info(f"DELETE /lectures/{lecture_id}")
+    service = LectureService(session)
+    service.delete_lecture(lecture_id)
+    return {"message": "Lecture deleted successfully"}
 
 
 @router.get("/{lecture_id}/sections", response_model=List[LectureSectionListPublic])
@@ -143,10 +164,7 @@ def update_card(
 
 @router.post("/steps/{step_id}/complete", response_model=LectureStepListPublic)
 def complete_step(step_id: int, session: Session = Depends(get_session)):
+    logger.info(f"POST /lectures/steps/{step_id}/complete")
     service = LectureService(session)
-    step = service.get_lecture_step(step_id)
-    step.completed = True
-    session.add(step)
-    session.commit()
-    session.refresh(step)
+    step = service.complete_lecture_step(step_id)
     return LectureStepListPublic.model_validate(step)

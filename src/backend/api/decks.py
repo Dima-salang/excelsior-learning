@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session
 from typing import List, Optional
 from db.session import get_session
-from models.deck import DeckPublic, DeckPublicWithCards
+from models.deck import DeckPublic, DeckPublicWithCards, DeckUpdate, Deck, DeckDelete
 from services.deck_service import DeckService
 from schema.paginated_response import PaginatedResponse
 
@@ -60,3 +60,29 @@ def get_deck(deck_id: int, session: Session = Depends(get_session)):
     if not deck:
         raise HTTPException(status_code=404, detail="Deck not found")
     return deck
+
+
+@router.patch("/{deck_id}", response_model=DeckPublic)
+def update_deck(
+    deck_id: int, deck_update: DeckUpdate, session: Session = Depends(get_session)
+):
+    """
+    Update a deck.
+    """
+    service = DeckService(session)
+    deck = service.update_deck(deck_id, deck_update.dict(exclude_unset=True))
+    if not deck:
+        raise HTTPException(status_code=404, detail="Deck not found")
+    return DeckPublic.model_validate(deck)
+
+
+@router.delete("/{deck_id}")
+def delete_deck(deck_id: int, session: Session = Depends(get_session)):
+    """
+    Delete a deck.
+    """
+    service = DeckService(session)
+    success = service.delete_deck(deck_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Deck not found")
+    return {"message": "Deck deleted successfully"}
