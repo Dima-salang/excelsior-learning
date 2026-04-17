@@ -120,7 +120,6 @@ def test_update_lecture(lecture_service: LectureService, setup_data, session: Se
         id=lecture.id,
         title="Updated Lecture",
         description="Updated Description",
-        completion_percentage=0.5,
         last_accessed_at=update_time,
     )
     updated_lecture = lecture_service.update_lecture(
@@ -128,7 +127,6 @@ def test_update_lecture(lecture_service: LectureService, setup_data, session: Se
     )
     assert updated_lecture.title == "Updated Lecture"
     assert updated_lecture.description == "Updated Description"
-    assert updated_lecture.completion_percentage == 0.5
     assert updated_lecture.last_accessed_at.replace(
         microsecond=0
     ) == update_time.replace(microsecond=0)
