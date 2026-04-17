@@ -473,62 +473,65 @@ class LLMProvider:
         os.environ[f"{provider_name.upper()}_API_KEY"] = self.api_key
 
         model_name = self.config.model_name
-        # litellm expects "openrouter/" prefix for OpenRouter models
-        if provider_name == "openrouter" and not model_name.startswith("openrouter/"):
-            model_name = f"openrouter/{model_name}"
 
-            # Setup litellm completion kwargs
-            litellm_kwargs = {
-                "model": model_name,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": prompt
+        # litellm expects "provider/" prefix for all models
+        if not model_name.startswith(f"{provider_name}/"):
+            model_name = f"{provider_name}/{model_name}"
+
+        # unified litellm completion
+        # Setup litellm completion kwargs
+        litellm_kwargs = {
+            "model": model_name,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": prompt
                         + f"Return as JSON matching this schema: {json_schema.model_json_schema()}",
-                    },
-                    {
-                        "role": "user",
-                        "content": user_prompt,
-                    },
-                ],
-                "response_format": {"type": "json_object"},
-            }
+                },
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                },
+            ],
+            "response_format": {"type": "json_object"},
+        }
 
-            # apply custom api_base if configured
-            if getattr(self.config, "base_url", None):
-                litellm_kwargs["api_base"] = self.config.base_url
+        # apply custom api_base if configured
+        if getattr(self.config, "base_url", None):
+            litellm_kwargs["api_base"] = self.config.base_url
 
-            # litellm completion
-            try:
-                response = litellm.completion(**litellm_kwargs)
-                content = response["choices"][0]["message"]["content"]
-                logger.info(f"Content: {content}")
-            except litellm.APIError as e:
-                logger.error(f"{provider_name} completion error: {str(e)}")
-                raise HTTPException(
-                    status_code=e.status_code,
-                    detail=e.message,
-                )
-            except litellm.RateLimitError as e:
-                logger.error(f"{provider_name} rate limit error: {str(e)}")
-                raise HTTPException(
-                    status_code=429,
-                    detail=e.message,
-                )
-            except litellm.AuthenticationError as e:
-                logger.error(f"{provider_name} authentication error: {str(e)}")
-                raise HTTPException(
-                    status_code=401,
-                    detail=e.message,
-                )
-            except Exception as e:
-                logger.error(f"{provider_name} completion error: {str(e)}")
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"{provider_name} generation failed: {str(e)}",
-                )
-            # validate
-            return json_schema.model_validate_json(content)
+        # litellm completion
+        try:
+            response = litellm.completion(**litellm_kwargs)
+            content = response["choices"][0]["message"]["content"]
+            logger.info(f"Content: {content}")
+        except litellm.APIError as e:
+            logger.error(f"{provider_name} completion error: {str(e)}")
+            raise HTTPException(
+                status_code=e.status_code,
+                detail=e.message,
+            )
+        except litellm.RateLimitError as e:
+            logger.error(f"{provider_name} rate limit error: {str(e)}")
+            raise HTTPException(
+                status_code=429,
+                detail=e.message,
+            )
+        except litellm.AuthenticationError as e:
+            logger.error(f"{provider_name} authentication error: {str(e)}")
+            raise HTTPException(
+                status_code=401,
+                detail=e.message,
+            )
+        except Exception as e:
+            logger.error(f"{provider_name} completion error: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"{provider_name} generation failed: {str(e)}",
+            )
+        # validate
+        return json_schema.model_validate_json(content)
+
 
         if provider_name == "gemini":
             os.environ["GEMINI_API_KEY"] = self.api_key
@@ -591,9 +594,10 @@ class LLMProvider:
         os.environ[f"{provider_name.upper()}_API_KEY"] = self.api_key
 
         model_name = self.config.model_name
-        # litellm expects "openrouter/" prefix for OpenRouter models
-        if provider_name == "openrouter" and not model_name.startswith("openrouter/"):
-            model_name = f"openrouter/{model_name}"
+
+        # litellm expects "provider/" prefix for all models
+        if not model_name.startswith(f"{provider_name}/"):
+            model_name = f"{provider_name}/{model_name}"
 
         # Setup litellm completion kwargs
         messages = [
