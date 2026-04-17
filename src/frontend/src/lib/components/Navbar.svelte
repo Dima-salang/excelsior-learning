@@ -108,6 +108,14 @@
 			>
 				Generate
 			</a>
+			<a
+				href="/providers"
+				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/providers')
+					? 'font-medium text-foreground'
+					: 'text-muted-foreground'}"
+			>
+				AI Models
+			</a>
 		</div>
 	</div>
 
@@ -166,14 +174,7 @@
 						Settings
 					</a>
 
-					<a
-						href="/providers"
-						onclick={closeDropdown}
-						class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground md:hidden"
-						role="menuitem"
-					>
-						AI Models
-					</a>
+					
 
 					<div class="my-1 h-px bg-border"></div>
 

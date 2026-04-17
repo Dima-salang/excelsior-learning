@@ -5,9 +5,7 @@
 	import { settings } from '$lib/stores/settings.svelte';
 	import { MessageCircle, Send, Loader2, BrainCircuit, User, Cpu, Trash2 } from '@lucide/svelte';
 	import { fade, fly, scale } from 'svelte/transition';
-	import { marked } from 'marked';
-	import markedKatex from 'marked-katex-extension';
-	import 'katex/dist/katex.min.css';
+	import MarkdownRenderer from './MarkdownRenderer.svelte';
 	import { tick } from 'svelte';
 
 	interface ChatMessage {
@@ -41,8 +39,6 @@
 	let error = $state('');
 	let isLoadingHistory = $state(false);
 	let chatContainer: HTMLElement;
-
-	marked.use(markedKatex({ throwOnError: false }));
 
 	$effect(() => {
 		if (chatId) {
@@ -179,7 +175,13 @@
 								error = data.slice(7).trim();
 								break;
 							} else {
-								messages[messages.length - 1].content += data;
+								try {
+									const parsed = JSON.parse(data);
+									const content = parsed.content || parsed.delta || parsed.text || parsed.message || data;
+									messages[messages.length - 1].content += content;
+								} catch {
+									messages[messages.length - 1].content += data;
+								}
 							}
 						}
 					}
@@ -208,11 +210,6 @@
 		} else {
 			messages = [];
 		}
-	}
-
-	function renderMarkdown(content: string): string {
-		if (!content) return '';
-		return marked.parse(content, { breaks: true, gfm: true }) as string;
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -282,9 +279,7 @@
 								{message.content}
 							</p>
 						{:else}
-							<div class="prose-chat">
-								{@html renderMarkdown(message.content)}
-							</div>
+							<MarkdownRenderer content={message.content} class="prose-chat" compact />
 						{/if}
 					</div>
 
@@ -354,11 +349,40 @@
 		font-family: var(--font-display);
 	}
 
+	:global(.prose-chat) {
+		--tw-prose-body: var(--prose-body);
+		--tw-prose-headings: var(--prose-headings);
+		--tw-prose-links: var(--prose-links);
+		--tw-prose-bold: var(--foreground);
+		--tw-prose-counters: var(--primary);
+		--tw-prose-bullets: var(--muted-foreground);
+		--tw-prose-hr: var(--border);
+		--tw-prose-quotes: var(--foreground);
+		--tw-prose-quote-borders: var(--primary);
+		--tw-prose-captions: var(--muted-foreground);
+		--tw-prose-code: var(--prose-code);
+		--tw-prose-pre-code: var(--foreground);
+		--tw-prose-pre-bg: var(--prose-pre-bg);
+		--tw-prose-th-borders: var(--border);
+		--tw-prose-td-borders: var(--border);
+		color-scheme: dark;
+	}
+
 	:global(.prose-chat p) {
 		font-size: 0.9375rem;
 		line-height: 1.6;
 		margin-bottom: 0.75em;
 		color: var(--prose-body);
+		overflow-wrap: break-word;
+		word-wrap: break-word;
+		white-space: pre-wrap;
+		word-break: break-word;
+	}
+
+	:global(.prose-chat > *) {
+		display: block;
+		overflow-wrap: break-word;
+		word-wrap: break-word;
 	}
 	:global(.prose-chat pre) {
 		background: var(--prose-pre-bg);

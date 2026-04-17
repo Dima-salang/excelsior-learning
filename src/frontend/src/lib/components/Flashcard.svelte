@@ -3,14 +3,7 @@
 	import { CheckCircle2, XCircle, HelpCircle, ArrowRight } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils';
-	import { marked } from 'marked';
-	import markedKatex from 'marked-katex-extension';
-
-	marked.use(
-		markedKatex({
-			throwOnError: false
-		})
-	);
+	import MarkdownRenderer from './MarkdownRenderer.svelte';
 
 	interface CardProps {
 		id: number;
@@ -41,14 +34,6 @@
 
 	let displayOptions = $derived(
 		options && options.length > 0 ? options : type === 'truefalse' ? ['True', 'False'] : []
-	);
-
-	let renderedFront = $derived(marked.parse(front, { breaks: true, gfm: true }));
-	let renderedOptions = $derived(
-		displayOptions.map((opt) => marked.parse(opt, { breaks: true, gfm: true }))
-	);
-	let renderedExplanation = $derived(
-		explanation ? marked.parse(explanation, { breaks: true, gfm: true }) : ''
 	);
 
 	let isCorrect = $derived(selectedIdx !== null && selectedIdx === options_ans);
@@ -95,13 +80,7 @@
 			{/if}
 		</div>
 
-		<div
-			class="markdown-content text-xl leading-relaxed font-bold md:text-2xl"
-			class:text-base={compact}
-			class:md:text-lg={compact}
-		>
-			{@html renderedFront}
-		</div>
+		<MarkdownRenderer content={front} class="text-xl leading-relaxed font-bold md:text-2xl" compact />
 
 		<div class="space-y-3" class:space-y-2={compact} style="perspective: 1000px;">
 			{#if displayOptions && displayOptions.length > 0}
@@ -121,9 +100,7 @@
 									: 'border-border bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
 						)}
 					>
-						<div class="markdown-content prose-sm">
-							{@html renderedOptions[idx]}
-						</div>
+						<MarkdownRenderer content={displayOptions[idx]} class="prose-sm" compact />
 						{#if isRevealed}
 							{#if idx === options_ans}
 								<CheckCircle2 class="h-4 w-4 text-success" />
@@ -148,12 +125,12 @@
 					compact && 'mt-4 rounded-xl'
 				)}
 			>
-				<div class="markdown-content font-sans text-xs leading-relaxed text-muted-foreground italic">
+				<div class="font-sans text-xs leading-relaxed text-muted-foreground italic">
 					<strong
 						class="mr-2 text-[9px] font-black tracking-widest text-primary uppercase not-italic"
 						>Insight:</strong
 					>
-					{@html renderedExplanation}
+					<MarkdownRenderer content={explanation || ''} class="inline" />
 				</div>
 			</div>
 		{/if}
@@ -184,56 +161,5 @@
 		animation: reject 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 		perspective: 1000px;
 		backface-visibility: hidden;
-	}
-
-	:global(.markdown-content) {
-		line-height: 1.625;
-	}
-	:global(.markdown-content p) {
-		margin-bottom: 0.5rem;
-		color: var(--foreground);
-	}
-	:global(.markdown-content p:last-child) {
-		margin-bottom: 0;
-	}
-	:global(.markdown-content code) {
-		padding: 0.125rem 0.375rem;
-		border-radius: 0.25rem;
-		background-color: var(--prose-code-bg);
-		color: var(--prose-code);
-		font-family:
-			ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-			monospace;
-		font-size: 0.9em;
-	}
-	:global(.markdown-content pre) {
-		padding: 1rem;
-		border-radius: 0.75rem;
-		background-color: var(--prose-pre-bg);
-		border: 1px solid var(--border);
-		margin-top: 1rem;
-		margin-bottom: 1rem;
-		overflow-x: auto;
-	}
-	:global(.markdown-content pre code) {
-		background-color: transparent;
-		padding: 0;
-	}
-	:global(.markdown-content ul),
-	:global(.markdown-content ol) {
-		margin-left: 1rem;
-		margin-bottom: 0.5rem;
-		list-style-type: disc;
-	}
-	:global(.markdown-content ul > * + *),
-	:global(.markdown-content ol > * + *) {
-		margin-top: 0.25rem;
-	}
-	:global(.markdown-content strong) {
-		font-weight: 900;
-		color: var(--foreground);
-	}
-	:global(.markdown-content li) {
-		color: var(--foreground);
 	}
 </style>
