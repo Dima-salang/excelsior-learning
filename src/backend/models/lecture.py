@@ -82,6 +82,7 @@ class LectureListPublic(SQLModel):
     completion_percentage: float = 0.0
     created_at: datetime
     last_accessed_at: datetime
+    sections: list["LectureSectionListPublic"] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -90,8 +91,11 @@ class LectureCreate(LectureBase):
     user_id: int
 
 
-class LectureUpdate(LectureBase):
-    id: int
+class LectureUpdate(SQLModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    completion_percentage: Optional[float] = None
+    last_accessed_at: Optional[datetime] = None
 
 
 class LectureDelete(SQLModel):

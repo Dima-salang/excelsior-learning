@@ -49,5 +49,9 @@ class DeckCreate(DeckBase):
     user_id: int
 
 
+class DeckUpdate(DeckBase):
+    pass
+
+
 class DeckDelete(SQLModel):
     id: int
