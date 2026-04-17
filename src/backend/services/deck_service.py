@@ -71,3 +71,23 @@ class DeckService:
         due_today = self.session.exec(statement).first() or 0
 
         return {"due_today": due_today, "past_due": 0}
+
+    def update_deck(self, deck_id: int, deck_update: dict) -> Deck | None:
+        deck = self.session.get(Deck, deck_id)
+        if not deck:
+            return None
+        for key, value in deck_update.items():
+            if hasattr(deck, key):
+                setattr(deck, key, value)
+        self.session.add(deck)
+        self.session.commit()
+        self.session.refresh(deck)
+        return deck
+
+    def delete_deck(self, deck_id: int) -> bool:
+        deck = self.session.get(Deck, deck_id)
+        if not deck:
+            return False
+        self.session.delete(deck)
+        self.session.commit()
+        return True

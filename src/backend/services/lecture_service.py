@@ -92,10 +92,35 @@ class LectureService:
         for key, value in update_data.items():
             if hasattr(lecture, key):
                 setattr(lecture, key, value)
+
+        self._recalculate_completion(lecture)
+
         self.session.add(lecture)
         self.session.commit()
         self.session.refresh(lecture)
         return LecturePublic.model_validate(lecture)
+
+    def _recalculate_completion(self, lecture: Lecture) -> None:
+        total_steps = self.session.exec(
+            select(func.count(LectureStep.id))
+            .select_from(LectureStep)
+            .join(LectureSection)
+            .where(LectureSection.lecture_id == lecture.id)
+        ).first()
+
+        completed_steps = self.session.exec(
+            select(func.count(LectureStep.id))
+            .select_from(LectureStep)
+            .join(LectureSection)
+            .where(
+                LectureSection.lecture_id == lecture.id, LectureStep.completed == True
+            )
+        ).first()
+
+        lecture.completion_percentage = (
+            (completed_steps / total_steps) * 100 if total_steps > 0 else 0
+        )
+        lecture.last_accessed_at = datetime.now()
 
     def delete_lecture(self, lecture_id: int) -> LecturePublic:
         lecture = self.session.get(Lecture, lecture_id)
@@ -103,7 +128,7 @@ class LectureService:
             raise HTTPException(status_code=404, detail="Lecture not found")
         self.session.delete(lecture)
         self.session.commit()
-        return lecture
+        return LecturePublic.model_validate(lecture)
 
     # LECTURE SECTIONS
     def create_lecture_section(
@@ -127,10 +152,11 @@ class LectureService:
         lecture_section = self.session.get(LectureSection, lecture_section_id)
         if not lecture_section:
             raise HTTPException(status_code=404, detail="Lecture section not found")
-        lecture_section.title = lecture_section_update.title
-        lecture_section.completion_percentage = (
-            lecture_section_update.completion_percentage
-        )
+
+        # update lecture section
+        for key, value in lecture_section_update.dict().items():
+            if hasattr(lecture_section, key) and value is not None:
+                setattr(lecture_section, key, value)
         self.session.add(lecture_section)
         self.session.commit()
         self.session.refresh(lecture_section)
@@ -172,12 +198,39 @@ class LectureService:
     def update_lecture_step(
         self, lecture_step_id: int, lecture_step_update: LectureStepUpdate
     ) -> LectureStepPublic:
-        lecture_step = self.session.get(LectureStep, lecture_step_id)
+        lecture_step = self.get_lecture_step(lecture_step_id)
         if not lecture_step:
             raise HTTPException(status_code=404, detail="Lecture step not found")
-        lecture_step.title = lecture_step_update.title
-        lecture_step.content = lecture_step_update.content
-        lecture_step.completed = lecture_step_update.completed
+
+        # update lecture step
+        for key, value in lecture_step_update.dict().items():
+            if hasattr(lecture_step, key) and value is not None:
+                setattr(lecture_step, key, value)
+
+        # update lecture completion percentage
+        lecture_section = self.get_lecture_section(lecture_step.lecture_section_id)
+        # get total steps for lecture section
+        total_steps = self.session.exec(
+            select(func.count())
+            .select_from(LectureStep)
+            .where(LectureStep.lecture_section_id == lecture_section.id)
+        ).first()
+
+        # completion percentage
+        completion_percentage = (
+            lecture_section.completion_percentage + (100 / total_steps)
+            if total_steps > 0
+            else 0
+        )
+
+        # update lecture section
+        self.update_lecture_section(
+            lecture_section.id,
+            LectureSectionUpdate(
+                completion_percentage=completion_percentage,
+            ),
+        )
+
         self.session.add(lecture_step)
         self.session.commit()
         self.session.refresh(lecture_step)
@@ -195,12 +248,46 @@ class LectureService:
         lecture = self.session.get(Lecture, lecture_id)
         if not lecture:
             raise HTTPException(status_code=404, detail="Lecture not found")
+
+        sections = self.session.exec(
+            select(LectureSection)
+            .where(LectureSection.lecture_id == lecture_id)
+            .order_by(LectureSection.order_key.asc())
+        ).all()
+
         lecture.last_accessed_at = datetime.now()
         lecture.updated_at = datetime.now()
         self.session.add(lecture)
         self.session.commit()
         self.session.refresh(lecture)
-        return LecturePublic.model_validate(lecture)
+
+        sections_with_steps = []
+        for section in sections:
+            steps = self.session.exec(
+                select(LectureStep)
+                .where(LectureStep.lecture_section_id == section.id)
+                .order_by(LectureStep.order_key.asc())
+            ).all()
+            sections_with_steps.append(
+                LectureSectionPublic(
+                    id=section.id,
+                    title=section.title,
+                    completion_percentage=section.completion_percentage,
+                    order_key=section.order_key,
+                    created_at=section.created_at,
+                    updated_at=section.updated_at,
+                    steps=[LectureStepListPublic.model_validate(s) for s in steps],
+                )
+            )
+
+        return LecturePublic(
+            id=lecture.id,
+            title=lecture.title,
+            description=lecture.description,
+            completion_percentage=lecture.completion_percentage,
+            last_accessed_at=lecture.last_accessed_at,
+            sections=sections_with_steps,
+        )
 
     def get_lecture_sections(self, lecture_id: int) -> list[LectureSectionListPublic]:
         sections = self.session.exec(
@@ -217,3 +304,22 @@ class LectureService:
             .order_by(LectureStep.order_key.asc())
         ).all()
         return [LectureStepListPublic.model_validate(s) for s in steps]
+
+    def complete_lecture_step(self, lecture_step_id: int) -> LectureStep:
+        lecture_step = self.session.get(LectureStep, lecture_step_id)
+        if not lecture_step:
+            raise HTTPException(status_code=404, detail="Lecture step not found")
+
+        lecture_step.completed = True
+        self.session.add(lecture_step)
+
+        section = self.session.get(LectureSection, lecture_step.lecture_section_id)
+        if section and section.lecture_id:
+            lecture = self.session.get(Lecture, section.lecture_id)
+            if lecture:
+                self._recalculate_completion(lecture)
+                self.session.add(lecture)
+
+        self.session.commit()
+        self.session.refresh(lecture_step)
+        return lecture_step
