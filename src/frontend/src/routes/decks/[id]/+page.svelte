@@ -15,7 +15,11 @@
 		Loader2,
 		Calendar,
 		AlertCircle,
-		CalendarClock
+		CalendarClock,
+		Pencil,
+		Trash2,
+		Save,
+		X
 	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import Flashcard from '$lib/components/Flashcard.svelte';
@@ -48,6 +52,10 @@
 	let deck = $state<Deck | null>(null);
 	let isLoading = $state(true);
 	let error = $state('');
+	let isEditing = $state(false);
+	let editTitle = $state('');
+	let editDescription = $state('');
+	let isDeleting = $state(false);
 
 	async function fetchDeck() {
 		try {
@@ -102,6 +110,53 @@
 		const date = new Date(dateStr);
 		const now = new Date();
 		return date < now;
+	}
+
+	function startEdit() {
+		if (deck) {
+			editTitle = deck.title;
+			editDescription = deck.description || '';
+			isEditing = true;
+		}
+	}
+
+	async function saveEdit() {
+		if (!deck) return;
+		try {
+			const updated = await apiFetch(`/decks/${deck.id}`, {
+				method: 'PATCH',
+				body: JSON.stringify({
+					title: editTitle,
+					description: editDescription
+				})
+			});
+			deck = { ...deck, ...updated };
+			isEditing = false;
+		} catch (err: any) {
+			error = err.message || 'Failed to update deck.';
+		}
+	}
+
+	function cancelEdit() {
+		isEditing = false;
+		editTitle = '';
+		editDescription = '';
+	}
+
+	async function confirmDelete() {
+		if (!deck) return;
+		isDeleting = true;
+	}
+
+	async function deleteDeck() {
+		if (!deck) return;
+		try {
+			await apiFetch(`/decks/${deck.id}`, { method: 'DELETE' });
+			goto('/decks');
+		} catch (err: any) {
+			error = err.message || 'Failed to delete deck.';
+			isDeleting = false;
+		}
 	}
 
 	let masteredCount = $derived(deck?.cards.filter((c) => c.is_correct).length || 0);
@@ -178,13 +233,47 @@
 			<header class="flex flex-col justify-between gap-8 md:flex-row md:items-end" in:fade>
 				<div class="space-y-6">
 					<h1 class="font-display text-4xl leading-tight font-black tracking-tighter text-foreground uppercase md:text-6xl">
-						{deck.title}
+						{#if isEditing}
+							<input
+								bind:value={editTitle}
+								class="bg-transparent border-b-2 border-primary focus:outline-none w-full text-foreground"
+								placeholder="Deck Title"
+							/>
+						{:else}
+							{deck.title}
+						{/if}
 					</h1>
-					<p class="max-w-2xl font-sans text-xl leading-relaxed text-muted-foreground">
-						{deck.description || 'Combining concepts into a unified study guide.'}
-					</p>
+					{#if isEditing}
+						<textarea
+							bind:value={editDescription}
+							class="font-sans text-xl leading-relaxed bg-muted/20 border border-border rounded-xl p-4 w-full focus:outline-none focus:border-primary text-muted-foreground"
+							rows="2"
+							placeholder="Description"
+						></textarea>
+					{:else}
+						<p class="max-w-2xl font-sans text-xl leading-relaxed text-muted-foreground">
+							{deck.description || 'Combining concepts into a unified study guide.'}
+						</p>
+					{/if}
 				</div>
 				<div class="flex flex-col gap-4 sm:flex-row">
+					{#if isEditing}
+						<Button onclick={saveEdit} variant="default" class="h-16 rounded-2xl px-8 font-black tracking-widest uppercase">
+							<Save class="h-4 w-4 mr-2" />
+							Save
+						</Button>
+						<Button onclick={cancelEdit} variant="ghost" class="h-16 rounded-2xl px-4">
+							<X class="h-4 w-4" />
+						</Button>
+					{:else}
+						<Button onclick={startEdit} variant="outline" class="h-16 rounded-2xl border-border px-6 font-black tracking-widest uppercase">
+							<Pencil class="h-4 w-4 mr-2" />
+							Edit
+						</Button>
+						<Button onclick={confirmDelete} variant="ghost" class="h-16 rounded-2xl px-4 text-destructive hover:text-destructive">
+							<Trash2 class="h-5 w-5" />
+						</Button>
+					{/if}
 					<Button
 						size="lg"
 						variant="outline"
@@ -271,6 +360,49 @@
 					{/each}
 				</div>
 			</div>
+		{/if}
+
+		{#if isDeleting}
+			<div class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+				<div class="mx-4 max-w-md rounded-2xl border border-destructive/20 bg-card p-8 shadow-2xl">
+					<div class="space-y-4 text-center">
+						<div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+							<Trash2 class="h-8 w-8 text-destructive" />
+						</div>
+						<h3 class="font-display text-2xl font-black uppercase text-foreground">Delete Deck?</h3>
+						<p class="text-muted-foreground">This action cannot be undone. All cards will be permanently removed.</p>
+						<div class="flex justify-center gap-4 pt-4">
+							<Button onclick={() => (isDeleting = false)} variant="outline" class="rounded-xl">
+								Cancel
+							</Button>
+							<Button onclick={deleteDeck} variant="destructive" class="rounded-xl">
+								Delete
+							</Button>
+						</div>
+					</div>
+				</div>
+			</div>
+			{#if isDeleting}
+				<div class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+					<div class="mx-4 max-w-md rounded-2xl border border-destructive/20 bg-card p-8 shadow-2xl">
+						<div class="space-y-4 text-center">
+							<div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+								<Trash2 class="h-8 w-8 text-destructive" />
+							</div>
+							<h3 class="font-display text-2xl font-black uppercase text-foreground">Delete Deck?</h3>
+							<p class="text-muted-foreground">This action cannot be undone. All cards will be permanently removed.</p>
+							<div class="flex justify-center gap-4 pt-4">
+								<Button onclick={() => (isDeleting = false)} variant="outline" class="rounded-xl">
+									Cancel
+								</Button>
+								<Button onclick={deleteDeck} variant="destructive" class="rounded-xl">
+									Delete
+								</Button>
+							</div>
+						</div>
+					</div>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>

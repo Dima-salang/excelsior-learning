@@ -4,6 +4,7 @@
 	import { apiFetch } from '$lib/api';
 	import { fade, fly, scale } from 'svelte/transition';
 	import { Button } from '$lib/components/ui/button';
+	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 	import {
 		Trophy,
 		Timer,
@@ -17,14 +18,6 @@
 		Zap
 	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
-	import { marked } from 'marked';
-	import markedKatex from 'marked-katex-extension';
-
-	marked.use(
-		markedKatex({
-			throwOnError: false
-		})
-	);
 
 	let quizId = $derived((page.params as any).quizId as string);
 	let quiz = $state<any>(null);
@@ -268,8 +261,8 @@
 									>
 								</div>
 
-								<h3 class="markdown-content mb-8 font-display text-xl leading-relaxed font-black">
-									{@html marked.parse(card.front)}
+								<h3 class="mb-8 font-display text-xl leading-relaxed font-black">
+									<MarkdownRenderer content={card.front} compact />
 								</h3>
 
 								{#if card.options && card.options.length > 0}
@@ -283,9 +276,9 @@
 														? 'border-destructive/30 bg-destructive/5 text-destructive'
 														: 'border-border bg-muted/30 text-muted-foreground'}"
 											>
-												<span class="markdown-content text-sm font-medium"
-													>{@html marked.parse(option)}</span
-												>
+												<span class="text-sm font-medium">
+													<MarkdownRenderer content={option} compact />
+												</span>
 												{#if idx === card.options_ans}
 													<Target class="h-4 w-4" />
 												{:else if idx === card.user_selected_ans && !card.is_correct}
@@ -303,9 +296,7 @@
 										<p class="mb-2 font-display text-[8px] font-black tracking-[0.2em] uppercase">
 											Explanation
 										</p>
-										<div class="markdown-content">
-											{@html marked.parse(card.explanation)}
-										</div>
+										<MarkdownRenderer content={card.explanation} compact />
 									</div>
 								{/if}
 							</div>

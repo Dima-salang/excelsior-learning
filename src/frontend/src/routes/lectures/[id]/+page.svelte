@@ -15,7 +15,11 @@
 		ArrowLeft,
 		Layers,
 		Sparkles,
-		XCircle
+		XCircle,
+		Pencil,
+		Trash2,
+		Save,
+		X
 	} from '@lucide/svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { onMount } from 'svelte';
@@ -49,6 +53,10 @@
 	let isLoading = $state(true);
 	let isLoadingSections = $state(true);
 	let error = $state('');
+	let isEditing = $state(false);
+	let editTitle = $state('');
+	let editDescription = $state('');
+	let isDeleting = $state(false);
 
 	async function fetchLecture(id: string) {
 		try {
@@ -102,6 +110,53 @@
 		}
 		goto(`/lectures/${page.params.id}/step/${step.id}`);
 	}
+
+	function startEdit() {
+		if (lecture) {
+			editTitle = lecture.title;
+			editDescription = lecture.description || '';
+			isEditing = true;
+		}
+	}
+
+	async function saveEdit() {
+		if (!lecture) return;
+		try {
+			const updated = await apiFetch(`/lectures/${lecture.id}`, {
+				method: 'PATCH',
+				body: JSON.stringify({
+					title: editTitle,
+					description: editDescription
+				})
+			});
+			lecture = { ...lecture, ...updated };
+			isEditing = false;
+		} catch (err: any) {
+			error = err.message || 'Failed to update lecture.';
+		}
+	}
+
+	function cancelEdit() {
+		isEditing = false;
+		editTitle = '';
+		editDescription = '';
+	}
+
+	async function confirmDelete() {
+		if (!lecture) return;
+		isDeleting = true;
+	}
+
+	async function deleteLecture() {
+		if (!lecture) return;
+		try {
+			await apiFetch(`/lectures/${lecture.id}`, { method: 'DELETE' });
+			goto('/lectures');
+		} catch (err: any) {
+			error = err.message || 'Failed to delete lecture.';
+			isDeleting = false;
+		}
+	}
 </script>
 
 <div class="container mx-auto max-w-5xl space-y-12 p-6 lg:p-12">
@@ -153,21 +208,57 @@
 						<Layers class="h-4 w-4" />
 						<span>Course Content</span>
 					</div>
-					<h1 class="font-unbounded text-4xl leading-tight font-black tracking-tighter uppercase md:text-6xl text-foreground">
-						{lecture.title}
-					</h1>
-					<p class="font-sans text-lg leading-relaxed text-muted-foreground opacity-80">
-						{lecture.description || 'Step through this AI-generated curriculum at your own pace.'}
-					</p>
+					{#if isEditing}
+						<input
+							bind:value={editTitle}
+							class="font-unbounded text-4xl leading-tight font-black tracking-tighter uppercase md:text-6xl bg-transparent border-b-2 border-primary focus:outline-none w-full text-foreground"
+							placeholder="Lecture Title"
+						/>
+						<textarea
+							bind:value={editDescription}
+							class="font-sans text-lg leading-relaxed bg-muted/20 border border-border rounded-xl p-4 w-full focus:outline-none focus:border-primary text-muted-foreground"
+							rows="2"
+							placeholder="Description"
+						></textarea>
+					{:else}
+						<h1 class="font-unbounded text-4xl leading-tight font-black tracking-tighter uppercase md:text-6xl text-foreground">
+							{lecture.title}
+						</h1>
+						<p class="font-sans text-lg leading-relaxed text-muted-foreground opacity-80">
+							{lecture.description || 'Step through this AI-generated curriculum at your own pace.'}
+						</p>
+					{/if}
 				</div>
 
-				<div class="min-w-[200px] rounded-[2rem] border border-primary/20 bg-primary/10 p-6 text-center shadow-2xl backdrop-blur-3xl">
-					<span class="mb-1 block text-[10px] font-black tracking-widest text-primary uppercase">Completion</span>
-					<div class="font-display text-5xl font-black text-foreground">
-						{Math.round(lecture.completion_percentage)}%
+				<div class="flex flex-col items-end gap-4">
+					<div class="flex items-center gap-2">
+						{#if isEditing}
+							<Button onclick={saveEdit} variant="default" class="rounded-xl">
+								<Save class="h-4 w-4 mr-2" />
+								Save
+							</Button>
+							<Button onclick={cancelEdit} variant="ghost" class="rounded-xl">
+								<X class="h-4 w-4" />
+							</Button>
+						{:else}
+							<Button onclick={startEdit} variant="outline" class="rounded-xl">
+								<Pencil class="h-4 w-4 mr-2" />
+								Edit
+							</Button>
+							<Button onclick={confirmDelete} variant="ghost" class="rounded-xl text-destructive hover:text-destructive">
+								<Trash2 class="h-4 w-4" />
+							</Button>
+						{/if}
 					</div>
-					<div class="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-						<div class="h-full bg-primary transition-all duration-1000" style="width: {lecture.completion_percentage}%"></div>
+
+					<div class="min-w-[200px] rounded-[2rem] border border-primary/20 bg-primary/10 p-6 text-center shadow-2xl backdrop-blur-3xl">
+						<span class="mb-1 block text-[10px] font-black tracking-widest text-primary uppercase">Completion</span>
+						<div class="font-display text-5xl font-black text-foreground">
+							{Math.round(lecture.completion_percentage)}%
+						</div>
+						<div class="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+							<div class="h-full bg-primary transition-all duration-1000" style="width: {lecture.completion_percentage}%"></div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -226,6 +317,28 @@
 				{/each}
 			{/if}
 		</section>
+
+		{#if isDeleting}
+			<div class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+				<div class="mx-4 max-w-md rounded-2xl border border-destructive/20 bg-card p-8 shadow-2xl">
+					<div class="space-y-4 text-center">
+						<div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+							<Trash2 class="h-8 w-8 text-destructive" />
+						</div>
+						<h3 class="font-display text-2xl font-black uppercase text-foreground">Delete Lecture?</h3>
+						<p class="text-muted-foreground">This action cannot be undone. All sections and steps will be permanently removed.</p>
+						<div class="flex justify-center gap-4 pt-4">
+							<Button onclick={() => (isDeleting = false)} variant="outline" class="rounded-xl">
+								Cancel
+							</Button>
+							<Button onclick={deleteLecture} variant="destructive" class="rounded-xl">
+								Delete
+							</Button>
+						</div>
+					</div>
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>
 

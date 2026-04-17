@@ -26,11 +26,9 @@
 	import { fade, fly, slide, scale } from 'svelte/transition';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { marked } from 'marked';
-	import markedKatex from 'marked-katex-extension';
-	import 'katex/dist/katex.min.css';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Flashcard from '$lib/components/Flashcard.svelte';
+	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 	import ChatSession from '$lib/components/ChatSession.svelte';
 	import { MessageCircle } from '@lucide/svelte';
 
@@ -78,6 +76,8 @@
 	let providers = $state<Provider[]>([]);
 	let isLoading = $state(true);
 	let isGenerating = $state(false);
+	let isCompleting = $state(false);
+	let isPageReady = $state(false);
 	let error = $state('');
 	let isSidebarOpen = $state(false);
 	let isChatSidebarOpen = $state(false);
@@ -85,6 +85,7 @@
 
 	let stepId = $derived(page.params.stepId);
 	let lectureId = $derived(page.params.id);
+	let bottomElement = $state<HTMLElement | null>(null);
 
 	async function fetchData(currentStepId: string | undefined) {
 		if (!currentStepId) return;
@@ -129,6 +130,9 @@
 			error = err.message || 'Failed to initialize the learning session.';
 		} finally {
 			isLoading = false;
+			setTimeout(() => {
+				isPageReady = true;
+			}, 100);
 		}
 	}
 
@@ -181,17 +185,43 @@
 	}
 
 	async function toggleComplete() {
-		if (!step) return;
+		if (!step || isCompleting) return;
+		isCompleting = true;
 		try {
 			const updated = await apiFetch(`/lectures/steps/${stepId}/complete`, {
 				method: 'POST'
 			});
-			step.completed = updated.is_completed;
-			lecture = await apiFetch(`/lectures/${lectureId}`);
+			step.completed = updated.completed;
 		} catch (err) {
 			console.error('Failed to update progress:', err);
+		} finally {
+			isCompleting = false;
 		}
 	}
+
+	$effect(() => {
+		if (!stepId || isLoading || !isPageReady) return;
+		
+		if (bottomElement && step && !step.completed && !isCompleting) {
+			let hasTriggered = false;
+			const observer = new IntersectionObserver(
+				(entries) => {
+					entries.forEach((entry) => {
+						if (entry.isIntersecting && !hasTriggered && !isCompleting && !step?.completed) {
+							hasTriggered = true;
+							toggleComplete();
+						}
+					});
+				},
+				{ threshold: 1.0 }
+			);
+			observer.observe(bottomElement);
+			return () => {
+				hasTriggered = true;
+				observer.disconnect();
+			};
+		}
+	});
 
 	async function updateCardMastery(cardId: number, isCorrect: boolean, selectedAns: number) {
 		try {
@@ -215,11 +245,20 @@
 		}
 	}
 
-	let allSteps = $derived(
-		[...(lecture?.sections || [])]
-			.sort((a, b) => a.order_key - b.order_key)
-			.flatMap((s) => [...s.steps].sort((a, b) => a.order_key - b.order_key))
-	);
+	function getAllSteps() {
+		if (!lecture || !lecture.sections || !Array.isArray(lecture.sections)) {
+			return [];
+		}
+		try {
+			return [...lecture.sections]
+				.sort((a, b) => a.order_key - b.order_key)
+				.flatMap((s) => [...(s.steps || [])].sort((a, b) => a.order_key - b.order_key));
+		} catch {
+			return [];
+		}
+	}
+
+	let allSteps = $derived(getAllSteps());
 
 	let currentStepIndex = $derived(allSteps.findIndex((s) => s.id === Number(stepId)));
 	let nextStep = $derived(allSteps[currentStepIndex + 1]);
@@ -234,12 +273,6 @@
 		isSidebarOpen = false;
 		goto(`/lectures/${lectureId}/step/${targetId}`);
 	}
-
-	marked.use(markedKatex({ throwOnError: false }));
-
-	let renderedContent = $derived(
-		step?.content ? marked.parse(step.content, { breaks: true, gfm: true }) : ''
-	);
 </script>
 
 <div class="flex h-screen overflow-hidden bg-background text-foreground">
@@ -288,7 +321,7 @@
 		</div>
 
 		<div class="custom-scrollbar h-[calc(100vh-160px)] overflow-y-auto p-6">
-			{#if lecture}
+			{#if lecture && lecture.sections}
 				<div class="space-y-10">
 					{#each [...lecture.sections].sort((a, b) => a.order_key - b.order_key) as section}
 						<div class="space-y-4">
@@ -297,7 +330,7 @@
 								{section.title}
 							</div>
 							<div class="space-y-2">
-								{#each [...section.steps].sort((a, b) => a.order_key - b.order_key) as s}
+								{#each [...(section.steps || [])].sort((a, b) => a.order_key - b.order_key) as s}
 									<button
 										onclick={() => navigateTo(s.id)}
 										class="w-full rounded-xl border p-3 text-left text-xs font-bold transition-all flex items-center gap-3 {s.id === Number(stepId)
@@ -427,7 +460,7 @@
 								<Button onclick={handleGenerate} variant="default" class="rounded-xl px-8 font-black">Generate Content</Button>
 							</div>
 						{:else}
-							{@html renderedContent}
+							<MarkdownRenderer content={step.content || ''} />
 
 							{#if step.cards && step.cards.length > 0}
 								<div class="mt-20 space-y-8" in:fade={{ delay: 600 }}>
@@ -461,10 +494,14 @@
 					<div class="flex flex-col items-center justify-between gap-8 border-t border-border pt-20 md:flex-row" in:fade={{ delay: 400 }}>
 						<Button
 							onclick={toggleComplete}
+							disabled={isCompleting}
 							variant={step.completed ? 'outline' : 'default'}
 							class="flex h-16 items-center gap-3 rounded-2xl px-10 text-sm font-black tracking-widest uppercase transition-all {step.completed ? 'border-success/30 bg-success/10 text-success' : 'shadow-xl hover:-translate-y-1'}"
 						>
-							{#if step.completed}
+							{#if isCompleting}
+								<Loader2 class="h-5 w-5 animate-spin" />
+								Completing...
+							{:else if step.completed}
 								<CheckCircle2 class="h-5 w-5" />
 								Step Completed
 							{:else}
@@ -477,7 +514,8 @@
 								<Button
 									variant="ghost"
 									onclick={() => navigateTo(prevStep.id)}
-									class="flex h-14 items-center gap-2 rounded-xl border border-border px-6 text-muted-foreground hover:bg-muted hover:text-foreground"
+									disabled={isCompleting || isGenerating}
+									class="flex h-14 items-center gap-2 rounded-xl border border-border px-6 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
 								>
 									<ChevronLeft class="h-4 w-4" />
 									Previous
@@ -485,7 +523,7 @@
 							{/if}
 
 							{#if nextStep}
-								<Button onclick={() => navigateTo(nextStep.id)} variant="default" class="flex h-14 items-center gap-2 rounded-xl px-8 font-black tracking-widest uppercase">
+								<Button onclick={() => navigateTo(nextStep.id)} disabled={isCompleting || isGenerating} variant="default" class="flex h-14 items-center gap-2 rounded-xl px-8 font-black tracking-widest uppercase disabled:opacity-50">
 									Next Step
 									<ChevronRight class="h-4 w-4" />
 								</Button>
@@ -497,6 +535,7 @@
 							{/if}
 						</div>
 					</div>
+					<div bind:this={bottomElement} class="h-4"></div>
 				</div>
 			</div>
 		{/if}
@@ -568,109 +607,10 @@
 		background: var(--muted);
 	}
 
-	.font-unbounded {
+.font-unbounded {
 		font-family: var(--font-display);
 	}
 	.font-sans {
 		font-family: var(--font-sans);
 	}
-
-	:global(.prose-excelsior) {
-		--tw-prose-body: var(--prose-body);
-		--tw-prose-headings: var(--prose-headings);
-		--tw-prose-links: var(--prose-links);
-		--tw-prose-bold: var(--foreground);
-		--tw-prose-counters: var(--primary);
-		--tw-prose-bullets: var(--muted-foreground);
-		--tw-prose-hr: var(--border);
-		--tw-prose-quotes: var(--foreground);
-		--tw-prose-quote-borders: var(--primary);
-		--tw-prose-captions: var(--muted-foreground);
-		--tw-prose-code: var(--prose-code);
-		--tw-prose-pre-code: var(--foreground);
-		--tw-prose-pre-bg: var(--prose-pre-bg);
-		--tw-prose-th-borders: var(--border);
-		--tw-prose-td-borders: var(--border);
-	}
-
-	:global(.prose-excelsior h1),
-	:global(.prose-excelsior h2),
-	:global(.prose-excelsior h3) {
-		font-family: var(--font-display);
-		letter-spacing: -0.05em;
-		text-transform: uppercase;
-		font-weight: 800;
-		margin-top: 3em;
-		margin-bottom: 1.5em;
-		line-height: 1.1;
-		color: var(--prose-headings);
-	}
-
-	:global(.prose-excelsior p) {
-		font-family: var(--font-sans);
-		font-size: 1.125rem;
-		line-height: 1.8;
-		margin-top: 1.5em;
-		margin-bottom: 1.5em;
-		color: var(--prose-body);
-	}
-
-	:global(.prose-excelsior strong) {
-		color: var(--foreground);
-		font-weight: 700;
-	}
-
-	:global(.prose-excelsior blockquote) {
-		border-left: 4px solid var(--primary);
-		background: var(--primary);
-		padding: 2rem;
-		border-radius: 1.5rem;
-		margin: 3rem 0;
-		font-style: italic;
-		color: var(--prose-blockquote);
-	}
-
-	:global(.prose-excelsior pre) {
-		background: var(--prose-pre-bg);
-		border: 1px solid var(--border);
-		padding: 2rem;
-		border-radius: 1.5rem;
-		margin: 2.5rem 0;
-		overflow-x: auto;
-		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-	}
-
-	:global(.prose-excelsior code) {
-		font-family: 'JetBrains Mono', 'Fira Code', monospace;
-		padding: 0.2rem 0.4rem;
-		border-radius: 0.4rem;
-		font-size: 0.9em;
-		color: var(--prose-code);
-		background: var(--prose-code-bg);
-	}
-
-	:global(.prose-excelsior pre code) {
-		background: transparent;
-		padding: 0;
-		color: var(--foreground);
-		line-height: 1.6;
-		font-size: 0.875rem;
-	}
-
-	:global(.prose-excelsior ul),
-	:global(.prose-excelsior ol) {
-		margin-top: 2em;
-		margin-bottom: 2em;
-		padding-left: 1.5em;
-		list-style-type: disc;
-	}
-
-	:global(.prose-excelsior li) {
-		margin-top: 1em;
-		margin-bottom: 1em;
-		font-family: var(--font-sans);
-		font-size: 1.125rem;
-		line-height: 1.7;
-		color: var(--prose-body);
-	}
-</style>
+ </style>

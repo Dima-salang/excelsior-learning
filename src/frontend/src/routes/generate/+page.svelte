@@ -68,8 +68,8 @@
 				apiFetch(`/decks?user_id=${auth.user.id}`),
 				apiFetch(`/llm/providers?user_id=${auth.user.id}`)
 			]);
-			decks = decksData;
-			providers = providersData;
+			decks = decksData?.items || decksData || [];
+			providers = providersData || [];
 
 			if (providers.length > 0) {
 				selectedProviderId = providers[0].id;
