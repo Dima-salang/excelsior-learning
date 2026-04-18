@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { apiFetch, API_BASE_URL } from '$lib/api';
-	const API_URL = API_BASE_URL || 'http://localhost:8000';
+	
 	import { Button } from '$lib/components/ui/button';
 	import { auth } from '$lib/stores/auth.svelte';
 	import {
