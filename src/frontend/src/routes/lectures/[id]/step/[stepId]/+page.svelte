@@ -320,7 +320,7 @@
 			</div>
 		</div>
 
-		<div class="custom-scrollbar h-[calc(100vh-160px)] overflow-y-auto p-6">
+		<div class="custom-scrollbar flex-1 overflow-y-auto overflow-x-hidden p-6 pb-20">
 			{#if lecture && lecture.sections}
 				<div class="space-y-10">
 					{#each [...lecture.sections].sort((a, b) => a.order_key - b.order_key) as section}
