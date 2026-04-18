@@ -275,10 +275,10 @@
 	}
 </script>
 
-<div class="flex h-screen overflow-hidden bg-background text-foreground">
+<div class="flex h-[100dvh] overflow-hidden bg-background text-foreground">
 	<!-- Adaptive Sidebar -->
-	<aside class="fixed inset-y-0 left-0 z-50 w-80 transform border-r border-border bg-card transition-transform duration-500 {isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl lg:relative lg:translate-x-0">
-		<div class="flex flex-col gap-6 border-b border-border p-8">
+	<aside class="fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-80 flex-col border-r border-border bg-card transition-transform duration-500 {isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl lg:relative lg:translate-x-0">
+		<div class="shrink-0 flex flex-col gap-6 border-b border-border p-8">
 			<a href="/" class="flex items-center gap-3">
 				<div class="rounded-xl bg-primary p-2">
 					<BrainCircuit class="h-5 w-5 text-primary-foreground" />
@@ -320,7 +320,7 @@
 			</div>
 		</div>
 
-		<div class="custom-scrollbar flex-1 overflow-y-auto overflow-x-hidden p-6 pb-20">
+		<div class="custom-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-6 pb-20">
 			{#if lecture && lecture.sections}
 				<div class="space-y-10">
 					{#each [...lecture.sections].sort((a, b) => a.order_key - b.order_key) as section}
@@ -415,7 +415,7 @@
 				<div class="h-full bg-primary transition-all duration-1000" style="width: {((currentStepIndex + 1) / allSteps.length) * 100}%"></div>
 			</div>
 
-			<div class="custom-scrollbar flex-grow overflow-x-hidden overflow-y-auto">
+			<div class="custom-scrollbar min-h-0 flex-grow overflow-x-hidden overflow-y-auto">
 				<div class="mx-auto max-w-4xl space-y-12 px-6 py-16 lg:py-24">
 					<header class="space-y-6" in:fade>
 						<div class="flex items-center gap-4 text-[10px] font-black tracking-[0.4em] text-primary uppercase">
