@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
+import { env } from '$env/dynamic/public';
 
-// export const API_BASE_URL = 'http://localhost:8000';
-export const API_BASE_URL = 'https://excelsior-academy.fastapicloud.dev';
+export const API_BASE_URL = env.PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
 	const token = browser ? localStorage.getItem('access_token') : null;
