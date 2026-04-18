@@ -76,10 +76,14 @@ async def global_exception_handler(request: Request, exc: Exception):
         },
     )
 
-
+allow_origin = (
+    "http://localhost:5173"
+    if os.environ.get("DEBUG") == "True"
+    else "https://excelsior-learning.vercel.app"
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://excelsior-learning.vercel.app",
+    allow_origin_regex=allow_origin,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
