@@ -3,7 +3,8 @@ import logging.handlers
 import sys
 from pathlib import Path
 
-LOGS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "logs"
+LOG_DIR_NAME = "logs"
+LOGS_DIR = Path(__file__).resolve().parent.parent / LOG_DIR_NAME
 LOGS_DIR.mkdir(exist_ok=True)
 
 

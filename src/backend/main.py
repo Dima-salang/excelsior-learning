@@ -24,6 +24,7 @@ from api.decks import router as decks_router
 from api.quiz import router as quiz_router
 from api.chat.chat import router as chat_router
 from typing import Annotated
+from sqlalchemy import text
 from db.engine import engine
 from core.logging_config import setup_logging
 
@@ -78,7 +79,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):(5173|4173|3000)",
+    allow_origin_regex=r"https://excelsior-learning.vercel.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -104,6 +105,29 @@ async def root():
 async def dashboard(token: Annotated[str, Depends(oauth2_scheme)]):
     logger.info("GET /dashboard")
     return {"message": "Welcome to Excelsior Learning API"}
+
+
+async def check_database():
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+            connection.commit()
+        return True
+    except Exception:
+        return False
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+@app.get("/ready")
+async def ready():
+    db_ok = await check_database()
+    if not db_ok:
+        raise HTTPException(status_code=503, detail="Database not ready")
+    return {"status": "ok", "database": "ready"}
 
 
 @app.on_event("startup")

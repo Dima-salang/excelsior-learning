@@ -5,9 +5,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from typing import Annotated
 from models.user import User, UserCreate, UserPublic
-from jwt.exceptions import InvalidTokenError
-from pwdlib import PasswordHash
 import jwt
+from pwdlib import PasswordHash
 from datetime import datetime, timedelta, timezone
 import os
 
@@ -86,7 +85,7 @@ async def get_current_user(
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
-    except InvalidTokenError:
+    except Exception:
         raise credentials_exception
     user = get_user(token_data.username, session)
     if user is None:
