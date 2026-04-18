@@ -12,7 +12,7 @@ source .venv/bin/activate
 cd "$(dirname "$0")/src/backend"
 
 # Run the backend server
-fastapi dev &
+fastapi run &
 
 # run the frontend server
 cd "$(dirname "$0")/../frontend"
