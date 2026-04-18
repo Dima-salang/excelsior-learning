@@ -22,6 +22,7 @@ from models.card import Card
 from models.llm_provider import UserLLMConfig
 from models.quiz import QuizDB
 from models.chat import Chat, ChatMessage
+from models.health import Health
 
 target_metadata = SQLModel.metadata
 
