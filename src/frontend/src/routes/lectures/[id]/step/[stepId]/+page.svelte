@@ -276,9 +276,23 @@
 </script>
 
 <div class="flex h-[100dvh] overflow-hidden bg-background text-foreground">
+	{#if isSidebarOpen}
+		<button
+			class="fixed inset-0 z-40 bg-black/50 lg:hidden"
+			onclick={() => (isSidebarOpen = false)}
+			aria-label="Close sidebar"
+		></button>
+	{/if}
+
 	<!-- Adaptive Sidebar -->
 	<aside class="fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-80 flex-col border-r border-border bg-card transition-transform duration-500 {isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl lg:relative lg:translate-x-0">
 		<div class="shrink-0 flex flex-col gap-6 border-b border-border p-8">
+			<button
+				onclick={() => (isSidebarOpen = false)}
+				class="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg lg:hidden"
+			>
+				<X class="h-5 w-5" />
+			</button>
 			<a href="/" class="flex items-center gap-3">
 				<div class="rounded-xl bg-primary p-2">
 					<BrainCircuit class="h-5 w-5 text-primary-foreground" />
@@ -374,7 +388,16 @@
 				{/if}
 			</button>
 			<span class="max-w-[200px] truncate text-xs font-black tracking-widest text-primary uppercase">{step?.title || 'Learning'}</span>
-			<div class="h-10 w-10"></div>
+			<button
+				onclick={() => (isSidebarOpen = !isSidebarOpen)}
+				class="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
+			>
+				{#if isSidebarOpen}
+					<X class="h-6 w-6" />
+				{:else}
+					<div class="h-10 w-10"></div>
+				{/if}
+			</button>
 		</div>
 
 		{#if isLoading}
