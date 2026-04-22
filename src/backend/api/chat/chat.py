@@ -6,6 +6,7 @@ from services.chat_service import ChatService
 from services.llm_service import LLMService
 from pydantic import BaseModel
 
+
 class ChatMessageRequest(BaseModel):
     user_id: int
     role: str
@@ -40,9 +41,10 @@ async def add_chat_conversation(
 @router.get("/conversation/{chat_id}")
 async def get_chat_conversation(
     chat_id: int,
+    user_id: int,
     chat_service: ChatService = Depends(get_chat_service),
 ):
-    return chat_service.get_chat_conversation(chat_id)
+    return chat_service.get_chat_conversation(user_id, chat_id)
 
 
 @router.get("/conversations/{user_id}")
@@ -56,18 +58,20 @@ async def get_chat_conversations(
 @router.patch("/conversation/{chat_id}")
 async def update_chat_conversation(
     chat_id: int,
+    user_id: int,
     title: str,
     chat_service: ChatService = Depends(get_chat_service),
 ):
-    return chat_service.update_chat_conversation(chat_id, title)
+    return chat_service.update_chat_conversation(user_id, chat_id, title)
 
 
 @router.delete("/conversation/{chat_id}")
 async def delete_chat_conversation(
     chat_id: int,
+    user_id: int,
     chat_service: ChatService = Depends(get_chat_service),
 ):
-    return chat_service.delete_chat_conversation(chat_id)
+    return chat_service.delete_chat_conversation(user_id, chat_id)
 
 
 @router.post("/conversation/{chat_id}/messages")

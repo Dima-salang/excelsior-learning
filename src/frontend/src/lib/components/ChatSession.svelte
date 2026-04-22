@@ -199,8 +199,10 @@
 
 	async function clearChat() {
 		if (chatId) {
+			const user = auth.user;
+			if (!user?.id) return;
 			try {
-				await apiFetch(`/chat/conversation/${chatId}`, { method: 'DELETE' });
+				await apiFetch(`/chat/conversation/${chatId}?user_id=${user.id}`, { method: 'DELETE' });
 				chatId = null;
 				messages = [];
 				onChatDeleted();
