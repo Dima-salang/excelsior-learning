@@ -81,12 +81,7 @@
 						/>
 					</div>
 					<div class="space-y-2">
-						<div class="flex items-center justify-between">
-							<Label for="password" class="text-sm font-medium">Password</Label>
-							<a href="/forgot-password" class="text-xs text-muted-foreground hover:text-primary">
-								Forgot password?
-							</a>
-						</div>
+						<Label for="password" class="text-sm font-medium">Password</Label>
 						<Input
 							id="password"
 							type="password"

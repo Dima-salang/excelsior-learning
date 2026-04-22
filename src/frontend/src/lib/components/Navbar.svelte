@@ -118,25 +118,6 @@
 					AI Models
 				</a>
 			</div>
-		{:else}
-			<div class="hidden items-center gap-1 text-sm md:flex">
-				<a
-					href="/login"
-					class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/login')
-						? 'font-medium text-foreground'
-						: 'text-muted-foreground'}"
-				>
-					Login
-				</a>
-				<a
-					href="/register"
-					class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/register')
-						? 'font-medium text-foreground'
-						: 'text-muted-foreground'}"
-				>
-					Register
-				</a>
-			</div>
 		{/if}
 	</div>
 
