@@ -166,13 +166,13 @@
 
 					<div class="flex items-center gap-6">
 						<div class="text-center">
-							<span class="block text-xs text-muted-foreground uppercase">Accuracy</span>
+							<span class="block text-xs text-muted-foreground uppercase">Score</span>
 							<span
 								class="text-xl font-bold {quiz.score > 7
 									? 'text-green-600 dark:text-green-400'
 									: 'text-primary'}"
 							>
-								{Math.round(quiz.score * 10)}%
+								{quiz.score}
 							</span>
 						</div>
 
