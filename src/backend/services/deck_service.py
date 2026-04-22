@@ -58,7 +58,7 @@ class DeckService:
         results = self.session.exec(statement)
         return results.all()
 
-    def get_due_cards_count(self, user_id: int) -> dict:
+    def get_due_cards_count(self, user_id: int, deck_id: int | None = None) -> dict:
         now = datetime.now()
         statement = (
             select(func.count(Card.id))
@@ -68,9 +68,46 @@ class DeckService:
             .where(Card.next_review != None)
             .where(Card.next_review <= now)
         )
+        if deck_id is not None:
+            statement = statement.where(Deck.id == deck_id)
         due_today = self.session.exec(statement).first() or 0
 
         return {"due_today": due_today, "past_due": 0}
+
+    def get_due_cards_by_deck(self, user_id: int) -> List[dict]:
+        now = datetime.now()
+        statement = (
+            select(Deck.id, Deck.title, func.count(Card.id).label("due_count"))
+            .select_from(Card)
+            .join(Deck, Deck.id == Card.deck_id)
+            .join(Lecture, Lecture.id == Deck.lecture_id)
+            .where(Lecture.user_id == user_id)
+            .where(Card.next_review != None)
+            .where(Card.next_review <= now)
+            .group_by(Deck.id, Deck.title)
+        )
+        results = self.session.exec(statement).all()
+        return [
+            {"deck_id": row.id, "title": row.title, "due_count": row.due_count}
+            for row in results
+        ]
+
+    def get_all_due_cards(
+        self, user_id: int, deck_id: int | None = None
+    ) -> List[CardPublic]:
+        now = datetime.now()
+        statement = (
+            select(Card)
+            .join(Deck, Deck.id == Card.deck_id)
+            .join(Lecture, Lecture.id == Deck.lecture_id)
+            .where(Lecture.user_id == user_id)
+            .where(Card.next_review != None)
+            .where(Card.next_review <= now)
+        )
+        if deck_id is not None:
+            statement = statement.where(Deck.id == deck_id)
+        results = self.session.exec(statement)
+        return results.all()
 
     def update_deck(self, deck_id: int, deck_update: dict) -> Deck | None:
         deck = self.session.get(Deck, deck_id)

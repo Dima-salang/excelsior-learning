@@ -22,6 +22,19 @@ def get_due_cards_stats(
     return stats
 
 
+@router.get("/stats/by-deck")
+def get_due_cards_by_deck(
+    user_id: int,
+    session: Session = Depends(get_session),
+):
+    """
+    Get due cards count per deck for a user.
+    """
+    service = DeckService(session)
+    stats = service.get_due_cards_by_deck(user_id)
+    return stats
+
+
 @router.get("/", response_model=PaginatedResponse[DeckPublic])
 def get_decks(
     user_id: int,
