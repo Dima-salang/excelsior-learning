@@ -53,154 +53,192 @@
 	in:fade={{ duration: 300 }}
 >
 	<div class="flex items-center gap-10">
-		<a href="/dashboard" class="flex items-center gap-2">
+		<a href={auth.isAuthenticated ? "/dashboard" : "/"} class="flex items-center gap-2">
 			<div class="flex flex-col">
 				<span class="font-display text-lg font-bold tracking-tight">EXCELSIOR</span>
 				<span class="text-[9px] font-medium tracking-widest text-primary uppercase">Academy</span>
 			</div>
 		</a>
-		<div class="hidden items-center gap-1 text-sm md:flex">
-			<a
-				href="/dashboard"
-				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/dashboard')
-					? 'font-medium text-foreground'
-					: 'text-muted-foreground'}"
-			>
-				Dashboard
-			</a>
-			<a
-				href="/lectures"
-				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/lectures')
-					? 'font-medium text-foreground'
-					: 'text-muted-foreground'}"
-			>
-				Courses
-			</a>
-			<a
-				href="/decks"
-				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/decks')
-					? 'font-medium text-foreground'
-					: 'text-muted-foreground'}"
-			>
-				Decks
-			</a>
-			<a
-				href="/quiz"
-				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/quiz')
-					? 'font-medium text-foreground'
-					: 'text-muted-foreground'}"
-			>
-				Quiz
-			</a>
-			<a
-				href="/chat"
-				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/chat')
-					? 'font-medium text-foreground'
-					: 'text-muted-foreground'}"
-			>
-				AI Tutor
-			</a>
-			<a
-				href="/generate"
-				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/generate')
-					? 'font-medium text-foreground'
-					: 'text-muted-foreground'}"
-			>
-				Generate
-			</a>
-			<a
-				href="/providers"
-				class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/providers')
-					? 'font-medium text-foreground'
-					: 'text-muted-foreground'}"
-			>
-				AI Models
-			</a>
-		</div>
+		{#if auth.isAuthenticated}
+			<div class="hidden items-center gap-1 text-sm md:flex">
+				<a
+					href="/dashboard"
+					class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/dashboard')
+						? 'font-medium text-foreground'
+						: 'text-muted-foreground'}"
+				>
+					Dashboard
+				</a>
+				<a
+					href="/lectures"
+					class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/lectures')
+						? 'font-medium text-foreground'
+						: 'text-muted-foreground'}"
+				>
+					Courses
+				</a>
+				<a
+					href="/decks"
+					class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/decks')
+						? 'font-medium text-foreground'
+						: 'text-muted-foreground'}"
+				>
+					Decks
+				</a>
+				<a
+					href="/quiz"
+					class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/quiz')
+						? 'font-medium text-foreground'
+						: 'text-muted-foreground'}"
+				>
+					Quiz
+				</a>
+				<a
+					href="/chat"
+					class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/chat')
+						? 'font-medium text-foreground'
+						: 'text-muted-foreground'}"
+				>
+					AI Tutor
+				</a>
+				<a
+					href="/generate"
+					class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/generate')
+						? 'font-medium text-foreground'
+						: 'text-muted-foreground'}"
+				>
+					Generate
+				</a>
+				<a
+					href="/providers"
+					class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/providers')
+						? 'font-medium text-foreground'
+						: 'text-muted-foreground'}"
+				>
+					AI Models
+				</a>
+			</div>
+		{:else}
+			<div class="hidden items-center gap-1 text-sm md:flex">
+				<a
+					href="/login"
+					class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/login')
+						? 'font-medium text-foreground'
+						: 'text-muted-foreground'}"
+				>
+					Login
+				</a>
+				<a
+					href="/register"
+					class="relative rounded-md px-3 py-2 transition-colors hover:bg-muted {isActive('/register')
+						? 'font-medium text-foreground'
+						: 'text-muted-foreground'}"
+				>
+					Register
+				</a>
+			</div>
+		{/if}
 	</div>
 
 	<div class="relative flex items-center gap-2">
-		<button
-			onclick={toggleDropdown}
-			onkeydown={(e) => e.key === 'Enter' && toggleDropdown()}
-			class="flex items-center gap-2 rounded-full px-3 py-1.5 transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-			aria-expanded={dropdownOpen}
-			aria-haspopup="true"
-		>
-			<span class="text-sm font-medium">{auth.user?.username || 'Guest'}</span>
-			<div
-				class="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-secondary"
-			>
-				<span class="text-xs font-semibold text-primary uppercase">
-					{auth.user?.username?.[0] || 'G'}
-				</span>
-			</div>
-			<ChevronDown
-				class="h-4 w-4 text-muted-foreground transition-transform {dropdownOpen
-					? 'rotate-180'
-					: ''}"
-			/>
-		</button>
-
-		{#if dropdownOpen}
-			<div
-				class="absolute top-full right-0 z-50 mt-2 min-w-[200px] origin-top-right"
-				in:fly={{ y: -5, duration: 150 }}
-				out:fly={{ y: -5, duration: 100 }}
-				role="menu"
-			>
-				<div class="rounded-lg border border-border bg-popover p-1 shadow-lg">
-					<div class="flex items-center gap-3 px-3 py-2">
-						<div
-							class="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-secondary"
-						>
-							<User class="h-4 w-4 text-muted-foreground" />
-						</div>
-						<div class="flex flex-col">
-							<span class="text-sm font-medium">{auth.user?.username}</span>
-							<span class="text-xs text-muted-foreground">{auth.user?.email}</span>
-						</div>
-					</div>
-
-					<div class="my-1 h-px bg-border"></div>
-
-					<a
-						href="/settings"
-						onclick={closeDropdown}
-						class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-						role="menuitem"
-					>
-						<Settings class="h-4 w-4" />
-						Settings
-					</a>
-
-					
-
-					<div class="my-1 h-px bg-border"></div>
-
-					<button
-						onclick={handleLogout}
-						disabled={loggingOut}
-						class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
-						role="menuitem"
-					>
-						{#if loggingOut}
-							<LogOut class="h-4 w-4 animate-pulse" />
-							Signing out...
-						{:else}
-							<LogOut class="h-4 w-4" />
-							Sign out
-						{/if}
-					</button>
-				</div>
-			</div>
-
+		{#if auth.isAuthenticated}
 			<button
-				class="fixed inset-0 z-40 cursor-default"
-				onclick={closeDropdown}
-				aria-label="Close dropdown"
-				tabindex="-1"
-			></button>
+				onclick={toggleDropdown}
+				onkeydown={(e) => e.key === 'Enter' && toggleDropdown()}
+				class="flex items-center gap-2 rounded-full px-3 py-1.5 transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+				aria-expanded={dropdownOpen}
+				aria-haspopup="true"
+			>
+				<span class="text-sm font-medium">{auth.user?.username || 'Guest'}</span>
+				<div
+					class="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-secondary"
+				>
+					<span class="text-xs font-semibold text-primary uppercase">
+						{auth.user?.username?.[0] || 'G'}
+					</span>
+				</div>
+				<ChevronDown
+					class="h-4 w-4 text-muted-foreground transition-transform {dropdownOpen
+						? 'rotate-180'
+						: ''}"
+				/>
+			</button>
+
+			{#if dropdownOpen}
+				<div
+					class="absolute top-full right-0 z-50 mt-2 min-w-[200px] origin-top-right"
+					in:fly={{ y: -5, duration: 150 }}
+					out:fly={{ y: -5, duration: 100 }}
+					role="menu"
+				>
+					<div class="rounded-lg border border-border bg-popover p-1 shadow-lg">
+						<div class="flex items-center gap-3 px-3 py-2">
+							<div
+								class="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-secondary"
+							>
+								<User class="h-4 w-4 text-muted-foreground" />
+							</div>
+							<div class="flex flex-col">
+								<span class="text-sm font-medium">{auth.user?.username}</span>
+								<span class="text-xs text-muted-foreground">{auth.user?.email}</span>
+							</div>
+						</div>
+
+						<div class="my-1 h-px bg-border"></div>
+
+						<a
+							href="/settings"
+							onclick={closeDropdown}
+							class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+							role="menuitem"
+						>
+							<Settings class="h-4 w-4" />
+							Settings
+						</a>
+
+						
+
+						<div class="my-1 h-px bg-border"></div>
+
+						<button
+							onclick={handleLogout}
+							disabled={loggingOut}
+							class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+							role="menuitem"
+						>
+							{#if loggingOut}
+								<LogOut class="h-4 w-4 animate-pulse" />
+								Signing out...
+							{:else}
+								<LogOut class="h-4 w-4" />
+								Sign out
+							{/if}
+						</button>
+					</div>
+				</div>
+
+				<button
+					class="fixed inset-0 z-40 cursor-default"
+					onclick={closeDropdown}
+					aria-label="Close dropdown"
+					tabindex="-1"
+				></button>
+			{/if}
+		{:else}
+			<div class="flex items-center gap-2">
+				<a
+					href="/login"
+					class="flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors hover:bg-muted"
+				>
+					Login
+				</a>
+				<a
+					href="/register"
+					class="flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+				>
+					Register
+				</a>
+			</div>
 		{/if}
 	</div>
 </nav>
