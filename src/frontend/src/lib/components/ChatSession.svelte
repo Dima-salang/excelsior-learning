@@ -3,7 +3,7 @@
 	import { apiFetch, API_BASE_URL } from '$lib/api';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
-	import { MessageCircle, Send, Loader2, BrainCircuit, User, Cpu, Trash2 } from '@lucide/svelte';
+	import { MessageCircle, Send, Loader2, BrainCircuit, User, Cpu, Trash2, AlertTriangle, X } from '@lucide/svelte';
 	import { fade, fly, scale } from 'svelte/transition';
 	import MarkdownRenderer from './MarkdownRenderer.svelte';
 	import { tick } from 'svelte';
@@ -38,6 +38,8 @@
 	let isGenerating = $state(false);
 	let error = $state('');
 	let isLoadingHistory = $state(false);
+	let showDeleteConfirm = $state(false);
+	let isDeleting = $state(false);
 	let chatContainer: HTMLElement;
 
 	$effect(() => {
@@ -116,10 +118,9 @@
 		await scrollToBottom();
 
 		try {
-			await apiFetch(`/chat/conversation/${currentChatId}/messages`, {
+			await apiFetch(`/chat/conversation/${currentChatId}/messages?user_id=${user.id}`, {
 				method: 'POST',
 				body: JSON.stringify({
-					user_id: user.id,
 					role: 'user',
 					content: currentPrompt
 				})
@@ -201,17 +202,29 @@
 		if (chatId) {
 			const user = auth.user;
 			if (!user?.id) return;
+			isDeleting = true;
 			try {
 				await apiFetch(`/chat/conversation/${chatId}?user_id=${user.id}`, { method: 'DELETE' });
 				chatId = null;
 				messages = [];
+				showDeleteConfirm = false;
 				onChatDeleted();
 			} catch (err) {
 				console.error('Failed to clear chat', err);
+			} finally {
+				isDeleting = false;
 			}
 		} else {
 			messages = [];
 		}
+	}
+
+	function confirmDelete() {
+		showDeleteConfirm = true;
+	}
+
+	function cancelDelete() {
+		showDeleteConfirm = false;
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -234,10 +247,10 @@
 			</div>
 		</div>
 		<div class="flex items-center gap-2">
-			{#if messages.length > 0}
+			{#if messages.length > 0 && !showDeleteConfirm}
 				<Button
 					variant="ghost"
-					onclick={clearChat}
+					onclick={confirmDelete}
 					class="h-8 rounded-lg px-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase hover:bg-destructive/10 hover:text-destructive"
 				>
 					<Trash2 class="h-3.5 w-3.5" />
@@ -245,6 +258,41 @@
 			{/if}
 		</div>
 	</header>
+
+	{#if showDeleteConfirm}
+		<div class="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+			<div class="mx-4 w-full max-w-xs rounded-xl border border-border bg-card p-4 shadow-xl">
+				<div class="flex flex-col items-center text-center">
+					<div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+						<AlertTriangle class="h-6 w-6 text-destructive" />
+					</div>
+					<h3 class="font-display text-lg font-black tracking-tighter uppercase">Delete Chat?</h3>
+					<p class="mt-1 text-sm text-muted-foreground">This conversation will be permanently removed.</p>
+					<div class="mt-4 flex w-full gap-2">
+						<Button
+							variant="outline"
+							onclick={cancelDelete}
+							class="flex-1"
+						>
+							Cancel
+						</Button>
+						<Button
+							variant="destructive"
+							onclick={clearChat}
+							disabled={isDeleting}
+							class="flex-1"
+						>
+							{#if isDeleting}
+								<Loader2 class="h-4 w-4 animate-spin" />
+							{:else}
+								Delete
+							{/if}
+						</Button>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Chat Area -->
 	<div bind:this={chatContainer} class="custom-scrollbar relative flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6 md:px-6">
