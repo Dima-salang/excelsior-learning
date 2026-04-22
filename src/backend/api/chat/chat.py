@@ -71,7 +71,7 @@ async def delete_chat_conversation(
     user_id: int,
     chat_service: ChatService = Depends(get_chat_service),
 ):
-    return chat_service.delete_chat_conversation(user_id, chat_id)
+    return chat_service.delete_chat_conversation(user_id=user_id, chat_id=chat_id)
 
 
 @router.post("/conversation/{chat_id}/messages")

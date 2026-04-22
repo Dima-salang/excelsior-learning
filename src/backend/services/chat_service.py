@@ -173,7 +173,7 @@ class ChatService:
         ).all()
         return chat_messages
 
-    def delete_chat_conversation(self, chat_id: int, user_id: int):
+    def delete_chat_conversation(self, user_id: int, chat_id: int):
         chat = self.get_chat_conversation(user_id, chat_id)
         self.session.delete(chat)
         self.session.commit()
