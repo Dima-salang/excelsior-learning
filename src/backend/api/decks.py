@@ -75,6 +75,21 @@ def get_deck(deck_id: int, session: Session = Depends(get_session)):
     return deck
 
 
+@router.get("/{deck_id}/card-count")
+def get_deck_card_count(
+    deck_id: int,
+    session: Session = Depends(get_session),
+):
+    """
+    Get total card count for a specific deck.
+    """
+    service = DeckService(session)
+    deck = service.get_deck(deck_id)
+    if not deck:
+        raise HTTPException(status_code=404, detail="Deck not found")
+    return {"deck_id": deck_id, "card_count": len(deck.cards)}
+
+
 @router.patch("/{deck_id}", response_model=DeckPublic)
 def update_deck(
     deck_id: int, deck_update: DeckUpdate, session: Session = Depends(get_session)

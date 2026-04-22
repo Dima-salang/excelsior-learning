@@ -19,7 +19,8 @@
 		ChevronRight,
 		Shuffle,
 		Calendar,
-		AlertCircle
+		AlertCircle,
+		Bolt
 	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import Flashcard from '$lib/components/Flashcard.svelte';
@@ -53,6 +54,8 @@
 	let quizStarted = $state(false);
 	let quizFinished = $state(false);
 
+	let isCramMode = $state(false);
+	let totalCardCount = $state(0);
 	let randomOrder = $state(true);
 	let ignoreInterval = $state(false);
 	let numFlashcards = $state(10);
@@ -67,12 +70,22 @@
 	let elapsedTime = $state(0);
 	let timerInterval = $state<number | null>(null);
 
+	onMount(async () => {
+		try {
+			const response = await apiFetch(`/decks/${deckId}/card-count`);
+			totalCardCount = response.card_count;
+		} catch (err) {
+			console.error('Failed to get card count:', err);
+		}
+	});
+
 	async function startQuiz() {
 		error = '';
 		try {
 			isLoading = true;
+			const cardsToStudy = isCramMode ? totalCardCount : numFlashcards;
 			const response = await apiFetch(
-				`/quiz/start/${deckId}?num_flashcards=${numFlashcards}&random_order=${randomOrder}&ignore_interval=${ignoreInterval}`,
+				`/quiz/start/${deckId}?num_flashcards=${cardsToStudy}&random_order=${randomOrder}&ignore_interval=${isCramMode || ignoreInterval}`,
 				{ method: 'POST' }
 			);
 			quiz = response;
@@ -212,8 +225,31 @@
 
 				<div class="rounded-[2.5rem] border border-border bg-card/50 p-8 backdrop-blur-xl">
 					<div class="space-y-8">
+						<!-- Cram Mode toggle -->
+						<div class="flex items-center justify-between rounded-2xl border border-primary/20 bg-primary/5 p-5">
+							<div class="flex items-center gap-4">
+								<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20">
+									<Bolt class="h-5 w-5 text-primary" />
+								</div>
+								<div>
+									<span class="block font-display text-sm font-black uppercase">Cram Session</span>
+									<span class="text-xs text-muted-foreground">Study all {totalCardCount} cards at once</span>
+								</div>
+							</div>
+							<button
+								type="button"
+								role="switch"
+								aria-checked={isCramMode}
+								onclick={() => (isCramMode = !isCramMode)}
+								class="relative h-7 w-14 shrink-0 overflow-hidden rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none {isCramMode ? 'bg-primary' : 'bg-muted'}"
+							>
+								<span class="pointer-events-none absolute top-[3px] left-[3px] h-[22px] w-[22px] rounded-full bg-background shadow-md transition-transform duration-200 {isCramMode ? 'translate-x-7' : 'translate-x-0'}"></span>
+								<span class="sr-only">{isCramMode ? 'On' : 'Off'}</span>
+							</button>
+						</div>
+
 						<!-- Card count slider -->
-						<div class="space-y-4">
+						<div class="space-y-4" class:opacity-50={isCramMode} class:pointer-events-none={isCramMode}>
 							<div class="flex items-center justify-between">
 								<label for="num-cards" class="flex flex-col gap-1">
 									<span class="text-[10px] font-black tracking-widest text-muted-foreground uppercase">Number of Cards</span>
@@ -271,7 +307,7 @@
 						</div>
 
 						<!-- Ignore Interval toggle -->
-						<div class="flex items-center justify-between rounded-2xl border border-border bg-muted/30 p-5">
+						<div class="flex items-center justify-between rounded-2xl border border-border bg-muted/30 p-5" class:opacity-50={isCramMode} class:pointer-events-none={isCramMode}>
 							<div class="flex items-center gap-4">
 								<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10">
 									<Calendar class="h-5 w-5 text-accent" />
@@ -294,7 +330,7 @@
 						</div>
 
 						<!-- Info note about interval -->
-						{#if !ignoreInterval}
+						{#if !ignoreInterval && !isCramMode}
 							<div class="flex items-start gap-3 rounded-xl border border-warning/20 bg-warning/5 p-4" in:slide>
 								<AlertCircle class="mt-0.5 h-4 w-4 shrink-0 text-warning" />
 								<p class="text-xs text-warning">
@@ -317,15 +353,19 @@
 					<Button
 						size="lg"
 						onclick={() => startQuiz()}
-						disabled={isLoading}
-						class="h-16 rounded-2xl bg-primary px-12 font-black tracking-widest uppercase shadow-lg transition-all hover:scale-105 disabled:opacity-60"
+						disabled={isLoading || (isCramMode && totalCardCount === 0)}
+						class="h-16 rounded-2xl px-12 font-black tracking-widest uppercase shadow-lg transition-all hover:scale-105 disabled:opacity-60 {isCramMode ? 'bg-accent hover:bg-accent/90' : 'bg-primary'}"
 					>
 						{#if isLoading}
 							<Loader2 class="mr-3 h-5 w-5 animate-spin" />
 							Starting...
 						{:else}
 							<Sparkles class="mr-3 h-5 w-5" />
-							Start Quiz
+							{#if isCramMode}
+								Cram Session ({totalCardCount} Cards)
+							{:else}
+								Start Quiz
+							{/if}
 						{/if}
 					</Button>
 					<Button
