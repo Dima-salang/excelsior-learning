@@ -54,7 +54,7 @@
 	let quizFinished = $state(false);
 
 	let randomOrder = $state(true);
-	let ignoreInterval = $state(true);
+	let ignoreInterval = $state(false);
 	let numFlashcards = $state(10);
 	let pendingAnswer = $state<{ isCorrect: boolean; selectedIdx: number } | null>(null);
 	let pendingRating = $state<number | null>(null);

@@ -6,7 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import FilterBar from '$lib/components/FilterBar.svelte';
-	import { Layers, Plus, Calendar, ChevronRight, Loader2, BookOpen } from '@lucide/svelte';
+	import { Layers, Plus, Calendar, ChevronRight, Loader2, BookOpen, Clock } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 
 	interface Deck {
@@ -14,9 +14,11 @@
 		title: string;
 		description: string | null;
 		created_at: string;
+		due_count?: number;
 	}
 
 	let decks = $state<Deck[]>([]);
+	let dueCounts = $state<Record<number, number>>({});
 	let isLoading = $state(true);
 	let isLoadingMore = $state(false);
 	let error = $state('');
@@ -72,6 +74,20 @@
 		}
 	}
 
+	async function fetchDueCounts() {
+		if (!auth.user) return;
+		try {
+			const stats = await apiFetch(`/decks/stats/by-deck?user_id=${auth.user.id}`);
+			const counts: Record<number, number> = {};
+			for (const item of stats || []) {
+				counts[item.deck_id] = item.due_count;
+			}
+			dueCounts = counts;
+		} catch (err) {
+			console.error('Failed to fetch due counts', err);
+		}
+	}
+
 	function handleSearchChange(value: string) {
 		clearTimeout(searchTimeout);
 		searchTimeout = window.setTimeout(() => {
@@ -102,6 +118,7 @@
 			return;
 		}
 		fetchDecks();
+		fetchDueCounts();
 	});
 
 	function formatDate(dateStr: string) {
@@ -205,8 +222,8 @@
 	{:else}
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 			{#each decks as deck, i (deck.id)}
-				<button
-					in:fly={{ y: 20, delay: Math.min(i * 50, 300) }}
+				{@const dueCount = dueCounts[deck.id] || 0}
+				<div
 					class="group flex h-full cursor-pointer flex-col rounded-xl border border-border bg-card p-6 text-left transition-all hover:border-primary/30 hover:shadow-md"
 					onclick={() => goto(`/decks/${deck.id}`)}
 				>
@@ -232,12 +249,27 @@
 							</div>
 						</div>
 
-						<div class="mt-4 flex items-center gap-1 text-xs font-medium text-primary">
-							<span>Study</span>
-							<ChevronRight class="h-4 w-4 transition-transform group-hover:translate-x-1" />
+						<div class="mt-4 flex items-center justify-between">
+							{#if dueCount > 0}
+								<button
+									onclick={(e) => { e.stopPropagation(); goto(`/quiz/${deck.id}`); }}
+									class="flex items-center gap-2 rounded-lg bg-warning/10 px-3 py-2 text-xs font-bold text-warning transition-all hover:bg-warning/20"
+								>
+									<Clock class="h-3.5 w-3.5" />
+									<span>{dueCount} Due</span>
+								</button>
+							{:else}
+								<button
+									onclick={(e) => e.stopPropagation()}
+									class="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+								>
+									<span>View Cards</span>
+								</button>
+							{/if}
+							<ChevronRight class="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
 						</div>
 					</div>
-				</button>
+				</div>
 			{/each}
 		</div>
 
