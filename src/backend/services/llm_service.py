@@ -10,7 +10,7 @@ from models.lecture_section import LectureSection
 from models.lecture_step import LectureStep
 from models.deck import Deck, DeckWithCardsFlashcard
 from pydantic import BaseModel
-from schema.lecture_schema_json import LectureSchema, LectureStepSchema
+from schema.lecture_schema_json import LectureSchema, LectureStepSchema, LectureLengthEnum
 from sqlmodel import Session
 from cryptography.fernet import Fernet
 import os
@@ -22,7 +22,6 @@ from models.llm_provider import PromptManager
 import requests
 import litellm
 import logging
-from models.chat import ChatMessage, ChatMessageGeneration
 
 OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
 
@@ -136,7 +135,7 @@ class LLMService:
         return f.decrypt(api_key.encode()).decode()
 
     # LECTURES
-    def generate_lecture(self, prompt: str, provider_id: int, user_id: int) -> Lecture:
+    def generate_lecture(self, prompt: str, provider_id: int, user_id: int, length: LectureLengthEnum = LectureLengthEnum.MEDIUM) -> Lecture:
         provider = self.session.get(UserLLMConfig, provider_id)
         if not provider:
             raise HTTPException(status_code=404, detail=self.PROVIDER_NOT_FOUND)
@@ -389,6 +388,7 @@ class LLMService:
                 Card(
                     type=card_data.type,
                     front=card_data.front,
+                    back=card_data.back,
                     options=card_data.options,
                     options_ans=card_data.options_ans,
                     explanation=card_data.explanation,

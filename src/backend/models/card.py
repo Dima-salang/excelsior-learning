@@ -20,13 +20,16 @@ if TYPE_CHECKING:
 
 
 class CardType(str, Enum):
-    MULTICHOICE = "multichoice"
-    TRUEFALSE = "truefalse"
+    multichoice = "multichoice"
+    truefalse = "truefalse"
+    standard = "standard"
+    explanation = "explanation"
 
 
 class CardBase(SQLModel):
-    type: str
+    type: CardType
     front: str
+    back: str | None = Field(default=None)
     options: Optional[list[str]] = Field(default=None)
     options_ans: Optional[int] = Field(default=None)
     user_selected_ans: Optional[int] = Field(default=None)
@@ -66,6 +69,7 @@ class CardListPublic(SQLModel):
     id: int
     type: str
     front: str
+    back: str | None = None
     options: Optional[list[str]] = None
     options_ans: Optional[int] = None
     explanation: Optional[str] = None

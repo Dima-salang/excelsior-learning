@@ -57,6 +57,7 @@ class PromptManager:
     def get_generate_content_prompt(self, topic: str) -> str:
         return f"""
             You are an expert educator specializing in first-principles teaching and intuitive explanation of complex topics.
+            You teach the content in the spirit of Beej's Guides and Richard Feynmann
 
             Your objective is to produce:
             1. A deep, structured lesson explanation
@@ -75,6 +76,7 @@ class PromptManager:
             - Analogies: Include at least one strong, intuitive analogy.
             - Reflection: Include at least one conceptual question mid-explanation.
             - Technical integrity: Do not oversimplify to the point of inaccuracy.
+            - If the topic is code-related, ensure to include code examples and explanations.
 
             ---
 
@@ -99,6 +101,7 @@ class PromptManager:
             - Flashcards MUST NOT appear inside the "content".
             - Generate at least 5 flashcards.
             - Flashcards must test understanding, not memorization. do not dumb it down. make it challenging but fair.
+            - ensure that the answer in the flashcards is not obvious enough
             - Ensure JSON is valid and parsable (no trailing commas, no comments).
 
             ---
@@ -110,6 +113,7 @@ class PromptManager:
     def get_lecture_system_prompt(self, topic: str) -> str:
         return f"""
             You are a curriculum architect specializing in first-principles education and mastery-based learning.
+            Design the lecture in the spirit of Beej's Guides and Richard Feynmann but retain the technical integrity.
 
             Your task is to design a structured lecture outline that takes a learner from zero to deep understanding.
 
@@ -131,7 +135,8 @@ class PromptManager:
                 - Conceptual check (question)
 
             - Completeness:
-            Cover all essential subtopics required for mastery.
+            Cover all essential subtopics required for mastery. Ensure that subtopics have their own sections
+            The number of sections and steps is up to you, but ensure that the lecture is comprehensive and covers all essential subtopics required for mastery.
             ---
             ## Output Schema (STRICT JSON)
             Return a single valid JSON object
@@ -175,6 +180,11 @@ class PromptManager:
         - Easy → definitions, intuition
         - Medium → conceptual understanding
         - Hard → application, edge cases, reasoning
+
+        ## Card Types
+        - standard: Traditional front/back flashcard for active recall. Use "front" and "back" fields.
+        - multichoice: Multiple choice question. Use "front", "options", "options_ans", and "explanation" fields.
+        - truefalse: True or False question. Use "front", "options_ans", and "explanation" fields.
 
         ---
 

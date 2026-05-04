@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Literal
 from enum import Enum
 
 
@@ -7,6 +7,12 @@ from enum import Enum
 class LectureSortEnum(str, Enum):
     ASCENDING = "ascending"
     DESCENDING = "descending"
+
+
+class LectureLengthEnum(int, Enum):
+    SHORT = 3
+    MEDIUM = 6
+    LONG = 10
 
 
 # lecture filter schema
@@ -32,8 +38,9 @@ class LectureFilterSchema(BaseModel):
 
 
 class StepFlashcardSchema(BaseModel):
-    type: str = Field(description="Type of flashcard: 'multichoice' or 'truefalse'")
+    type: Literal["multichoice", "truefalse", "standard"] = Field(description="Type of flashcard: 'multichoice' or 'truefalse', or 'standard'")
     front: str = Field(description="The question or front of the flashcard")
+    back: str = Field(description="The answer or back of the flashcard for the standard card type", default=None)
     options: Optional[list[str]] = Field(
         default=None, description="Options for multichoice cards and truefalse cards"
     )
@@ -61,7 +68,7 @@ class LectureSectionSchema(BaseModel):
     title: str = Field(description="Title of the section")
     order_key: int = Field(description="Order key of the lecture section")
     steps: list[LectureStepSchema] = Field(
-        description="List of steps for this section. YOU MUST GENERATE AT LEAST 5 STEPS PER SECTION."
+        description="List of steps for this section. YOU MUST GENERATE A MINIMUM OF 5 STEPS PER SECTION."
     )
 
 
@@ -69,6 +76,6 @@ class LectureSchema(BaseModel):
     title: str = Field(description="Title of the lecture")
     description: str = Field(description="Brief overview of the lecture")
     sections: list[LectureSectionSchema] = Field(
-        description="List of sections for the lecture. YOU MUST GENERATE AT LEAST 5 SECTIONS."
+        description="List of sections for the lecture. YOU MUST GENERATE A MINIMUM OF 10 SECTIONS."
     )
     cards: Optional[list[StepFlashcardSchema]] = Field(default=None)

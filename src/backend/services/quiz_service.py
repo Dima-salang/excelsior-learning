@@ -103,6 +103,7 @@ class QuizService:
                 quiz_id=quiz_id,
                 type=card.type,
                 front=card.front,
+                back=card.back,
                 options=card.options,
                 options_ans=card.options_ans,
                 explanation=card.explanation,
