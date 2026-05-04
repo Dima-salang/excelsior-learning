@@ -28,6 +28,7 @@
 		id: number;
 		type: string;
 		front: string;
+		back?: string;
 		options?: string[];
 		options_ans?: number;
 		explanation?: string;

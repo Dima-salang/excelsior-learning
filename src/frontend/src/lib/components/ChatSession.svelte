@@ -121,6 +121,7 @@
 			await apiFetch(`/chat/conversation/${currentChatId}/messages?user_id=${user.id}`, {
 				method: 'POST',
 				body: JSON.stringify({
+					user_id: user.id,
 					role: 'user',
 					content: currentPrompt
 				})

@@ -289,6 +289,17 @@
 									</div>
 								{/if}
 
+								{#if card.type === 'standard' && card.back}
+									<div
+										class="mt-8 rounded-2xl border border-success/20 bg-success/5 p-6 text-sm text-foreground"
+									>
+										<p class="mb-2 font-display text-[8px] font-black tracking-[0.2em] text-success uppercase">
+											Correct Answer
+										</p>
+										<MarkdownRenderer content={card.back} compact />
+									</div>
+								{/if}
+
 								{#if card.explanation}
 									<div
 										class="mt-8 rounded-2xl bg-muted/50 p-6 text-sm text-muted-foreground italic"
