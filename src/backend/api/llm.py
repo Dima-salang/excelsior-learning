@@ -9,10 +9,11 @@ from models.llm_provider import (
     UserLLMConfigUpdate,
     UserLLMConfigPublic,
 )
+from litellm.exceptions import APIError, RateLimitError
 from pydantic import BaseModel
 from models.lecture import Lecture
-from models.card import CardBase
-from models.deck import DeckWithCardsFlashcard
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
 
 router = APIRouter(prefix="/llm", tags=["llm"])
 
@@ -42,6 +43,11 @@ def add_provider(
     return service.add_provider(provider)
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=5),
+    retry=retry_if_exception_type(Exception),
+)
 @router.get("/providers", response_model=List[UserLLMConfigPublic])
 def get_providers(user_id: int, session: Session = Depends(get_session)):
     """
@@ -82,6 +88,11 @@ def delete_provider(provider_id: int, session: Session = Depends(get_session)):
     return service.delete_provider(provider_id)
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=5),
+    retry=retry_if_exception_type(APIError | RateLimitError),
+)
 @router.post("/generate/lecture", response_model=Lecture)
 def generate_lecture(
     request: GenerateLectureRequest, session: Session = Depends(get_session)
@@ -95,6 +106,11 @@ def generate_lecture(
     )
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=5),
+    retry=retry_if_exception_type(APIError | RateLimitError),
+)
 @router.post("/generate/{deck_id}/cards", response_model=int)
 def generate_cards_for_deck(
     deck_id: int,

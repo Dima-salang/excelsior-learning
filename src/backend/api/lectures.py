@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from typing import List, Optional
 import logging
-from datetime import datetime
 from db.session import get_session
 from services.lecture_service import LectureService
 from services.llm_service import LLMService
@@ -16,7 +15,13 @@ from models.lecture import (
 )
 from models.card import CardPublic, CardUpdate, Card, CardListPublic
 from schema.paginated_response import PaginatedResponse
-from schema.lecture_schema_json import LectureSortEnum
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
+from litellm.exceptions import APIError, RateLimitError, ServiceUnavailableError
 
 logger = logging.getLogger("excelsior")
 router = APIRouter(prefix="/lectures", tags=["lectures"])
@@ -135,6 +140,11 @@ def get_step_cards(step_id: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=5),
+    retry=retry_if_exception_type(APIError | RateLimitError | ServiceUnavailableError),
+)
 @router.post("/{lecture_id}/steps/{step_id}/generate", response_model=LectureStepPublic)
 def generate_step_content(
     lecture_id: int,
